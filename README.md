@@ -124,6 +124,20 @@ See `docs/SPECIFICATION.md` for Version 2.0 features including:
 
 For complete feature specifications and future roadmap, see [docs/SPECIFICATION.md](docs/SPECIFICATION.md).
 
+## For Developers
+
+### GitHub Copilot
+
+This repository is optimized for use with GitHub Copilot and coding agents. See [`.github/copilot-instructions.md`](.github/copilot-instructions.md) for:
+- Project architecture and conventions
+- How to build, test, and run the project
+- Code patterns and best practices
+- Examples of effective prompts
+
+### Getting Started
+
+For detailed development setup and Copilot usage patterns, see [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md).
+
 ## License
 
 This project is currently private.
