@@ -20,7 +20,7 @@ class PersistenceService {
   Future<Tournament?> loadTournament() async {
     final prefs = await SharedPreferences.getInstance();
     final json = prefs.getString(_tournamentKey);
-    if (json == null) return null;
+    if (json == null || json.isEmpty) return null;
     
     try {
       final Map<String, dynamic> data = jsonDecode(json);
@@ -52,7 +52,7 @@ class PersistenceService {
     final playersJson = prefs.getString(_setupPlayersKey);
     final courtCount = prefs.getInt(_setupCourtsKey);
 
-    if (playersJson == null) return null;
+    if (playersJson == null || playersJson.isEmpty) return null;
 
     try {
       final List<dynamic> playersList = jsonDecode(playersJson);

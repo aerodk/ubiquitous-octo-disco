@@ -136,5 +136,25 @@ void main() {
       final value = prefs.getString('current_tournament');
       expect(value, isNull);
     });
+
+    test('should handle empty string tournament data gracefully', () async {
+      // Manually set empty string
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('current_tournament', '');
+
+      // Should return null
+      final loaded = await persistenceService.loadTournament();
+      expect(loaded, isNull);
+    });
+
+    test('should handle empty string setup data gracefully', () async {
+      // Manually set empty string
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('setup_players', '');
+
+      // Should return null
+      final loaded = await persistenceService.loadSetupState();
+      expect(loaded, isNull);
+    });
   });
 }
