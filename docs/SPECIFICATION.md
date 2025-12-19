@@ -281,6 +281,7 @@ Efter hver kamp skal brugeren kunne indtaste score med knap-interface.
 - Aktiv knap viser valgt score tydeligt
 - "Gem Score" knap som gemmer og går videre
 - Validering: Begge par skal have score før gem
+- Der skal vises runde knapper med score fra 0-24 efter tryk på en side af banen. Den anden side skal udregnes automatisk.
 
 **Flutter Implementation:**
 ```dart
