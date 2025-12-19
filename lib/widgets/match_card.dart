@@ -18,13 +18,17 @@ class _MatchCardState extends State<MatchCard> {
       context: context,
       builder: (context) => ScoreInputDialog(match: widget.match),
     ).then((result) {
-      if (result != null && result is Map<String, int>) {
-        setState(() {
-          widget.match.team1Score = result['team1Score'];
-          widget.match.team2Score = result['team2Score'];
-        });
-        // Notify parent that score changed
-        widget.onScoreChanged?.call();
+      if (result != null && result is Map && mounted) {
+        final team1 = result['team1Score'] as int?;
+        final team2 = result['team2Score'] as int?;
+        if (team1 != null && team2 != null) {
+          setState(() {
+            widget.match.team1Score = team1;
+            widget.match.team2Score = team2;
+          });
+          // Notify parent that score changed
+          widget.onScoreChanged?.call();
+        }
       }
     });
   }
