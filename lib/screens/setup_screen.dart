@@ -14,6 +14,7 @@ class SetupScreen extends StatefulWidget {
 
 class _SetupScreenState extends State<SetupScreen> {
   final TextEditingController _playerNameController = TextEditingController();
+  final FocusNode _playerNameFocusNode = FocusNode();
   final List<Player> _players = [];
   int _courtCount = 1;
   final TournamentService _tournamentService = TournamentService();
@@ -21,6 +22,7 @@ class _SetupScreenState extends State<SetupScreen> {
   @override
   void dispose() {
     _playerNameController.dispose();
+    _playerNameFocusNode.dispose();
     super.dispose();
   }
 
@@ -52,6 +54,9 @@ class _SetupScreenState extends State<SetupScreen> {
       ));
       _playerNameController.clear();
     });
+    
+    // Request focus to allow for faster typing and adding of names
+    _playerNameFocusNode.requestFocus();
   }
 
   void _removePlayer(int index) {
@@ -126,6 +131,7 @@ class _SetupScreenState extends State<SetupScreen> {
                 Expanded(
                   child: TextField(
                     controller: _playerNameController,
+                    focusNode: _playerNameFocusNode,
                     decoration: const InputDecoration(
                       labelText: 'Spiller navn',
                       suffixIcon: Icon(Icons.person_add),
