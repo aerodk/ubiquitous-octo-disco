@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/player.dart';
 import '../models/court.dart';
+import '../models/tournament.dart';
 import '../services/tournament_service.dart';
 import '../utils/constants.dart';
 import 'round_display_screen.dart';
@@ -93,11 +94,19 @@ class _SetupScreenState extends State<SetupScreen> {
     // Generate first round
     final firstRound = _tournamentService.generateFirstRound(_players, courts);
 
+    // Create tournament with first round
+    final tournament = Tournament(
+      name: 'Padel Turnering',
+      players: _players,
+      courts: courts,
+      rounds: [firstRound],
+    );
+
     // Navigate to round display
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => RoundDisplayScreen(round: firstRound),
+        builder: (context) => RoundDisplayScreen(tournament: tournament),
       ),
     );
   }
