@@ -92,12 +92,14 @@ ListView.builder(
 
 **Beskrivelse:**
 Brugeren skal kunne registrere baner.
+Antal af baner bliver skal automatisk justeres under registrering af navne, så der tilføjes eller fjernes baner, per hele bane med fire deltagere.
 
 **Acceptkriterier:**
 - NumberPicker eller Stepper til antal baner
 - Editérbar liste over baner
 - Standard: "Bane 1", "Bane 2", etc.
 - Minimum 1 bane, maksimum 8 baner
+
 
 **Flutter Implementation:**
 ```dart
@@ -279,6 +281,7 @@ Efter hver kamp skal brugeren kunne indtaste score med knap-interface.
 - Aktiv knap viser valgt score tydeligt
 - "Gem Score" knap som gemmer og går videre
 - Validering: Begge par skal have score før gem
+- Der skal vises runde knapper med score fra 0-24 efter tryk på en side af banen. Den anden side skal udregnes automatisk.
 
 **Flutter Implementation:**
 ```dart
