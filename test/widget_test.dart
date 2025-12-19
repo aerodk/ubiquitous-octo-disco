@@ -203,7 +203,7 @@ void main() {
     await tester.tap(find.text('Tilføj'));
     await tester.pump();
     
-    // Should auto-adjust to 2 courts (formula: (5+3)/4 = 2)
+    // Should auto-adjust to 2 courts (formula: (5+3)~/4 = 2)
     expect(find.text('2 baner'), findsOneWidget);
     
     // Manually decrease court count

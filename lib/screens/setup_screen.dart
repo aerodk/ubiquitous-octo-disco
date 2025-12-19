@@ -71,7 +71,7 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
   /// Formula: 1 court per 4 players (rounded up)
   int _calculateSuggestedCourtCount(int playerCount) {
     if (playerCount == 0) return 1;
-    // Round up: (playerCount + 3) / 4
+    // Round up using integer division: (playerCount + 3) ~/ 4
     final suggested = ((playerCount + 3) ~/ 4);
     // Clamp to valid range
     return suggested.clamp(Constants.minCourts, Constants.maxCourts);

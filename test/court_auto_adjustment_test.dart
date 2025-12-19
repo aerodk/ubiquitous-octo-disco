@@ -8,7 +8,7 @@ void main() {
   group('Court auto-adjustment calculation', () {
     int calculateSuggestedCourtCount(int playerCount) {
       if (playerCount == 0) return 1;
-      // Round up: (playerCount + 3) / 4
+      // Round up using integer division: (playerCount + 3) ~/ 4
       final suggested = ((playerCount + 3) ~/ 4);
       // Clamp to valid range
       return suggested.clamp(Constants.minCourts, Constants.maxCourts);
