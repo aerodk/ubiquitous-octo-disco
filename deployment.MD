@@ -12,14 +12,15 @@ This project can be deployed to GitHub Pages using the automated GitHub Action w
 
 ### Deployment Steps
 
-#### Automated Deployment (Recommended)
+#### Automatic Deployment (Default)
 
-1. Go to the repository on GitHub
-2. Navigate to **Actions** tab
-3. Select **Deploy to GitHub Pages** workflow
-4. Click **Run workflow** button
-5. Select the branch (usually `main` or `master`)
-6. Click **Run workflow** to start the deployment
+The app automatically deploys to GitHub Pages whenever you push to the `main` branch.
+
+**Simply:**
+1. Make your code changes
+2. Commit and push to `main` branch
+3. GitHub Actions automatically builds and deploys the app
+4. Wait 2-3 minutes for the deployment to complete
 
 The workflow will:
 - Set up Flutter environment
@@ -28,9 +29,18 @@ The workflow will:
 - Deploy the built app to GitHub Pages
 - Display the GitHub Pages URL in the workflow summary
 
-#### Manual Deployment
+#### Manual Deployment (Optional)
 
-If you need to deploy manually:
+You can also manually trigger a deployment via GitHub Actions UI:
+
+1. Go to the repository on GitHub
+2. Navigate to **Actions** tab
+3. Select **Deploy to GitHub Pages** workflow
+4. Click **Run workflow** button
+5. Select the branch (usually `main`)
+6. Click **Run workflow** to start the deployment
+
+Or deploy manually from the command line:
 
 ```bash
 # Install dependencies
@@ -50,7 +60,9 @@ The GitHub Action workflow is configured in `.github/workflows/deploy-pages.yml`
 Key configuration options:
 - **Base href**: Set to `/ubiquitous-octo-disco/` to match the repository name
 - **Build mode**: Release mode with optimizations
-- **Trigger**: Manual workflow dispatch
+- **Triggers**: 
+  - Automatic: On push to `main` branch
+  - Manual: Via workflow dispatch in GitHub Actions UI
 
 ### GitHub Pages URL
 
