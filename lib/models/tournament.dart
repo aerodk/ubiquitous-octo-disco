@@ -25,6 +25,25 @@ class Tournament {
 
   int get completedRounds => rounds.where((r) => r.isCompleted).length;
 
+  /// Create a copy of this tournament with updated fields
+  Tournament copyWith({
+    String? id,
+    String? name,
+    List<Player>? players,
+    List<Court>? courts,
+    List<Round>? rounds,
+    DateTime? createdAt,
+  }) {
+    return Tournament(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      players: players ?? this.players,
+      courts: courts ?? this.courts,
+      rounds: rounds ?? this.rounds,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
   factory Tournament.fromJson(Map<String, dynamic> json) => Tournament(
         id: json['id'],
         name: json['name'],
@@ -33,8 +52,9 @@ class Tournament {
             .toList(),
         courts:
             (json['courts'] as List).map((c) => Court.fromJson(c)).toList(),
-        rounds:
-            (json['rounds'] as List).map((r) => Round.fromJson(r)).toList(),
+        rounds: json['rounds'] != null
+            ? (json['rounds'] as List).map((r) => Round.fromJson(r)).toList()
+            : null,
         createdAt: DateTime.parse(json['createdAt']),
       );
 
