@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/player.dart';
 import '../models/court.dart';
 import '../services/tournament_service.dart';
+import '../services/persistence_service.dart';
 import '../utils/constants.dart';
 import 'round_display_screen.dart';
 
@@ -18,12 +19,41 @@ class _SetupScreenState extends State<SetupScreen> {
   final List<Player> _players = [];
   int _courtCount = 1;
   final TournamentService _tournamentService = TournamentService();
+  final PersistenceService _persistenceService = PersistenceService();
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedState();
+  }
 
   @override
   void dispose() {
     _playerNameController.dispose();
     _playerNameFocusNode.dispose();
     super.dispose();
+  }
+
+  /// Load saved setup state from local storage
+  Future<void> _loadSavedState() async {
+    final savedState = await _persistenceService.loadSetupState();
+    if (savedState != null && mounted) {
+      setState(() {
+        _players.addAll(savedState.players);
+        _courtCount = savedState.courtCount;
+        _isLoading = false;
+      });
+    } else {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  /// Save current setup state to local storage
+  Future<void> _saveState() async {
+    await _persistenceService.saveSetupState(_players, _courtCount);
   }
 
   void _addPlayer() {
@@ -55,6 +85,9 @@ class _SetupScreenState extends State<SetupScreen> {
       _playerNameController.clear();
     });
     
+    // Save state after adding player
+    _saveState();
+    
     // Request focus to allow for faster typing and adding of names
     _playerNameFocusNode.requestFocus();
   }
@@ -63,6 +96,8 @@ class _SetupScreenState extends State<SetupScreen> {
     setState(() {
       _players.removeAt(index);
     });
+    // Save state after removing player
+    _saveState();
   }
 
   void _showError(String message) {
@@ -104,6 +139,15 @@ class _SetupScreenState extends State<SetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Show loading indicator while loading saved state
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Opsætning af Turnering'),
@@ -186,7 +230,10 @@ class _SetupScreenState extends State<SetupScreen> {
                 IconButton(
                   icon: const Icon(Icons.remove),
                   onPressed: _courtCount > Constants.minCourts
-                      ? () => setState(() => _courtCount--)
+                      ? () {
+                          setState(() => _courtCount--);
+                          _saveState();
+                        }
                       : null,
                 ),
                 Text(
@@ -196,7 +243,10 @@ class _SetupScreenState extends State<SetupScreen> {
                 IconButton(
                   icon: const Icon(Icons.add),
                   onPressed: _courtCount < Constants.maxCourts
-                      ? () => setState(() => _courtCount++)
+                      ? () {
+                          setState(() => _courtCount++);
+                          _saveState();
+                        }
                       : null,
                 ),
               ],
