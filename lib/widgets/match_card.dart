@@ -72,6 +72,9 @@ class MatchCard extends StatelessWidget {
   }
 
   Widget _buildTeam(String label, Team team, int? score) {
+    final isTeam1 = label == 'Par 1';
+    final teamColor = isTeam1 ? Colors.blue : Colors.red;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -89,7 +92,7 @@ class MatchCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
-                  color: label == 'Par 1' ? Colors.blue : Colors.red,
+                  color: teamColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(

@@ -89,16 +89,7 @@ void main() {
       );
 
       // Check that player 0 and player 1 are not together in the next round
-      bool partneredAgain = false;
-      for (final match in nextRound.matches) {
-        if ((match.team1.player1 == players[0] && match.team1.player2 == players[1]) ||
-            (match.team1.player1 == players[1] && match.team1.player2 == players[0]) ||
-            (match.team2.player1 == players[0] && match.team2.player2 == players[1]) ||
-            (match.team2.player1 == players[1] && match.team2.player2 == players[0])) {
-          partneredAgain = true;
-          break;
-        }
-      }
+      bool partneredAgain = _arePlayersPartnered(nextRound, players[0], players[1]);
 
       // It's possible they might be paired again, but algorithm should try to avoid it
       // This test mainly ensures the algorithm runs without errors
@@ -200,4 +191,17 @@ void main() {
       }
     });
   });
+}
+
+// Helper method to check if two players are partnered in a round
+bool _arePlayersPartnered(Round round, Player player1, Player player2) {
+  for (final match in round.matches) {
+    if ((match.team1.player1 == player1 && match.team1.player2 == player2) ||
+        (match.team1.player1 == player2 && match.team1.player2 == player1) ||
+        (match.team2.player1 == player1 && match.team2.player2 == player2) ||
+        (match.team2.player1 == player2 && match.team2.player2 == player1)) {
+      return true;
+    }
+  }
+  return false;
 }

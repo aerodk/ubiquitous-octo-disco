@@ -5,6 +5,11 @@ import '../models/round.dart';
 import '../models/player_stats.dart';
 
 class AmericanoAlgorithm {
+  // Constants for algorithm optimization
+  static const int _maxPartnerCount = 999;
+  static const int _maxOpponentCount = 999;
+  static const int _maxRankingDiff = 999;
+
   Round generateNextRound({
     required List<Player> players,
     required List<Court> courts,
@@ -72,6 +77,11 @@ class AmericanoAlgorithm {
   }
 
   void _updateStatsFromMatch(Match match, Map<Player, PlayerStats> stats) {
+    // Defensive null checks
+    if (match.team1Score == null || match.team2Score == null) {
+      return;
+    }
+
     // Team 1 spillere
     final t1p1 = match.team1.player1;
     final t1p2 = match.team1.player2;
@@ -126,8 +136,8 @@ class AmericanoAlgorithm {
 
       // Find bedste partner for denne spiller
       Player? bestPartner;
-      int minPartnerCount = 999;
-      int bestRankingDiff = 999;
+      int minPartnerCount = _maxPartnerCount;
+      int bestRankingDiff = _maxRankingDiff;
 
       for (int j = i + 1; j < sortedPlayers.length; j++) {
         final player2 = sortedPlayers[j];
@@ -176,7 +186,7 @@ class AmericanoAlgorithm {
 
       // Find bedste modstander
       Team? bestOpponent;
-      int minOpponentCount = 999;
+      int minOpponentCount = _maxOpponentCount;
 
       for (int j = i + 1; j < pairs.length; j++) {
         final team2 = pairs[j];
