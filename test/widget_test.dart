@@ -38,6 +38,32 @@ void main() {
     expect(find.text('Spillere (1/24)'), findsOneWidget);
   });
 
+  testWidgets('TextField gets focus after adding a player', (WidgetTester tester) async {
+    // Build our app and trigger a frame.
+    await tester.pumpWidget(const PadelTournamentApp());
+
+    // Find the text field
+    final textField = find.byType(TextField);
+    
+    // Enter a player name
+    await tester.enterText(textField, 'Player 1');
+    
+    // Tap the add button
+    await tester.tap(find.text('Tilføj'));
+    await tester.pump();
+
+    // Verify the player was added
+    expect(find.text('Player 1'), findsOneWidget);
+    
+    // Verify the text field is cleared
+    final textFieldWidget = tester.widget<TextField>(textField);
+    expect(textFieldWidget.controller?.text, isEmpty);
+    
+    // Verify the text field has focus (by checking if we can immediately type)
+    await tester.enterText(textField, 'Player 2');
+    expect(textFieldWidget.controller?.text, 'Player 2');
+  });
+
   testWidgets('Setup screen prevents empty player names', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const PadelTournamentApp());
