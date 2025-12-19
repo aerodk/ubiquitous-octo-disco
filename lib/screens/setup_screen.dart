@@ -116,7 +116,7 @@ class _SetupScreenState extends State<SetupScreen> {
       _playerNameController.clear();
     });
     
-    // Save state after adding player
+    // Save state in background - don't await to keep UI responsive
     _saveState();
     
     // Request focus to allow for faster typing and adding of names
@@ -127,7 +127,7 @@ class _SetupScreenState extends State<SetupScreen> {
     setState(() {
       _players.removeAt(index);
     });
-    // Save state after removing player
+    // Save state in background - don't await to keep UI responsive
     _saveState();
   }
 
@@ -288,6 +288,7 @@ class _SetupScreenState extends State<SetupScreen> {
                   onPressed: _courtCount > Constants.minCourts
                       ? () {
                           setState(() => _courtCount--);
+                          // Save state in background - don't await to keep UI responsive
                           _saveState();
                         }
                       : null,
@@ -301,6 +302,7 @@ class _SetupScreenState extends State<SetupScreen> {
                   onPressed: _courtCount < Constants.maxCourts
                       ? () {
                           setState(() => _courtCount++);
+                          // Save state in background - don't await to keep UI responsive
                           _saveState();
                         }
                       : null,
