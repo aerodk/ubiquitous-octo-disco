@@ -2,9 +2,9 @@
 
 A Flutter mobile application that helps organize and run Padel tournaments in Americano/Mexicano format.
 
-## Version 1.0 - MVP Implementation
+## Current Version: 2.0 - Score Input & Americano Algorithm
 
-This implementation includes the core features needed to set up and start a Padel tournament.
+This implementation includes all MVP features plus score input and intelligent round generation using the Americano algorithm.
 
 ### Features Implemented
 
@@ -31,6 +31,26 @@ This implementation includes the core features needed to set up and start a Pade
 - Clear team composition showing both players per team
 - Display of players on break (if any)
 - Professional card-based UI
+- Tap matches to input scores
+- Display completed matches with scores
+- Visual indicators for completed/incomplete matches
+
+#### 5. Score Input (F-005) - Version 2.0
+- Interactive score input screen with 0-24 point buttons
+- Automatic score calculation (total always equals 24)
+- Color-coded teams (blue vs red)
+- Clear display of team names and selected scores
+- Save score and return to round display
+- Visual feedback for score selection
+
+#### 6. Americano Algorithm (F-006) - Version 2.0
+- Generate subsequent rounds based on player performance
+- Smart player pairing to avoid repeating partnerships
+- Match players with similar point totals
+- Rotate opponents for variety
+- Balance break rounds across players
+- Track player statistics (points, games played, partners, opponents)
+- Optimize matchups based on tournament history
 
 ### Project Structure
 
@@ -39,17 +59,21 @@ lib/
 ├── main.dart                       # App entry point with theme configuration
 ├── models/                         # Data models
 │   ├── player.dart                 # Player model with JSON serialization
+│   ├── player_stats.dart           # Player statistics for Americano algorithm
 │   ├── court.dart                  # Court model
 │   ├── match.dart                  # Match and Team models with score tracking
 │   ├── round.dart                  # Round model with matches and break players
 │   └── tournament.dart             # Tournament model for complete tournament state
 ├── services/                       # Business logic
-│   └── tournament_service.dart     # Round generation and player distribution
+│   ├── tournament_service.dart     # Round generation and player distribution
+│   └── americano_algorithm.dart    # Americano algorithm implementation
 ├── screens/                        # UI screens
 │   ├── setup_screen.dart          # Player and court registration
-│   └── round_display_screen.dart  # Round display with matches
+│   ├── round_display_screen.dart  # Round display with matches and score tracking
+│   └── score_input_screen.dart    # Score input interface with button grid
 └── widgets/                        # Reusable widgets
-    └── match_card.dart            # Card widget for displaying match details
+    ├── match_card.dart            # Card widget for displaying match details
+    └── score_button_grid.dart     # Grid of score buttons (0-24)
 ```
 
 ### Testing
@@ -58,6 +82,7 @@ Comprehensive test coverage includes:
 - Unit tests for all data models
 - JSON serialization/deserialization tests
 - Tournament service logic tests
+- Americano algorithm tests
 - Widget tests for setup screen
 - Validation tests for player and court registration
 
@@ -90,6 +115,21 @@ flutter test
    - See which players are paired together
    - Check which players are on break (if any)
 
+3. **Score Input** (Version 2.0)
+   - Tap on any match card to input scores
+   - Select score for one team (0-24)
+   - Other team's score auto-calculates (always totals 24)
+   - Tap "Gem Score" to save
+
+4. **Next Round Generation** (Version 2.0)
+   - Complete all match scores in current round
+   - Click "Generer Næste Runde" button
+   - Algorithm creates optimal pairings based on:
+     - Player point totals
+     - Previous partnerships
+     - Previous opponents
+     - Break round history
+
 ### Technical Details
 
 - **Framework:** Flutter 3.0+
@@ -111,14 +151,41 @@ flutter test
 - Maximum 8 courts
 - Automatically named sequentially
 
-### Future Enhancements (Version 2.0)
+#### Scores (Version 2.0)
+- Each match must have scores for both teams
+- Score range: 0-24 points per team
+- Total score always equals 24
+- All matches must be completed before generating next round
 
-See `docs/SPECIFICATION.md` for Version 2.0 features including:
-- Score input system (0-24 points)
-- Americano algorithm for subsequent rounds
-- Leaderboard and statistics
-- Tournament persistence
+### Americano Algorithm Details (Version 2.0)
+
+The algorithm prioritizes match quality through several factors:
+
+1. **Point Balance** (Highest Priority)
+   - Players with similar point totals are matched together
+   - Creates competitive and fair matches
+
+2. **Partner Rotation**
+   - Avoids pairing the same players repeatedly
+   - Tracks partnership history across rounds
+
+3. **Opponent Variation**
+   - Players face different opponents each round
+   - Minimizes repeated matchups
+
+4. **Break Balance**
+   - Distributes break rounds fairly among all players
+   - Tracks which players have had breaks
+
+### Future Enhancements (Version 3.0+)
+
+See `docs/SPECIFICATION.md` for future features including:
+- Tournament persistence and resume functionality
+- Leaderboard with detailed statistics
 - Multiple simultaneous tournaments
+- Export results to PDF
+- Dark mode
+- Push notifications for match starts
 
 ## Specification
 
