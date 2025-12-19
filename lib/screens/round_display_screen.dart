@@ -125,7 +125,12 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                 padding: const EdgeInsets.all(16),
                 children: [
                   // Display all matches
-                  ..._currentRound.matches.map((match) => MatchCard(match: match)),
+                  ..._currentRound.matches.map(
+                    (match) => MatchCard(
+                      match: match,
+                      onScoreChanged: () => setState(() {}),
+                    ),
+                  ),
 
                   // Display players on break
                   if (_currentRound.playersOnBreak.isNotEmpty)

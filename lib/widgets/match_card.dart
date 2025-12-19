@@ -3,8 +3,9 @@ import '../models/match.dart';
 
 class MatchCard extends StatefulWidget {
   final Match match;
+  final VoidCallback? onScoreChanged;
 
-  const MatchCard({super.key, required this.match});
+  const MatchCard({super.key, required this.match, this.onScoreChanged});
 
   @override
   State<MatchCard> createState() => _MatchCardState();
@@ -21,6 +22,8 @@ class _MatchCardState extends State<MatchCard> {
           widget.match.team1Score = result['team1Score'];
           widget.match.team2Score = result['team2Score'];
         });
+        // Notify parent that score changed
+        widget.onScoreChanged?.call();
       }
     });
   }
