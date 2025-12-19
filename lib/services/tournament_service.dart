@@ -2,8 +2,11 @@ import '../models/player.dart';
 import '../models/court.dart';
 import '../models/match.dart';
 import '../models/round.dart';
+import 'americano_algorithm.dart';
 
 class TournamentService {
+  final AmericanoAlgorithm _americanoAlgorithm = AmericanoAlgorithm();
+
   Round generateFirstRound(List<Player> players, List<Court> courts) {
     // Shuffle players randomly
     final shuffledPlayers = List<Player>.from(players)..shuffle();
@@ -40,6 +43,20 @@ class TournamentService {
       roundNumber: 1,
       matches: matches,
       playersOnBreak: playersOnBreak,
+    );
+  }
+
+  Round generateNextRound({
+    required List<Player> players,
+    required List<Court> courts,
+    required List<Round> previousRounds,
+  }) {
+    final nextRoundNumber = previousRounds.length + 1;
+    return _americanoAlgorithm.generateNextRound(
+      players: players,
+      courts: courts,
+      previousRounds: previousRounds,
+      roundNumber: nextRoundNumber,
     );
   }
 }

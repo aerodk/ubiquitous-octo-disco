@@ -92,7 +92,13 @@ class _SetupScreenState extends State<SetupScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => RoundDisplayScreen(round: firstRound),
+        builder: (context) => RoundDisplayScreen(
+          round: firstRound,
+          players: _players,
+          courts: courts,
+          previousRounds: const [],
+          tournamentService: _tournamentService,
+        ),
       ),
     );
   }
