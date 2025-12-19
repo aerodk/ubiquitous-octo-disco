@@ -5,10 +5,11 @@ import '../models/round.dart';
 import '../models/player_stats.dart';
 
 class AmericanoAlgorithm {
-  // Constants for algorithm optimization
-  static const int _maxPartnerCount = 999;
-  static const int _maxOpponentCount = 999;
-  static const int _maxRankingDiff = 999;
+  // Constants for algorithm optimization - these are sentinel values
+  // used to find minimum counts when matching players/teams
+  static const int _maxPartnerCount = 999; // Max previous partnerships to compare
+  static const int _maxOpponentCount = 999; // Max previous opponent count to compare
+  static const int _maxRankingDiff = 999; // Max ranking difference to compare
 
   Round generateNextRound({
     required List<Player> players,
@@ -77,7 +78,8 @@ class AmericanoAlgorithm {
   }
 
   void _updateStatsFromMatch(Match match, Map<Player, PlayerStats> stats) {
-    // Defensive null checks
+    // Defensive null checks - silently skip incomplete matches
+    // This is expected behavior when processing rounds with pending scores
     if (match.team1Score == null || match.team2Score == null) {
       return;
     }
@@ -129,7 +131,7 @@ class AmericanoAlgorithm {
 
     // Prøv at parre spillere som ikke har spillet sammen før
     // eller som har spillet mindst sammen
-    for (int i = 0; i < sortedPlayers.length && pairs.length < sortedPlayers.length / 2; i++) {
+    for (int i = 0; i < sortedPlayers.length && pairs.length < sortedPlayers.length ~/ 2; i++) {
       final player1 = sortedPlayers[i];
 
       if (usedPlayers.contains(player1)) continue;
