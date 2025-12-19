@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:meta/meta.dart';
 import '../models/player.dart';
 import '../models/court.dart';
 import '../models/tournament.dart';
@@ -117,7 +118,7 @@ class _SetupScreenState extends State<SetupScreen> {
     });
     
     // Save state in background - don't await to keep UI responsive
-    _saveState();
+    unawaited(_saveState());
     
     // Request focus to allow for faster typing and adding of names
     _playerNameFocusNode.requestFocus();
@@ -128,7 +129,7 @@ class _SetupScreenState extends State<SetupScreen> {
       _players.removeAt(index);
     });
     // Save state in background - don't await to keep UI responsive
-    _saveState();
+    unawaited(_saveState());
   }
 
   void _showError(String message) {
@@ -289,7 +290,7 @@ class _SetupScreenState extends State<SetupScreen> {
                       ? () {
                           setState(() => _courtCount--);
                           // Save state in background - don't await to keep UI responsive
-                          _saveState();
+                          unawaited(_saveState());
                         }
                       : null,
                 ),
@@ -303,7 +304,7 @@ class _SetupScreenState extends State<SetupScreen> {
                       ? () {
                           setState(() => _courtCount++);
                           // Save state in background - don't await to keep UI responsive
-                          _saveState();
+                          unawaited(_saveState());
                         }
                       : null,
                 ),
