@@ -32,9 +32,11 @@ class _ScoreInputScreenState extends State<ScoreInputScreen> {
   }
 
   void _saveScore() {
+    // Both scores are guaranteed to be non-null when this is called
+    // because the button is disabled otherwise
     Navigator.pop(context, {
-      'team1Score': team1Score,
-      'team2Score': team2Score,
+      'team1Score': team1Score!,
+      'team2Score': team2Score!,
     });
   }
 
