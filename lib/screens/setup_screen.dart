@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/player.dart';
 import '../models/court.dart';
+import '../models/tournament.dart';
 import '../services/tournament_service.dart';
 import '../services/persistence_service.dart';
 import '../utils/constants.dart';
@@ -56,6 +57,36 @@ class _SetupScreenState extends State<SetupScreen> {
     await _persistenceService.saveSetupState(_players, _courtCount);
   }
 
+  /// Clear all players and reset court count
+  Future<void> _clearAll() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Ryd alle'),
+        content: const Text('Er du sikker på at du vil fjerne alle spillere?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annuller'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Ryd'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      setState(() {
+        _players.clear();
+        _courtCount = 1;
+      });
+      await _persistenceService.clearSetupState();
+    }
+  }
+
   void _addPlayer() {
     final name = _playerNameController.text.trim();
 
@@ -109,7 +140,7 @@ class _SetupScreenState extends State<SetupScreen> {
     );
   }
 
-  void _generateFirstRound() {
+  void _generateFirstRound() async {
     // Validation: Minimum players
     if (_players.length < Constants.minPlayers) {
       _showError(Constants.minPlayersError);
@@ -128,13 +159,29 @@ class _SetupScreenState extends State<SetupScreen> {
     // Generate first round
     final firstRound = _tournamentService.generateFirstRound(_players, courts);
 
-    // Navigate to round display
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => RoundDisplayScreen(round: firstRound),
-      ),
+    // Create tournament
+    final tournament = Tournament(
+      name: 'Padel Turnering',
+      players: _players,
+      courts: courts,
+      rounds: [firstRound],
     );
+
+    // Save tournament to persistence
+    await _persistenceService.saveTournament(tournament);
+    
+    // Clear setup state as we now have a tournament
+    await _persistenceService.clearSetupState();
+
+    // Navigate to round display
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => RoundDisplayScreen(tournament: tournament),
+        ),
+      );
+    }
   }
 
   @override
@@ -152,6 +199,15 @@ class _SetupScreenState extends State<SetupScreen> {
       appBar: AppBar(
         title: const Text('Opsætning af Turnering'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        automaticallyImplyLeading: false, // Remove back button
+        actions: [
+          if (_players.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.delete_sweep),
+              onPressed: _clearAll,
+              tooltip: 'Ryd alle',
+            ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
