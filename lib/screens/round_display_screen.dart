@@ -43,12 +43,10 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       await _persistenceService.clearTournament();
       
       // Navigate to setup screen
-      if (mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const SetupScreen()),
-          (route) => false,
-        );
-      }
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const SetupScreen()),
+        (route) => false,
+      );
     }
   }
 

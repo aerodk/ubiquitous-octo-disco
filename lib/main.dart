@@ -33,7 +33,6 @@ class AppInitializer extends StatefulWidget {
 
 class _AppInitializerState extends State<AppInitializer> {
   final PersistenceService _persistenceService = PersistenceService();
-  bool _isLoading = true;
 
   @override
   void initState() {
