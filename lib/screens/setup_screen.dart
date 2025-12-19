@@ -68,13 +68,15 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
   }
 
   /// Calculate suggested court count based on number of players
-  /// Formula: 1 court per 4 players (rounded up)
+  /// Formula: 1 court per 4 players (only when full court can be filled)
   int _calculateSuggestedCourtCount(int playerCount) {
     if (playerCount == 0) return 1;
-    // Round up using integer division: (playerCount + 3) ~/ 4
-    final suggested = ((playerCount + 3) ~/ 4);
+    // Only add courts when we have enough players to fill them (floor division)
+    final suggested = playerCount ~/ 4;
+    // Ensure at least 1 court
+    final courtCount = suggested < 1 ? 1 : suggested;
     // Clamp to valid range
-    return suggested.clamp(Constants.minCourts, Constants.maxCourts);
+    return courtCount.clamp(Constants.minCourts, Constants.maxCourts);
   }
 
   /// Automatically adjust court count based on player count

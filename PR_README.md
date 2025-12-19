@@ -9,29 +9,32 @@ This PR implements automatic court count adjustment based on player count during
 ```
 Start with 0 players, 1 court
 → Add 4 players: Still 1 court (no animation)
-→ Add 5th player: Changes to 2 courts with 600ms pulsing highlight ✨
-→ Add 8 players total: Still 2 courts
-→ Add 9th player: Changes to 3 courts with animation ✨
+→ Add 7 players: Still 1 court (not enough for 2 full courts)
+→ Add 8th player: Changes to 2 courts with 600ms pulsing highlight ✨
+→ Add 11 players total: Still 2 courts
+→ Add 12th player: Changes to 3 courts with animation ✨
 ```
 
 ### Scenario 2: Removing Players  
 ```
-Start with 9 players, 3 courts
+Start with 12 players, 3 courts
 → Remove 1 player: Changes to 2 courts with animation ✨
-→ Remove 4 more: Changes to 1 court with animation ✨
+→ Remove to 8 players: Still 2 courts
+→ Remove 1 more (7 players): Changes to 1 court with animation ✨
 ```
 
 ### Scenario 3: Manual Override
 ```
-4 players, 1 court (suggested)
+7 players, 1 court (suggested)
 → User manually sets 3 courts: Stays at 3 (no animation)
-→ Add 5th player: Auto-adjusts to 2 courts with animation ✨
+→ Add 1 player (8 total): Auto-adjusts to 2 courts with animation ✨
 ```
 
 ## Key Features
 
 ### ✅ Automatic Adjustment
-- Calculates `ceil(playerCount / 4)` for suggested court count
+- Calculates `floor(playerCount / 4)` for suggested court count (minimum 1)
+- Only adds courts when enough players to fill a full court (4 players)
 - Triggers automatically when players are added/removed
 - Clamped to [1, 8] courts (min/max constraints)
 
@@ -54,8 +57,9 @@ Start with 9 players, 3 courts
 ```dart
 int _calculateSuggestedCourtCount(int playerCount) {
   if (playerCount == 0) return 1;
-  final suggested = ((playerCount + 3) ~/ 4);
-  return suggested.clamp(Constants.minCourts, Constants.maxCourts);
+  final suggested = playerCount ~/ 4;
+  final courtCount = suggested < 1 ? 1 : suggested;
+  return courtCount.clamp(Constants.minCourts, Constants.maxCourts);
 }
 ```
 
@@ -109,7 +113,7 @@ bool _autoAdjustCourtCount() {
 
 ### Unit Tests (93 lines)
 ✅ Tests all player count scenarios
-✅ Boundary conditions (4→5, 8→9, etc.)
+✅ Boundary conditions (7→8, 11→12, etc.)
 ✅ Min/max constraints (1-8 courts)
 ✅ Edge cases (0, negative, large numbers)
 
@@ -121,11 +125,11 @@ bool _autoAdjustCourtCount() {
 
 ### Example Test Cases
 ```dart
-test('should return 2 courts for 5-8 players', () {
-  expect(calculateSuggestedCourtCount(5), 2);
-  expect(calculateSuggestedCourtCount(6), 2);
-  expect(calculateSuggestedCourtCount(7), 2);
+test('should return 2 courts for 8-11 players', () {
   expect(calculateSuggestedCourtCount(8), 2);
+  expect(calculateSuggestedCourtCount(9), 2);
+  expect(calculateSuggestedCourtCount(10), 2);
+  expect(calculateSuggestedCourtCount(11), 2);
 });
 
 testWidgets('Court count automatically adjusts when adding players', ...);
@@ -180,8 +184,9 @@ testWidgets('Manual court adjustment still works despite auto-adjustment', ...);
 7. Verify manual +/- buttons still work
 
 ### Test Checklist
-- [ ] Add 4 players → Should stay at 1 court
-- [ ] Add 5th player → Should change to 2 courts with animation
+- [ ] Add 7 players → Should stay at 1 court
+- [ ] Add 8th player → Should change to 2 courts with animation
+- [ ] Add to 12 players → Should change to 3 courts with animation
 - [ ] Remove players → Should adjust down with animation
 - [ ] Manual adjustment → Should work without animation
 - [ ] Edge cases → Should respect min/max constraints

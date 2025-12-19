@@ -23,31 +23,30 @@
 
 ## Automatic Adjustment Flow
 
-### Scenario 1: Adding 5th Player (Triggers Auto-Adjustment)
+### Scenario 1: Adding 8th Player (Triggers Auto-Adjustment)
 
 ```
-STEP 1: User has 4 players, 1 court
+STEP 1: User has 7 players, 1 court
 ┌─────────────────────────────────────────────┐
-│  Spillere (4/24)                            │
+│  Spillere (7/24)                            │
 │  • Player 1                                 │
 │  • Player 2                                 │
 │  • Player 3                                 │
 │  • Player 4                                 │
+│  • Player 5                                 │
+│  • Player 6                                 │
+│  • Player 7                                 │
 │                                             │
 │  Baner                                      │
 │     [-]  1 bane  [+]                        │
 └─────────────────────────────────────────────┘
 
-↓ User adds "Player 5"
+↓ User adds "Player 8"
 
 STEP 2: Auto-adjustment triggered
 ┌─────────────────────────────────────────────┐
-│  Spillere (5/24)                            │
-│  • Player 1                                 │
-│  • Player 2                                 │
-│  • Player 3                                 │
-│  • Player 4                                 │
-│  • Player 5 ← New                           │
+│  Spillere (8/24)                            │
+│  • Player 1 ... Player 8                    │
 │                                             │
 │  Baner                                      │
 │  ╔═════════════════════════╗                │
@@ -63,10 +62,10 @@ STEP 2: Auto-adjustment triggered
 ### Scenario 2: Removing Players (Auto-Adjusts Down)
 
 ```
-BEFORE: 9 players → 3 courts
+BEFORE: 12 players → 3 courts
 ┌─────────────────────────────────────────────┐
-│  Spillere (9/24)                            │
-│  • Player 1 ... Player 9                    │
+│  Spillere (12/24)                           │
+│  • Player 1 ... Player 12                   │
 │                                             │
 │  Baner                                      │
 │     [-]  3 baner  [+]                       │
@@ -74,10 +73,10 @@ BEFORE: 9 players → 3 courts
 
 ↓ Remove 1 player
 
-AFTER: 8 players → 2 courts (ANIMATED)
+AFTER: 11 players → 2 courts (ANIMATED)
 ┌─────────────────────────────────────────────┐
-│  Spillere (8/24)                            │
-│  • Player 1 ... Player 8                    │
+│  Spillere (11/24)                           │
+│  • Player 1 ... Player 11                   │
 │                                             │
 │  Baner                                      │
 │  ╔═════════════════════════╗                │
@@ -91,8 +90,8 @@ AFTER: 8 players → 2 courts (ANIMATED)
 ```
 USER ACTION: Manual adjustment
 ┌─────────────────────────────────────────────┐
-│  Spillere (4/24)                            │
-│  • 4 players                                │
+│  Spillere (7/24)                            │
+│  • 7 players                                │
 │                                             │
 │  Baner                                      │
 │     [-]  1 bane  [+] ← User clicks [+]      │
@@ -102,19 +101,19 @@ USER ACTION: Manual adjustment
 
 RESULT: No animation (manual change)
 ┌─────────────────────────────────────────────┐
-│  Spillere (4/24)                            │
-│  • 4 players                                │
+│  Spillere (7/24)                            │
+│  • 7 players                                │
 │                                             │
 │  Baner                                      │
 │     [-]  2 baner  [+] ← No animation        │
 └─────────────────────────────────────────────┘
 
-↓ Add 5th player
+↓ Add 1 player (8 total)
 
-AUTO-ADJUST: Back to suggested count
+AUTO-ADJUST: Adjusts to correct count
 ┌─────────────────────────────────────────────┐
-│  Spillere (5/24)                            │
-│  • 5 players                                │
+│  Spillere (8/24)                            │
+│  • 8 players                                │
 │                                             │
 │  Baner                                      │
 │  ╔═════════════════════════╗                │
@@ -129,19 +128,19 @@ AUTO-ADJUST: Back to suggested count
 Player Count → Suggested Courts
 ────────────────────────────────
      0       →       1       (minimum)
-    1-4      →       1       ┐
-                              │ Same court
-     5       →       2       ┘ (trigger animation)
-    6-8      →       2       ┐
+    1-7      →       1       ┐
+                              │ Same court (not enough for 2 full courts)
+     8       →       2       ┘ (trigger animation)
+    9-11     →       2       ┐
                               │ Same courts
-     9       →       3       ┘ (trigger animation)
-   10-12     →       3       
-   13-16     →       4       
-   17-20     →       5       
-   21-24     →       6       
-   25-28     →       7       
-   29-32     →       8       (maximum)
-```
+    12       →       3       ┘ (trigger animation)
+   13-15     →       3       
+   16-19     →       4       
+   20-23     →       5       
+   24-27     →       6       
+   28-31     →       7       
+   32+       →       8       (maximum)
+
 
 ## Animation Timeline
 

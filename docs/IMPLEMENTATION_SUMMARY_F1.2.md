@@ -13,23 +13,25 @@ This feature automatically adjusts the number of courts based on the number of r
 ```
 Start: 0 players → 1 court (minimum)
 Add 4 players → 1 court (no change)
-Add 5th player → 2 courts (✨ animated highlight)
-Add 8th player → 2 courts (no change)
-Add 9th player → 3 courts (✨ animated highlight)
+Add 7th player → 1 court (no change)
+Add 8th player → 2 courts (✨ animated highlight)
+Add 11th player → 2 courts (no change)
+Add 12th player → 3 courts (✨ animated highlight)
 ```
 
 **Removing Players:**
 ```
-9 players → 3 courts
+12 players → 3 courts
 Remove 1 player → 2 courts (✨ animated highlight)
-Continue removing → Adjusts down as needed
+8 players → 2 courts
+Remove 1 player → 1 court (✨ animated highlight)
 ```
 
 **Manual Override:**
 ```
 4 players (system suggests 1 court)
 User manually sets 3 courts → Stays at 3
-Add 5th player → Auto-adjusts to 2 courts (✨ animated highlight)
+Add 4 more players (8 total) → Auto-adjusts to 2 courts (✨ animated highlight)
 ```
 
 ### Visual Feedback
@@ -55,8 +57,9 @@ Add 5th player → Auto-adjusts to 2 courts (✨ animated highlight)
    ```dart
    int _calculateSuggestedCourtCount(int playerCount) {
      if (playerCount == 0) return 1;
-     final suggested = ((playerCount + 3) ~/ 4);
-     return suggested.clamp(Constants.minCourts, Constants.maxCourts);
+     final suggested = playerCount ~/ 4;
+     final courtCount = suggested < 1 ? 1 : suggested;
+     return courtCount.clamp(Constants.minCourts, Constants.maxCourts);
    }
    ```
 
