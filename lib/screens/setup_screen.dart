@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/player.dart';
 import '../models/court.dart';
 import '../services/tournament_service.dart';
+import '../utils/constants.dart';
 import 'round_display_screen.dart';
 
 class SetupScreen extends StatefulWidget {
@@ -28,19 +29,19 @@ class _SetupScreenState extends State<SetupScreen> {
 
     // Validation: Empty name
     if (name.isEmpty) {
-      _showError('Spillernavn kan ikke være tomt');
+      _showError(Constants.emptyNameError);
       return;
     }
 
     // Validation: Duplicate name
     if (_players.any((player) => player.name.toLowerCase() == name.toLowerCase())) {
-      _showError('Spilleren findes allerede');
+      _showError(Constants.duplicateNameError);
       return;
     }
 
     // Validation: Maximum players
-    if (_players.length >= 24) {
-      _showError('Maksimum 24 spillere tilladt');
+    if (_players.length >= Constants.maxPlayers) {
+      _showError(Constants.maxPlayersError);
       return;
     }
 
@@ -70,8 +71,8 @@ class _SetupScreenState extends State<SetupScreen> {
 
   void _generateFirstRound() {
     // Validation: Minimum players
-    if (_players.length < 4) {
-      _showError('Minimum 4 spillere påkrævet');
+    if (_players.length < Constants.minPlayers) {
+      _showError(Constants.minPlayersError);
       return;
     }
 
@@ -80,7 +81,7 @@ class _SetupScreenState extends State<SetupScreen> {
       _courtCount,
       (index) => Court(
         id: (index + 1).toString(),
-        name: 'Bane ${index + 1}',
+        name: Constants.getDefaultCourtName(index),
       ),
     );
 
@@ -110,7 +111,7 @@ class _SetupScreenState extends State<SetupScreen> {
           children: [
             // Player registration section
             Text(
-              'Spillere (${_players.length}/24)',
+              'Spillere (${_players.length}/${Constants.maxPlayers})',
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
@@ -178,7 +179,7 @@ class _SetupScreenState extends State<SetupScreen> {
               children: [
                 IconButton(
                   icon: const Icon(Icons.remove),
-                  onPressed: _courtCount > 1
+                  onPressed: _courtCount > Constants.minCourts
                       ? () => setState(() => _courtCount--)
                       : null,
                 ),
@@ -188,7 +189,7 @@ class _SetupScreenState extends State<SetupScreen> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.add),
-                  onPressed: _courtCount < 8
+                  onPressed: _courtCount < Constants.maxCourts
                       ? () => setState(() => _courtCount++)
                       : null,
                 ),
@@ -202,7 +203,7 @@ class _SetupScreenState extends State<SetupScreen> {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: _players.length >= 4 ? _generateFirstRound : null,
+                onPressed: _players.length >= Constants.minPlayers ? _generateFirstRound : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
