@@ -191,5 +191,52 @@ void main() {
       expect(fromJson.players.length, 2);
       expect(fromJson.courts.length, 1);
     });
+
+    test('should create copy with updated fields using copyWith', () {
+      final players = [
+        Player(id: '1', name: 'Player 1'),
+        Player(id: '2', name: 'Player 2'),
+      ];
+
+      final courts = [
+        Court(id: '1', name: 'Bane 1'),
+      ];
+
+      final tournament = Tournament(
+        id: 'tournament1',
+        name: 'Test Tournament',
+        players: players,
+        courts: courts,
+      );
+      
+      final updatedTournament = tournament.copyWith(
+        name: 'Updated Tournament',
+      );
+      
+      expect(updatedTournament.id, tournament.id);
+      expect(updatedTournament.name, 'Updated Tournament');
+      expect(updatedTournament.players, tournament.players);
+      expect(updatedTournament.courts, tournament.courts);
+    });
+
+    test('should handle null rounds in JSON', () {
+      final json = {
+        'id': 'tournament1',
+        'name': 'Test Tournament',
+        'players': [
+          {'id': '1', 'name': 'Player 1'},
+        ],
+        'courts': [
+          {'id': '1', 'name': 'Bane 1'},
+        ],
+        'rounds': null,
+        'createdAt': DateTime.now().toIso8601String(),
+      };
+
+      final tournament = Tournament.fromJson(json);
+      
+      expect(tournament.rounds, isEmpty);
+      expect(tournament.currentRound, isNull);
+    });
   });
 }
