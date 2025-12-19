@@ -218,5 +218,25 @@ void main() {
       expect(updatedTournament.players, tournament.players);
       expect(updatedTournament.courts, tournament.courts);
     });
+
+    test('should handle null rounds in JSON', () {
+      final json = {
+        'id': 'tournament1',
+        'name': 'Test Tournament',
+        'players': [
+          {'id': '1', 'name': 'Player 1'},
+        ],
+        'courts': [
+          {'id': '1', 'name': 'Bane 1'},
+        ],
+        'rounds': null,
+        'createdAt': DateTime.now().toIso8601String(),
+      };
+
+      final tournament = Tournament.fromJson(json);
+      
+      expect(tournament.rounds, isEmpty);
+      expect(tournament.currentRound, isNull);
+    });
   });
 }

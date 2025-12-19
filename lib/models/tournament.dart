@@ -52,8 +52,9 @@ class Tournament {
             .toList(),
         courts:
             (json['courts'] as List).map((c) => Court.fromJson(c)).toList(),
-        rounds:
-            (json['rounds'] as List).map((r) => Round.fromJson(r)).toList(),
+        rounds: json['rounds'] != null
+            ? (json['rounds'] as List).map((r) => Round.fromJson(r)).toList()
+            : null,
         createdAt: DateTime.parse(json['createdAt']),
       );
 
