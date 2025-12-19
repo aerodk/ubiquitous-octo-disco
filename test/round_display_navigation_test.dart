@@ -143,37 +143,22 @@ void main() {
       expect(appBar.leading, isNull);
     });
 
-    testWidgets('canGoBack should return false when on first round', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: RoundDisplayScreen(tournament: tournamentWithOneRound),
-        ),
-      );
-
-      // Get the state
-      final state = tester.state<_RoundDisplayScreenState>(
-        find.byType(RoundDisplayScreen),
-      );
-
-      expect(state._canGoBack, isFalse);
-    });
-
-    testWidgets('canGoBack should return true when on second round with no scores', (WidgetTester tester) async {
+    testWidgets('back button should be enabled when on second round with no scores', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: RoundDisplayScreen(tournament: tournamentWithTwoRounds),
         ),
       );
 
-      // Get the state
-      final state = tester.state<_RoundDisplayScreenState>(
-        find.byType(RoundDisplayScreen),
-      );
-
-      expect(state._canGoBack, isTrue);
+      // Should have a back button
+      expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+      
+      // Back button should be enabled (not null onPressed)
+      final IconButton backButton = tester.widget(find.byIcon(Icons.arrow_back).first);
+      expect(backButton.onPressed, isNotNull);
     });
 
-    testWidgets('canGoBack should return false when on second round with scores', (WidgetTester tester) async {
+    testWidgets('back button should be disabled when on second round with scores', (WidgetTester tester) async {
       // Add scores to the current round
       tournamentWithTwoRounds.rounds.last.matches.first.team1Score = 15;
       tournamentWithTwoRounds.rounds.last.matches.first.team2Score = 9;
@@ -184,30 +169,61 @@ void main() {
         ),
       );
 
-      // Get the state
-      final state = tester.state<_RoundDisplayScreenState>(
-        find.byType(RoundDisplayScreen),
-      );
-
-      expect(state._canGoBack, isFalse);
+      // Should have a back button
+      expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+      
+      // Back button should be disabled (null onPressed)
+      final IconButton backButton = tester.widget(find.byIcon(Icons.arrow_back).first);
+      expect(backButton.onPressed, isNull);
     });
 
-    testWidgets('canGoBack should return false when any match has scores', (WidgetTester tester) async {
+    testWidgets('back button should be disabled when any match has partial scores', (WidgetTester tester) async {
+      // Create a fresh tournament to avoid test pollution
+      final freshTournament = Tournament(
+        name: 'Test Tournament',
+        players: players,
+        courts: courts,
+        rounds: [
+          Round(
+            roundNumber: 1,
+            matches: [
+              Match(
+                court: courts[0],
+                team1: Team(player1: players[0], player2: players[1]),
+                team2: Team(player1: players[2], player2: players[3]),
+              ),
+            ],
+            playersOnBreak: [],
+          ),
+          Round(
+            roundNumber: 2,
+            matches: [
+              Match(
+                court: courts[0],
+                team1: Team(player1: players[0], player2: players[2]),
+                team2: Team(player1: players[1], player2: players[3]),
+              ),
+            ],
+            playersOnBreak: [],
+          ),
+        ],
+      );
+
       // Add score to only one team in one match
-      tournamentWithTwoRounds.rounds.last.matches.first.team1Score = 15;
+      freshTournament.rounds.last.matches.first.team1Score = 15;
 
       await tester.pumpWidget(
         MaterialApp(
-          home: RoundDisplayScreen(tournament: tournamentWithTwoRounds),
+          home: RoundDisplayScreen(tournament: freshTournament),
         ),
       );
 
-      // Get the state
-      final state = tester.state<_RoundDisplayScreenState>(
-        find.byType(RoundDisplayScreen),
-      );
-
-      expect(state._canGoBack, isFalse);
+      // Should have a back button
+      expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+      
+      // Back button should be disabled (null onPressed) even with partial score
+      final IconButton backButton = tester.widget(find.byIcon(Icons.arrow_back).first);
+      expect(backButton.onPressed, isNull);
     });
   });
 }

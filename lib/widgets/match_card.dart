@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/match.dart';
+import '../utils/constants.dart';
 
 class MatchCard extends StatefulWidget {
   final Match match;
@@ -142,12 +143,12 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
     setState(() {
       if (isTeam1) {
         _team1Score = score;
-        // Auto-calculate team 2 score (24 - team1)
-        _team2Score = 24 - score;
+        // Auto-calculate team 2 score (total points - team1)
+        _team2Score = Constants.maxScore - score;
       } else {
         _team2Score = score;
-        // Auto-calculate team 1 score (24 - team2)
-        _team1Score = 24 - score;
+        // Auto-calculate team 1 score (total points - team2)
+        _team1Score = Constants.maxScore - score;
       }
     });
   }
@@ -193,7 +194,7 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: List.generate(25, (index) {
+              children: List.generate(Constants.maxScore + 1, (index) {
                 final isSelected = _team1Score == index;
                 return SizedBox(
                   width: 50,
