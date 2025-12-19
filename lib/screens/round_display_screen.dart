@@ -29,11 +29,9 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   Round get _currentRound => _tournament.currentRound!;
   
   bool get _canGoBack {
-    // Can only go back if:
-    // 1. Not on the first round
-    // 2. No scores entered in current round
-    if (_tournament.rounds.length <= 1) return false;
-    
+    // Can only go back if no scores entered in current round
+    // Note: From Round 1, user can go back to Setup screen
+    // From Round 2+, user can go back to previous round
     final currentRound = _currentRound;
     final hasAnyScores = currentRound.matches.any(
       (match) => match.team1Score != null || match.team2Score != null
@@ -78,7 +76,13 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   void _goToPreviousRound() {
     if (!_canGoBack) return;
     
-    // Remove the current round and navigate back
+    // If on first round, just pop back to setup screen
+    if (_tournament.rounds.length <= 1) {
+      Navigator.pop(context);
+      return;
+    }
+    
+    // Otherwise, remove the current round and navigate back
     final updatedTournament = Tournament(
       id: _tournament.id,
       name: _tournament.name,
@@ -191,6 +195,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                   // Display all matches
                   ..._currentRound.matches.map(
                     (match) => MatchCard(
+                      key: ValueKey(match.id),
                       match: match,
                       onScoreChanged: () => setState(() {}),
                     ),
