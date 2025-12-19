@@ -2,6 +2,8 @@
 
 🌐 **Live Demo:** [https://aerodk.github.io/ubiquitous-octo-disco/](https://aerodk.github.io/ubiquitous-octo-disco/)
 
+> **Note:** If the live demo shows this README instead of the app, see [GitHub Pages Setup Guide](GITHUB_PAGES_SETUP.md) for configuration instructions.
+
 A Flutter mobile application that helps organize and run Padel tournaments in Americano/Mexicano format.
 
 ## Version 1.0 - MVP Implementation
@@ -121,6 +123,14 @@ See `docs/SPECIFICATION.md` for Version 2.0 features including:
 - Leaderboard and statistics
 - Tournament persistence
 - Multiple simultaneous tournaments
+
+## Deployment
+
+This app is automatically deployed to GitHub Pages when code is pushed to the `main` branch.
+
+**🚀 Quick Setup:** If GitHub Pages shows the README instead of the app, follow the [GitHub Pages Setup Guide](GITHUB_PAGES_SETUP.md).
+
+**📖 Full Documentation:** See [deployment.MD](deployment.MD) for complete deployment instructions and troubleshooting.
 
 ## Specification
 

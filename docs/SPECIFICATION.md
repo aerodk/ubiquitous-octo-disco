@@ -267,6 +267,68 @@ class MatchCard extends StatelessWidget {
 
 ---
 
+## DEPLOYMENT TIL GITHUB PAGES
+**Feature ID:** F-2.5
+
+### Beskrivelse
+Applikationen skal kunne deployes til GitHub Pages så den kan bruges i en browser uden installation.
+
+### Konfiguration Krav
+
+#### GitHub Repository Settings (Engangskonfiguration)
+
+**Vigtigt:** GitHub Pages skal konfigureres til at bruge GitHub Actions som kilde, ellers vises kun README.md filen.
+
+**Trin 1: Aktivér GitHub Pages med GitHub Actions**
+1. Gå til repository settings: `https://github.com/[brugernavn]/[repo-navn]/settings/pages`
+2. Under **Build and deployment**:
+   - **Source**: Vælg **"GitHub Actions"** (IKKE "Deploy from a branch")
+3. Gem indstillingerne
+
+**Trin 2: Konfigurer Workflow Permissions**
+1. Gå til `Settings → Actions → General`
+2. Under **Workflow permissions**:
+   - Vælg **"Read and write permissions"**
+   - Aktivér ✅ **"Allow GitHub Actions to create and approve pull requests"**
+3. Klik **Save**
+
+### Workflow Konfiguration
+
+**Fil:** `.github/workflows/deploy-pages.yml`
+
+**Triggers:**
+- Automatisk: Ved push til `main` branch
+- Manuel: Via "Run workflow" i GitHub Actions UI
+
+**Build Process:**
+1. Setup Flutter 3.24.0 (stable channel)
+2. Install dependencies: `flutter pub get`
+3. Build: `flutter build web --release --base-href /[repo-navn]/`
+4. Deploy til GitHub Pages fra `build/web` directory
+
+**URL efter deployment:**
+```
+https://[brugernavn].github.io/[repo-navn]/
+```
+
+### Acceptkriterier
+- ✅ Workflow bygger Flutter web app i release mode
+- ✅ Deployment sker automatisk ved push til main
+- ✅ Flutter applikationen (ikke README.md) vises på GitHub Pages URL
+- ✅ App er funktionel i browser uden installation
+- ✅ Base-href matcher repository navn for korrekt routing
+
+### Tekniske Detaljer
+- Bruger `actions/upload-pages-artifact@v3` til at uploade build
+- Bruger `actions/deploy-pages@v4` til deployment
+- Kræver GitHub Pages source sat til "GitHub Actions"
+- Deployment tid: 2-3 minutter efter workflow completion
+
+### Troubleshooting
+Se `deployment.MD` fil i repository root for detaljerede troubleshooting instruktioner.
+
+---
+
 ## VERSION 2.0 - SCORE & NÆSTE RUNDER
 
 ### 5. Score Input per Kamp
