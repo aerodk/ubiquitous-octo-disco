@@ -17,7 +17,7 @@ class SetupScreen extends StatefulWidget {
   State<SetupScreen> createState() => _SetupScreenState();
 }
 
-class _SetupScreenState extends State<SetupScreen> {
+class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStateMixin {
   final TextEditingController _playerNameController = TextEditingController();
   final FocusNode _playerNameFocusNode = FocusNode();
   final List<Player> _players = [];
@@ -25,10 +25,16 @@ class _SetupScreenState extends State<SetupScreen> {
   final TournamentService _tournamentService = TournamentService();
   final PersistenceService _persistenceService = PersistenceService();
   bool _isLoading = true;
+  bool _isCourtCountAnimating = false;
+  late AnimationController _animationController;
 
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
     _loadSavedState();
   }
 
@@ -36,6 +42,7 @@ class _SetupScreenState extends State<SetupScreen> {
   void dispose() {
     _playerNameController.dispose();
     _playerNameFocusNode.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
@@ -58,6 +65,42 @@ class _SetupScreenState extends State<SetupScreen> {
   /// Save current setup state to local storage
   Future<void> _saveState() async {
     await _persistenceService.saveSetupState(_players, _courtCount);
+  }
+
+  /// Calculate suggested court count based on number of players
+  /// Formula: 1 court per 4 players (only when full court can be filled)
+  int _calculateSuggestedCourtCount(int playerCount) {
+    if (playerCount == 0) return 1;
+    // Only add courts when we have enough players to fill them (floor division)
+    final suggested = playerCount ~/ 4;
+    // Ensure at least 1 court
+    final courtCount = suggested < 1 ? 1 : suggested;
+    // Clamp to valid range
+    return courtCount.clamp(Constants.minCourts, Constants.maxCourts);
+  }
+
+  /// Automatically adjust court count based on player count
+  /// Returns true if adjustment was made
+  bool _autoAdjustCourtCount() {
+    final suggestedCount = _calculateSuggestedCourtCount(_players.length);
+    if (suggestedCount != _courtCount) {
+      setState(() {
+        _courtCount = suggestedCount;
+        _isCourtCountAnimating = true;
+      });
+      
+      // Trigger animation
+      _animationController.forward(from: 0.0).then((_) {
+        if (mounted) {
+          setState(() {
+            _isCourtCountAnimating = false;
+          });
+        }
+      });
+      
+      return true;
+    }
+    return false;
   }
 
   /// Clear all players and reset court count
@@ -119,6 +162,9 @@ class _SetupScreenState extends State<SetupScreen> {
       _playerNameController.clear();
     });
     
+    // Auto-adjust court count based on player count
+    _autoAdjustCourtCount();
+    
     // Save state in background - don't await to keep UI responsive
     unawaited(_saveState());
     
@@ -130,6 +176,10 @@ class _SetupScreenState extends State<SetupScreen> {
     setState(() {
       _players.removeAt(index);
     });
+    
+    // Auto-adjust court count based on player count
+    _autoAdjustCourtCount();
+    
     // Save state in background - don't await to keep UI responsive
     unawaited(_saveState());
   }
@@ -283,34 +333,56 @@ class _SetupScreenState extends State<SetupScreen> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.remove),
-                  onPressed: _courtCount > Constants.minCourts
-                      ? () {
-                          setState(() => _courtCount--);
-                          // Save state in background - don't await to keep UI responsive
-                          unawaited(_saveState());
-                        }
-                      : null,
-                ),
-                Text(
-                  '$_courtCount ${_courtCount == 1 ? 'bane' : 'baner'}',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.add),
-                  onPressed: _courtCount < Constants.maxCourts
-                      ? () {
-                          setState(() => _courtCount++);
-                          // Save state in background - don't await to keep UI responsive
-                          unawaited(_saveState());
-                        }
-                      : null,
-                ),
-              ],
+            AnimatedBuilder(
+              animation: _animationController,
+              builder: (context, child) {
+                // Create a pulsing highlight effect
+                final highlightColor = _isCourtCountAnimating
+                    ? Color.lerp(
+                        Colors.transparent,
+                        Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                        (1 - (_animationController.value - 0.5).abs() * 2).clamp(0.0, 1.0),
+                      )
+                    : Colors.transparent;
+
+                return Container(
+                  decoration: BoxDecoration(
+                    color: highlightColor,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: child,
+                );
+              },
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.remove),
+                    onPressed: _courtCount > Constants.minCourts
+                        ? () {
+                            setState(() => _courtCount--);
+                            // Save state in background - don't await to keep UI responsive
+                            unawaited(_saveState());
+                          }
+                        : null,
+                  ),
+                  Text(
+                    '$_courtCount ${_courtCount == 1 ? 'bane' : 'baner'}',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add),
+                    onPressed: _courtCount < Constants.maxCourts
+                        ? () {
+                            setState(() => _courtCount++);
+                            // Save state in background - don't await to keep UI responsive
+                            unawaited(_saveState());
+                          }
+                        : null,
+                  ),
+                ],
+              ),
             ),
 
             const SizedBox(height: 16),
