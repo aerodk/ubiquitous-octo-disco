@@ -11,20 +11,75 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:star_cano/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
+  testWidgets('Padel tournament app loads setup screen', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(const PadelTournamentApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    // Verify that the setup screen is loaded
+    expect(find.text('Opsætning af Turnering'), findsOneWidget);
+    expect(find.text('Spillere (0/24)'), findsOneWidget);
+    expect(find.text('Baner'), findsOneWidget);
+    expect(find.text('Generer Første Runde'), findsOneWidget);
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+  testWidgets('Setup screen allows adding players', (WidgetTester tester) async {
+    // Build our app and trigger a frame.
+    await tester.pumpWidget(const PadelTournamentApp());
+
+    // Find the text field and enter a player name
+    await tester.enterText(find.byType(TextField), 'Test Player');
+    
+    // Tap the add button
+    await tester.tap(find.text('Tilføj'));
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Verify the player was added
+    expect(find.text('Test Player'), findsOneWidget);
+    expect(find.text('Spillere (1/24)'), findsOneWidget);
+  });
+
+  testWidgets('Setup screen prevents empty player names', (WidgetTester tester) async {
+    // Build our app and trigger a frame.
+    await tester.pumpWidget(const PadelTournamentApp());
+
+    // Try to add an empty name
+    await tester.tap(find.text('Tilføj'));
+    await tester.pump();
+
+    // Verify error message is shown
+    expect(find.text('Spillernavn kan ikke være tomt'), findsOneWidget);
+  });
+
+  testWidgets('Setup screen prevents duplicate player names', (WidgetTester tester) async {
+    // Build our app and trigger a frame.
+    await tester.pumpWidget(const PadelTournamentApp());
+
+    // Add first player
+    await tester.enterText(find.byType(TextField), 'Test Player');
+    await tester.tap(find.text('Tilføj'));
+    await tester.pump();
+
+    // Try to add duplicate
+    await tester.enterText(find.byType(TextField), 'Test Player');
+    await tester.tap(find.text('Tilføj'));
+    await tester.pump();
+
+    // Verify error message is shown
+    expect(find.text('Spilleren findes allerede'), findsOneWidget);
+  });
+
+  testWidgets('Setup screen allows adjusting court count', (WidgetTester tester) async {
+    // Build our app and trigger a frame.
+    await tester.pumpWidget(const PadelTournamentApp());
+
+    // Initial court count should be 1
+    expect(find.text('1 bane'), findsOneWidget);
+
+    // Tap add button
+    await tester.tap(find.byIcon(Icons.add).last);
+    await tester.pump();
+
+    // Verify court count increased
+    expect(find.text('2 baner'), findsOneWidget);
   });
 }
