@@ -3,6 +3,7 @@ import '../models/court.dart';
 import '../models/match.dart';
 import '../models/round.dart';
 import '../models/player_standing.dart';
+import '../models/tournament_settings.dart';
 
 class TournamentService {
   Round generateFirstRound(List<Player> players, List<Court> courts) {
@@ -44,14 +45,18 @@ class TournamentService {
     );
   }
 
-  /// Generates the final round using rank-based pairing (F-011)
-  /// Pattern: R1+R3 vs R2+R4, R5+R7 vs R6+R8, etc.
+  /// Generates the final round using rank-based pairing (F-011, F-017)
+  /// Supports multiple pairing strategies:
+  /// - Balanced: R1+R3 vs R2+R4 (default)
+  /// - Top Alliance: R1+R2 vs R3+R4
+  /// - Max Competition: R1+R4 vs R2+R3
   /// Uses rolling pause system for overflow players
   Round generateFinalRound(
     List<Court> courts,
     List<PlayerStanding> standings,
-    int roundNumber,
-  ) {
+    int roundNumber, {
+    PairingStrategy strategy = PairingStrategy.balanced,
+  }) {
     // Sort standings by rank (should already be sorted)
     final rankedStandings = List<PlayerStanding>.from(standings)
       ..sort((a, b) => a.rank.compareTo(b.rank));
@@ -72,28 +77,23 @@ class TournamentService {
         .map((s) => s.player)
         .toList();
 
-    // Generate matches using R1+R3 vs R2+R4 pattern
+    // Generate matches using selected pairing strategy
     final matches = <Match>[];
     final availableCourts = List<Court>.from(courts);
 
     for (int i = 0; i < activePlayers.length; i += 4) {
       if (i + 3 < activePlayers.length) {
-        // Create match with R(i)+R(i+2) vs R(i+1)+R(i+3) pattern
         final courtIndex = i ~/ 4;
         final court = courtIndex < availableCourts.length
             ? availableCourts[courtIndex]
             : availableCourts.last;
 
-        final match = Match(
-          court: court,
-          team1: Team(
-            player1: activePlayers[i],     // R1, R5, R9, ...
-            player2: activePlayers[i + 2], // R3, R7, R11, ...
-          ),
-          team2: Team(
-            player1: activePlayers[i + 1], // R2, R6, R10, ...
-            player2: activePlayers[i + 3], // R4, R8, R12, ...
-          ),
+        // Create match based on pairing strategy
+        final match = _createMatchWithStrategy(
+          activePlayers,
+          i,
+          court,
+          strategy,
         );
         matches.add(match);
       }
@@ -105,6 +105,58 @@ class TournamentService {
       playersOnBreak: playersOnBreak,
       isFinalRound: true,
     );
+  }
+
+  /// Creates a match using the specified pairing strategy
+  Match _createMatchWithStrategy(
+    List<Player> players,
+    int startIndex,
+    Court court,
+    PairingStrategy strategy,
+  ) {
+    switch (strategy) {
+      case PairingStrategy.balanced:
+        // R1+R3 vs R2+R4 pattern (default, most balanced)
+        return Match(
+          court: court,
+          team1: Team(
+            player1: players[startIndex],     // R1, R5, R9, ...
+            player2: players[startIndex + 2], // R3, R7, R11, ...
+          ),
+          team2: Team(
+            player1: players[startIndex + 1], // R2, R6, R10, ...
+            player2: players[startIndex + 3], // R4, R8, R12, ...
+          ),
+        );
+
+      case PairingStrategy.topAlliance:
+        // R1+R2 vs R3+R4 pattern (top players together)
+        return Match(
+          court: court,
+          team1: Team(
+            player1: players[startIndex],     // R1, R5, R9, ...
+            player2: players[startIndex + 1], // R2, R6, R10, ...
+          ),
+          team2: Team(
+            player1: players[startIndex + 2], // R3, R7, R11, ...
+            player2: players[startIndex + 3], // R4, R8, R12, ...
+          ),
+        );
+
+      case PairingStrategy.maxCompetition:
+        // R1+R4 vs R2+R3 pattern (most competitive balance)
+        return Match(
+          court: court,
+          team1: Team(
+            player1: players[startIndex],     // R1, R5, R9, ...
+            player2: players[startIndex + 3], // R4, R8, R12, ...
+          ),
+          team2: Team(
+            player1: players[startIndex + 1], // R2, R6, R10, ...
+            player2: players[startIndex + 2], // R3, R7, R11, ...
+          ),
+        );
+    }
   }
 
   /// Selects players to sit out using rolling pause prioritization

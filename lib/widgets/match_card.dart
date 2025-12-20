@@ -5,8 +5,14 @@ import '../utils/constants.dart';
 class MatchCard extends StatefulWidget {
   final Match match;
   final VoidCallback? onScoreChanged;
+  final int maxPoints;
 
-  const MatchCard({super.key, required this.match, this.onScoreChanged});
+  const MatchCard({
+    super.key,
+    required this.match,
+    this.onScoreChanged,
+    this.maxPoints = 24,
+  });
 
   @override
   State<MatchCard> createState() => _MatchCardState();
@@ -16,7 +22,10 @@ class _MatchCardState extends State<MatchCard> {
   void _showScoreInput() {
     showDialog(
       context: context,
-      builder: (context) => ScoreInputDialog(match: widget.match),
+      builder: (context) => ScoreInputDialog(
+        match: widget.match,
+        maxPoints: widget.maxPoints,
+      ),
     ).then((result) {
       if (result != null && result is Map && mounted) {
         final team1 = result['team1Score'] as int?;
@@ -125,8 +134,13 @@ class _MatchCardState extends State<MatchCard> {
 
 class ScoreInputDialog extends StatefulWidget {
   final Match match;
+  final int maxPoints;
 
-  const ScoreInputDialog({super.key, required this.match});
+  const ScoreInputDialog({
+    super.key,
+    required this.match,
+    this.maxPoints = 24,
+  });
 
   @override
   State<ScoreInputDialog> createState() => _ScoreInputDialogState();
@@ -148,11 +162,11 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
       if (isTeam1) {
         _team1Score = score;
         // Auto-calculate team 2 score (total points - team1)
-        _team2Score = Constants.maxScore - score;
+        _team2Score = widget.maxPoints - score;
       } else {
         _team2Score = score;
         // Auto-calculate team 1 score (total points - team2)
-        _team1Score = Constants.maxScore - score;
+        _team1Score = widget.maxPoints - score;
       }
     });
   }
@@ -198,7 +212,7 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: List.generate(Constants.maxScore + 1, (index) {
+              children: List.generate(widget.maxPoints + 1, (index) {
                 final isSelected = _team1Score == index;
                 return SizedBox(
                   width: 50,

@@ -230,6 +230,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       _tournament.courts,
       standings,
       nextRoundNumber,
+      strategy: _tournament.settings.finalRoundStrategy,
     );
     
     final updatedTournament = Tournament(
@@ -338,6 +339,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                     (match) => MatchCard(
                       key: ValueKey(match.id),
                       match: match,
+                      maxPoints: _tournament.settings.pointsPerMatch,
                       onScoreChanged: () {
                         setState(() {});
                         _checkForTournamentCompletion();
