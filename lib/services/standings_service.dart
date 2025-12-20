@@ -105,6 +105,8 @@ class StandingsService {
     // Note: Ties (playerScore == opponentScore) don't count as wins or losses
 
     // Update head-to-head records
+    // H2H tracks cumulative points scored against each opponent across all matches
+    // When players face each other multiple times, all points are summed
     final newH2H = Map<String, int>.from(standing.headToHeadPoints);
     for (final opponentId in opponentIds) {
       newH2H[opponentId] = (newH2H[opponentId] ?? 0) + playerScore;

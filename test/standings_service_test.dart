@@ -71,6 +71,9 @@ void main() {
 
   group('StandingsService - Basic Ranking', () {
     test('Test Case 1: Basic ranking by total points and wins', () {
+      // Test Case 1 from SPECIFICATION_V3.md
+      // Tests primary ranking criterion (total points) and first tiebreaker (wins)
+      // Expected: Players ranked by points first, then by number of wins
       // Setup from SPECIFICATION_V3.md Test Case 1
       final playerA = Player(id: 'A', name: 'Player A');
       final playerB = Player(id: 'B', name: 'Player B');

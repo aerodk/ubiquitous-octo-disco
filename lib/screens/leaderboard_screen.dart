@@ -12,9 +12,11 @@ import '../services/standings_service.dart';
 /// - Responsive design for mobile devices
 class LeaderboardScreen extends StatelessWidget {
   final Tournament tournament;
-  final StandingsService _standingsService = StandingsService();
+  
+  // Service is stateless and can be shared
+  static final StandingsService _standingsService = StandingsService();
 
-  LeaderboardScreen({
+  const LeaderboardScreen({
     super.key,
     required this.tournament,
   });
