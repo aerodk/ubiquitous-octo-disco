@@ -222,11 +222,11 @@ git branch -r | grep gh-pages
 
 ### "Production deployment failed"
 **Cause:** Missing permissions or Pages not configured
-**Solution:** Check Settings → Pages → Source = "GitHub Actions"
+**Solution:** Check Settings → Pages → Source should be set to "GitHub Actions"
 
 ### "Workflow triggers but nothing happens"
 **Cause:** Permissions issue
-**Solution:** Settings → Actions → Workflow permissions = "Read and write"
+**Solution:** Settings → Actions → Workflow permissions should be set to "Read and write"
 
 ### "Base href causes 404 errors"
 **Cause:** Mismatch between base-href and actual deployment path

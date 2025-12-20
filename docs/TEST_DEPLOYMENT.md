@@ -48,8 +48,12 @@ The project now supports two deployment environments:
 
 1. **Create a `develop` branch** (if it doesn't exist):
    ```bash
+   # Initial setup - create and push develop branch
    git checkout -b develop
    git push -u origin develop
+   
+   # Subsequent pushes (after initial setup)
+   git push origin develop
    ```
 
 2. **Configure workflow permissions**:
