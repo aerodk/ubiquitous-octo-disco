@@ -46,7 +46,7 @@ permissions:
 - Default branch: `develop`
 
 **Deployment:**
-- Uses third-party action (`peaceiris/actions-gh-pages@v3`)
+- Uses third-party action (`peaceiris/actions-gh-pages@v4`)
 - Deploys to `gh-pages-test` branch
 - Base href: `/ubiquitous-octo-disco/test/`
 
@@ -75,7 +75,7 @@ permissions:
 | **Trigger** | Manual only | Auto (develop) + Manual |
 | **Target** | GitHub Pages (official) | `gh-pages-test` branch |
 | **Base Href** | `/ubiquitous-octo-disco/` | `/ubiquitous-octo-disco/test/` |
-| **Deployment Action** | `actions/deploy-pages@v4` | `peaceiris/actions-gh-pages@v3` |
+| **Deployment Action** | `actions/deploy-pages@v4` | `peaceiris/actions-gh-pages@v4` |
 | **Jobs** | 2 (build + deploy) | 1 (combined) |
 | **URL Access** | ✅ Direct | ⚠️ Limited (see below) |
 
