@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:star_cano/models/round.dart';
 import '../models/tournament.dart';
 import '../services/persistence_service.dart';
+import '../services/standings_service.dart';
 import '../widgets/match_card.dart';
 import '../services/tournament_service.dart';
 import 'setup_screen.dart';
@@ -19,6 +20,7 @@ class RoundDisplayScreen extends StatefulWidget {
 class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   final PersistenceService _persistenceService = PersistenceService();
   final TournamentService _tournamentService = TournamentService();
+  final StandingsService _standingsService = StandingsService();
   late Tournament _tournament;
 
   @override
@@ -38,6 +40,22 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     );
     
     return !hasAnyScores;
+  }
+
+  bool get _canStartFinalRound {
+    // Must have at least 3 completed rounds
+    if (_tournament.completedRounds < 3) return false;
+    
+    // Current round must be completed
+    if (!_currentRound.isCompleted) return false;
+    
+    // Cannot start if already in final round
+    if (_currentRound.isFinalRound) return false;
+    
+    // Tournament must not be completed
+    if (_tournament.isCompleted) return false;
+    
+    return true;
   }
   Future<void> _resetTournament() async {
     final confirmed = await showDialog<bool>(
@@ -132,6 +150,89 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     );
   }
 
+  Future<void> _generateFinalRound() async {
+    // Show confirmation dialog with leaderboard preview
+    final standings = _standingsService.calculateStandings(_tournament);
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.emoji_events, color: Colors.amber, size: 32),
+            SizedBox(width: 8),
+            Text('Start Sidste Runde'),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Dette starter den sidste runde. Er du sikker?',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              const Text('Nuværende top 5:'),
+              const SizedBox(height: 8),
+              ...standings.take(5).map((s) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Text(
+                  '${s.rank}. ${s.player.name} - ${s.totalPoints} point',
+                  style: const TextStyle(fontSize: 12),
+                ),
+              )),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annuller'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.amber,
+              foregroundColor: Colors.black,
+            ),
+            child: const Text('Start Sidste Runde'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    // Generate final round
+    final nextRoundNumber = _tournament.rounds.length + 1;
+    final finalRound = _tournamentService.generateFinalRound(
+      _tournament.courts,
+      standings,
+      nextRoundNumber,
+    );
+    
+    final updatedTournament = Tournament(
+      id: _tournament.id,
+      name: _tournament.name,
+      players: _tournament.players,
+      courts: _tournament.courts,
+      rounds: [..._tournament.rounds, finalRound],
+      createdAt: _tournament.createdAt,
+    );
+    
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => RoundDisplayScreen(tournament: updatedTournament),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final round = widget.tournament.currentRound;
@@ -170,8 +271,18 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Runde ${_currentRound.roundNumber}'),
-          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+          title: _currentRound.isFinalRound
+              ? const Row(
+                  children: [
+                    Icon(Icons.emoji_events, color: Colors.amber),
+                    SizedBox(width: 8),
+                    Text('🏆 SIDSTE RUNDE'),
+                  ],
+                )
+              : Text('Runde ${_currentRound.roundNumber}'),
+          backgroundColor: _currentRound.isFinalRound
+              ? Colors.amber[700]
+              : Theme.of(context).colorScheme.inversePrimary,
         actions: [
           IconButton(
             icon: const Icon(Icons.leaderboard),
@@ -247,23 +358,52 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
               ),
             ),
             
-            // Next round button (for testing)
+            // Bottom buttons section
             Padding(
               padding: const EdgeInsets.all(16.0),
-              child: SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _generateNextRound,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: Text(
-                    'Generer Næste Runde (${_currentRound.roundNumber + 1})',
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                ),
+              child: Column(
+                children: [
+                  // Final round button (gold themed, shown when eligible)
+                  if (_canStartFinalRound)
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton.icon(
+                        onPressed: _generateFinalRound,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.amber[600],
+                          foregroundColor: Colors.black,
+                          elevation: 8,
+                        ),
+                        icon: const Icon(Icons.emoji_events, size: 28),
+                        label: const Text(
+                          'Start Sidste Runde',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  
+                  // Regular next round button
+                  if (!_currentRound.isFinalRound && !_canStartFinalRound)
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: _generateNextRound,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: Text(
+                          'Generer Næste Runde (${_currentRound.roundNumber + 1})',
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
           ],
