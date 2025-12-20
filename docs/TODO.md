@@ -89,3 +89,39 @@
   - [x] Tests for pause prioritization
   - [x] Tests for top half protection
 
+## Version 5.0 - Tournament Settings & Configuration (SPECIFICATION_V5.md)
+- [x] Data Model Updates (F-014, F-015, F-016, F-017)
+  - [x] Create TournamentSettings model with validation
+  - [x] Add PairingStrategy enum (balanced, topAlliance, maxCompetition)
+  - [x] Add JSON serialization for persistence
+  - [x] Update Tournament model to include settings field
+  - [x] Backward compatibility with default settings
+  - [x] Unit tests for TournamentSettings model
+- [x] Settings UI (F-014)
+  - [x] Create TournamentSettingsWidget with ExpansionTile
+  - [x] Collapsible settings section on SetupScreen
+  - [x] Visual indicator when settings are customized
+  - [x] Settings summary display when collapsed
+  - [x] Integration with SetupScreen
+- [x] Minimum Rounds Setting (F-015)
+  - [x] Stepper UI component (2-10 range, default: 3)
+  - [x] Update canStartFinalRound logic to use setting
+  - [x] Validation and user feedback
+- [x] Points Per Match Setting (F-016)
+  - [x] Dropdown selector (18-32 even numbers, default: 24)
+  - [x] Dynamic ScoreButtonGrid generation
+  - [x] Update MatchCard and ScoreInputDialog
+  - [x] Backward compatibility (default to 24)
+- [x] Final Round Pairing Strategy (F-017)
+  - [x] Balanced pairing (R1+R3 vs R2+R4) - default
+  - [x] Top Alliance pairing (R1+R2 vs R3+R4)
+  - [x] Max Competition pairing (R1+R4 vs R2+R3)
+  - [x] Radio button UI with descriptions
+  - [x] TournamentService implementation for all strategies
+  - [x] Comprehensive unit tests for all three strategies
+- [x] Testing & Integration
+  - [x] Unit tests for all pairing strategies
+  - [x] Tests for settings validation and serialization
+  - [x] Backward compatibility verified
+
+
