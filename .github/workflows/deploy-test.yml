@@ -1,0 +1,62 @@
+name: Deploy to Test Environment
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to deploy to test'
+        required: false
+        default: 'develop'
+
+permissions:
+  contents: write
+
+# Allow only one concurrent test deployment
+concurrency:
+  group: "pages-test"
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch || github.ref }}
+        
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          
+      - name: Install dependencies
+        run: flutter pub get
+        
+      - name: Build Flutter web app for test
+        run: flutter build web --release --base-href /ubiquitous-octo-disco/test/
+        
+      - name: Deploy to test branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/web
+          publish_branch: gh-pages-test
+          commit_message: 'Deploy test build from ${{ github.ref_name }}'
+          
+      - name: Display test URL
+        run: |
+          echo "🧪 Test deployment successful!"
+          echo ""
+          echo "📍 Test artifacts deployed to gh-pages-test branch"
+          echo ""
+          echo "⚠️  Note: GitHub Pages serves one site per repository."
+          echo "🔧 To view test build:"
+          echo "   1. Test locally: flutter build web --release --base-href /ubiquitous-octo-disco/test/"
+          echo "   2. Or temporarily switch Pages source to gh-pages-test branch"
+          echo "   3. See docs/TEST_DEPLOYMENT.md for detailed instructions"
