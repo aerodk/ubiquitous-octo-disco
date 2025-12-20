@@ -95,6 +95,7 @@ flutter devices
 - Prefer minimal, well-tested changes. Add or update unit tests under `test/` for business logic in `lib/services/`.
 - ALWAYS run `flutter analyze` before completing a task to ensure code quality.
 - ALWAYS run `flutter test` to verify existing tests still pass after making changes.
+- Create PRs against both develop branch and main branch when making changes to enable easy test on develop 
 
 ## Testing conventions
 - Unit tests for models: Test JSON serialization, equality, and edge cases.
