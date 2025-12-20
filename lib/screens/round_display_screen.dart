@@ -5,6 +5,7 @@ import '../services/persistence_service.dart';
 import '../widgets/match_card.dart';
 import '../services/tournament_service.dart';
 import 'setup_screen.dart';
+import 'leaderboard_screen.dart';
 
 class RoundDisplayScreen extends StatefulWidget {
   final Tournament tournament;
@@ -172,6 +173,18 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
           title: Text('Runde ${_currentRound.roundNumber}'),
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.leaderboard),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => LeaderboardScreen(tournament: _tournament),
+                ),
+              );
+            },
+            tooltip: 'Vis stillinger',
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _resetTournament,
