@@ -1,6 +1,7 @@
 import 'player.dart';
 import 'court.dart';
 import 'round.dart';
+import 'tournament_settings.dart';
 
 class Tournament {
   final String id;
@@ -10,6 +11,7 @@ class Tournament {
   final List<Round> rounds;
   final DateTime createdAt;
   final bool isCompleted;
+  final TournamentSettings settings;
 
   Tournament({
     String? id,
@@ -19,9 +21,11 @@ class Tournament {
     List<Round>? rounds,
     DateTime? createdAt,
     this.isCompleted = false,
+    TournamentSettings? settings,
   })  : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
         rounds = rounds ?? [],
-        createdAt = createdAt ?? DateTime.now();
+        createdAt = createdAt ?? DateTime.now(),
+        settings = settings ?? const TournamentSettings();
 
   Round? get currentRound => rounds.isEmpty ? null : rounds.last;
 
@@ -36,6 +40,7 @@ class Tournament {
     List<Round>? rounds,
     DateTime? createdAt,
     bool? isCompleted,
+    TournamentSettings? settings,
   }) {
     return Tournament(
       id: id ?? this.id,
@@ -45,6 +50,7 @@ class Tournament {
       rounds: rounds ?? this.rounds,
       createdAt: createdAt ?? this.createdAt,
       isCompleted: isCompleted ?? this.isCompleted,
+      settings: settings ?? this.settings,
     );
   }
 
@@ -61,6 +67,9 @@ class Tournament {
             : null,
         createdAt: DateTime.parse(json['createdAt']),
         isCompleted: json['isCompleted'] ?? false,
+        settings: json['settings'] != null
+            ? TournamentSettings.fromJson(json['settings'])
+            : const TournamentSettings(),
       );
 
   Map<String, dynamic> toJson() => {
@@ -71,5 +80,6 @@ class Tournament {
         'rounds': rounds.map((r) => r.toJson()).toList(),
         'createdAt': createdAt.toIso8601String(),
         'isCompleted': isCompleted,
+        'settings': settings.toJson(),
       };
 }

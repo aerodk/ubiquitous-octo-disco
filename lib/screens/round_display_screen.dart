@@ -47,8 +47,8 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   }
 
   bool get _canStartFinalRound {
-    // Must have at least 3 completed rounds
-    if (_tournament.completedRounds < 3) return false;
+    // Must have at least the configured minimum completed rounds
+    if (_tournament.completedRounds < _tournament.settings.minRoundsBeforeFinal) return false;
     
     // Current round must be completed
     if (!_currentRound.isCompleted) return false;
@@ -230,6 +230,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       _tournament.courts,
       standings,
       nextRoundNumber,
+      strategy: _tournament.settings.finalRoundStrategy,
     );
     
     final updatedTournament = Tournament(
@@ -338,6 +339,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                     (match) => MatchCard(
                       key: ValueKey(match.id),
                       match: match,
+                      maxPoints: _tournament.settings.pointsPerMatch,
                       onScoreChanged: () {
                         setState(() {});
                         _checkForTournamentCompletion();

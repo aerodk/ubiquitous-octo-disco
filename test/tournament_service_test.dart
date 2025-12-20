@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:star_cano/models/player.dart';
 import 'package:star_cano/models/court.dart';
 import 'package:star_cano/models/player_standing.dart';
+import 'package:star_cano/models/tournament_settings.dart';
 import 'package:star_cano/services/tournament_service.dart';
 
 void main() {
@@ -380,6 +381,216 @@ void main() {
 
       // R13 should sit out (lowest rank with fewest pauses)
       expect(round.playersOnBreak[0].id, '13');
+    });
+  });
+
+  group('TournamentService - Pairing Strategies (V5.0)', () {
+    late TournamentService service;
+
+    setUp(() {
+      service = TournamentService();
+    });
+
+    // Helper function to create 12 ranked players
+    List<PlayerStanding> create12RankedPlayers() {
+      final players = List.generate(
+        12,
+        (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
+      );
+      
+      return List.generate(
+        12,
+        (i) => PlayerStanding(
+          player: players[i],
+          totalPoints: 50 - i * 2,
+          wins: 3 - (i ~/ 4),
+          losses: (i ~/ 4),
+          matchesPlayed: 4,
+          biggestWinMargin: 10,
+          smallestLossMargin: 5,
+          headToHeadPoints: {},
+          rank: i + 1,
+          pauseCount: 0,
+        ),
+      );
+    }
+
+    List<Court> createCourts() => [
+      Court(id: '1', name: 'Bane 1'),
+      Court(id: '2', name: 'Bane 2'),
+      Court(id: '3', name: 'Bane 3'),
+    ];
+
+    test('should use balanced strategy by default (R1+R3 vs R2+R4)', () {
+      final standings = create12RankedPlayers();
+      final courts = createCourts();
+
+      final round = service.generateFinalRound(
+        courts,
+        standings,
+        4,
+        // Default strategy is balanced
+      );
+
+      expect(round.matches.length, 3);
+
+      // Match 1: R1+R3 vs R2+R4
+      final match1 = round.matches[0];
+      expect(match1.team1.player1.id, '1'); // R1
+      expect(match1.team1.player2.id, '3'); // R3
+      expect(match1.team2.player1.id, '2'); // R2
+      expect(match1.team2.player2.id, '4'); // R4
+
+      // Match 2: R5+R7 vs R6+R8
+      final match2 = round.matches[1];
+      expect(match2.team1.player1.id, '5'); // R5
+      expect(match2.team1.player2.id, '7'); // R7
+      expect(match2.team2.player1.id, '6'); // R6
+      expect(match2.team2.player2.id, '8'); // R8
+
+      // Match 3: R9+R11 vs R10+R12
+      final match3 = round.matches[2];
+      expect(match3.team1.player1.id, '9'); // R9
+      expect(match3.team1.player2.id, '11'); // R11
+      expect(match3.team2.player1.id, '10'); // R10
+      expect(match3.team2.player2.id, '12'); // R12
+    });
+
+    test('should use topAlliance strategy (R1+R2 vs R3+R4)', () {
+      final standings = create12RankedPlayers();
+      final courts = createCourts();
+
+      final round = service.generateFinalRound(
+        courts,
+        standings,
+        4,
+        strategy: PairingStrategy.topAlliance,
+      );
+
+      expect(round.matches.length, 3);
+
+      // Match 1: R1+R2 vs R3+R4 (top 2 together)
+      final match1 = round.matches[0];
+      expect(match1.team1.player1.id, '1'); // R1
+      expect(match1.team1.player2.id, '2'); // R2
+      expect(match1.team2.player1.id, '3'); // R3
+      expect(match1.team2.player2.id, '4'); // R4
+
+      // Match 2: R5+R6 vs R7+R8
+      final match2 = round.matches[1];
+      expect(match2.team1.player1.id, '5'); // R5
+      expect(match2.team1.player2.id, '6'); // R6
+      expect(match2.team2.player1.id, '7'); // R7
+      expect(match2.team2.player2.id, '8'); // R8
+
+      // Match 3: R9+R10 vs R11+R12
+      final match3 = round.matches[2];
+      expect(match3.team1.player1.id, '9'); // R9
+      expect(match3.team1.player2.id, '10'); // R10
+      expect(match3.team2.player1.id, '11'); // R11
+      expect(match3.team2.player2.id, '12'); // R12
+    });
+
+    test('should use maxCompetition strategy (R1+R4 vs R2+R3)', () {
+      final standings = create12RankedPlayers();
+      final courts = createCourts();
+
+      final round = service.generateFinalRound(
+        courts,
+        standings,
+        4,
+        strategy: PairingStrategy.maxCompetition,
+      );
+
+      expect(round.matches.length, 3);
+
+      // Match 1: R1+R4 vs R2+R3 (max balance)
+      final match1 = round.matches[0];
+      expect(match1.team1.player1.id, '1'); // R1
+      expect(match1.team1.player2.id, '4'); // R4
+      expect(match1.team2.player1.id, '2'); // R2
+      expect(match1.team2.player2.id, '3'); // R3
+
+      // Match 2: R5+R8 vs R6+R7
+      final match2 = round.matches[1];
+      expect(match2.team1.player1.id, '5'); // R5
+      expect(match2.team1.player2.id, '8'); // R8
+      expect(match2.team2.player1.id, '6'); // R6
+      expect(match2.team2.player2.id, '7'); // R7
+
+      // Match 3: R9+R12 vs R10+R11
+      final match3 = round.matches[2];
+      expect(match3.team1.player1.id, '9'); // R9
+      expect(match3.team1.player2.id, '12'); // R12
+      expect(match3.team2.player1.id, '10'); // R10
+      expect(match3.team2.player2.id, '11'); // R11
+    });
+
+    test('all strategies should handle 13 players with 1 sitting out', () {
+      final players = List.generate(
+        13,
+        (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
+      );
+      
+      final standings = List.generate(
+        13,
+        (i) => PlayerStanding(
+          player: players[i],
+          totalPoints: 52 - i * 2,
+          wins: 3 - (i ~/ 5),
+          losses: (i ~/ 5),
+          matchesPlayed: 4,
+          biggestWinMargin: 10,
+          smallestLossMargin: 5,
+          headToHeadPoints: {},
+          rank: i + 1,
+          pauseCount: 0,
+        ),
+      );
+
+      final courts = createCourts();
+
+      for (final strategy in PairingStrategy.values) {
+        final round = service.generateFinalRound(
+          courts,
+          standings,
+          4,
+          strategy: strategy,
+        );
+
+        expect(round.matches.length, 3, reason: 'Failed for $strategy');
+        expect(round.playersOnBreak.length, 1, reason: 'Failed for $strategy');
+        
+        // Verify all 12 active players are in matches
+        final allMatchPlayers = round.matches.expand((m) => [
+          m.team1.player1.id,
+          m.team1.player2.id,
+          m.team2.player1.id,
+          m.team2.player2.id,
+        ]).toSet();
+        
+        expect(allMatchPlayers.length, 12, reason: 'Failed for $strategy');
+        expect(allMatchPlayers.contains('13'), false, reason: 'Failed for $strategy');
+      }
+    });
+
+    test('all strategies should respect court assignments', () {
+      final standings = create12RankedPlayers();
+      final courts = createCourts();
+
+      for (final strategy in PairingStrategy.values) {
+        final round = service.generateFinalRound(
+          courts,
+          standings,
+          4,
+          strategy: strategy,
+        );
+
+        // Top match should get best court (Court 1)
+        expect(round.matches[0].court.id, '1', reason: 'Failed for $strategy');
+        expect(round.matches[1].court.id, '2', reason: 'Failed for $strategy');
+        expect(round.matches[2].court.id, '3', reason: 'Failed for $strategy');
+      }
     });
   });
 }
