@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 import '../models/player.dart';
 import '../models/court.dart';
 import '../models/tournament.dart';
+import '../models/tournament_settings.dart';
 import '../services/tournament_service.dart';
 import '../services/persistence_service.dart';
 import '../utils/constants.dart';
+import '../widgets/tournament_settings_widget.dart';
 import 'round_display_screen.dart';
 
 class SetupScreen extends StatefulWidget {
@@ -22,6 +24,7 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
   final FocusNode _playerNameFocusNode = FocusNode();
   final List<Player> _players = [];
   int _courtCount = 1;
+  TournamentSettings _tournamentSettings = const TournamentSettings();
   final TournamentService _tournamentService = TournamentService();
   final PersistenceService _persistenceService = PersistenceService();
   bool _isLoading = true;
@@ -218,6 +221,7 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
       players: _players,
       courts: courts,
       rounds: [firstRound],
+      settings: _tournamentSettings,
     );
 
     // Save tournament to persistence
@@ -383,6 +387,19 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
                   ),
                 ],
               ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Tournament Settings section
+            TournamentSettingsWidget(
+              initialSettings: _tournamentSettings,
+              onSettingsChanged: (settings) {
+                setState(() {
+                  _tournamentSettings = settings;
+                });
+              },
+              enabled: true,
             ),
 
             const SizedBox(height: 16),
