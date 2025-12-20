@@ -11,7 +11,7 @@ class PlayerStanding {
   final int biggestWinMargin;
   final int smallestLossMargin;
   final Map<String, int> headToHeadPoints; // playerId -> points scored against them
-  int rank;
+  final int rank;
 
   PlayerStanding({
     required this.player,

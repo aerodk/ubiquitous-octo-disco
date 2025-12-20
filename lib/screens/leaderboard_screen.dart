@@ -22,13 +22,14 @@ class LeaderboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final standings = _standingsService.calculateStandings(tournament);
+    final hasMatches = standings.any((s) => s.matchesPlayed > 0);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Leaderboard'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
-      body: standings.isEmpty
+      body: !hasMatches
           ? const Center(
               child: Text(
                 'No matches played yet',
