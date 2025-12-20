@@ -9,6 +9,7 @@ class Tournament {
   final List<Court> courts;
   final List<Round> rounds;
   final DateTime createdAt;
+  final bool isCompleted;
 
   Tournament({
     String? id,
@@ -17,6 +18,7 @@ class Tournament {
     required this.courts,
     List<Round>? rounds,
     DateTime? createdAt,
+    this.isCompleted = false,
   })  : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
         rounds = rounds ?? [],
         createdAt = createdAt ?? DateTime.now();
@@ -33,6 +35,7 @@ class Tournament {
     List<Court>? courts,
     List<Round>? rounds,
     DateTime? createdAt,
+    bool? isCompleted,
   }) {
     return Tournament(
       id: id ?? this.id,
@@ -41,6 +44,7 @@ class Tournament {
       courts: courts ?? this.courts,
       rounds: rounds ?? this.rounds,
       createdAt: createdAt ?? this.createdAt,
+      isCompleted: isCompleted ?? this.isCompleted,
     );
   }
 
@@ -56,6 +60,7 @@ class Tournament {
             ? (json['rounds'] as List).map((r) => Round.fromJson(r)).toList()
             : null,
         createdAt: DateTime.parse(json['createdAt']),
+        isCompleted: json['isCompleted'] ?? false,
       );
 
   Map<String, dynamic> toJson() => {
@@ -65,5 +70,6 @@ class Tournament {
         'courts': courts.map((c) => c.toJson()).toList(),
         'rounds': rounds.map((r) => r.toJson()).toList(),
         'createdAt': createdAt.toIso8601String(),
+        'isCompleted': isCompleted,
       };
 }

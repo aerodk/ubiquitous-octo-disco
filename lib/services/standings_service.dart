@@ -79,7 +79,8 @@ class StandingsService {
   }
 
   /// Award 12 points to a player on break
-  /// Returns a new PlayerStanding with updated points
+  /// Returns a new PlayerStanding with updated points and incremented pause count
+  /// Note: pauseCount tracks cumulative breaks throughout tournament and never decrements
   PlayerStanding _awardBreakPoints(PlayerStanding standing) {
     return PlayerStanding(
       player: standing.player,
@@ -91,6 +92,7 @@ class StandingsService {
       smallestLossMargin: standing.smallestLossMargin,
       headToHeadPoints: standing.headToHeadPoints,
       rank: standing.rank,
+      pauseCount: standing.pauseCount + 1,
     );
   }
 
@@ -147,6 +149,7 @@ class StandingsService {
       smallestLossMargin: newSmallestLoss,
       headToHeadPoints: newH2H,
       rank: standing.rank,
+      pauseCount: standing.pauseCount,
     );
   }
 
