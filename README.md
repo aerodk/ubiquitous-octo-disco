@@ -126,11 +126,16 @@ See `docs/SPECIFICATION.md` for Version 2.0 features including:
 
 ## Deployment
 
-This app is automatically deployed to GitHub Pages when code is pushed to the `main` branch.
+This project supports two deployment environments:
+
+- **Production**: Manual deployment from `main` branch to `https://aerodk.github.io/ubiquitous-octo-disco/`
+- **Test/Staging**: Automatic deployment from `develop` branch (for testing before production)
 
 **🚀 Quick Setup:** If GitHub Pages shows the README instead of the app, follow the [GitHub Pages Setup Guide](GITHUB_PAGES_SETUP.md).
 
-**📖 Full Documentation:** See [deployment.MD](deployment.MD) for complete deployment instructions and troubleshooting.
+**📖 Production Deployment:** See [deployment.MD](deployment.MD) for complete deployment instructions and troubleshooting.
+
+**🧪 Test Deployment:** See [docs/TEST_DEPLOYMENT.md](docs/TEST_DEPLOYMENT.md) for test/develop deployment workflow.
 
 ## Specification
 

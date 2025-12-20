@@ -12,6 +12,7 @@ class PlayerStanding {
   final int smallestLossMargin;
   final Map<String, int> headToHeadPoints; // playerId -> points scored against them
   final int rank;
+  final int pauseCount; // Number of times player has been on break
 
   PlayerStanding({
     required this.player,
@@ -23,6 +24,7 @@ class PlayerStanding {
     required this.smallestLossMargin,
     required this.headToHeadPoints,
     this.rank = 0,
+    this.pauseCount = 0,
   });
 
   factory PlayerStanding.initial(Player player) {
@@ -36,6 +38,7 @@ class PlayerStanding {
       smallestLossMargin: 999,
       headToHeadPoints: {},
       rank: 0,
+      pauseCount: 0,
     );
   }
 
@@ -50,6 +53,7 @@ class PlayerStanding {
       smallestLossMargin: json['smallestLossMargin'],
       headToHeadPoints: Map<String, int>.from(json['headToHeadPoints'] ?? {}),
       rank: json['rank'] ?? 0,
+      pauseCount: json['pauseCount'] ?? 0,
     );
   }
 
@@ -64,6 +68,7 @@ class PlayerStanding {
       'smallestLossMargin': smallestLossMargin,
       'headToHeadPoints': headToHeadPoints,
       'rank': rank,
+      'pauseCount': pauseCount,
     };
   }
 
@@ -79,6 +84,7 @@ class PlayerStanding {
       smallestLossMargin: smallestLossMargin,
       headToHeadPoints: headToHeadPoints,
       rank: newRank,
+      pauseCount: pauseCount,
     );
   }
 }
