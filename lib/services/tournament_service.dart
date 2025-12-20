@@ -122,18 +122,7 @@ class TournamentService {
 
     // Sort bottom half by break priority
     final bottomHalfSorted = List<PlayerStanding>.from(bottomHalf)
-      ..sort((a, b) {
-        // 1. Most games played first (descending)
-        final gamesCompare = b.matchesPlayed.compareTo(a.matchesPlayed);
-        if (gamesCompare != 0) return gamesCompare;
-
-        // 2. Lowest rank (already in order, but higher rank value = lower position)
-        final rankCompare = b.rank.compareTo(a.rank);
-        if (rankCompare != 0) return rankCompare;
-
-        // 3. Fewest pauses (ascending)
-        return a.pauseCount.compareTo(b.pauseCount);
-      });
+      ..sort(_compareForBreakPriority);
 
     final breakPlayers = <Player>[];
 
@@ -145,14 +134,7 @@ class TournamentService {
     // If we still need more players (edge case), take from top half
     if (breakPlayers.length < count) {
       final topHalfSorted = List<PlayerStanding>.from(topHalf)
-        ..sort((a, b) {
-          // Same prioritization for top half if needed
-          final gamesCompare = b.matchesPlayed.compareTo(a.matchesPlayed);
-          if (gamesCompare != 0) return gamesCompare;
-          final rankCompare = b.rank.compareTo(a.rank);
-          if (rankCompare != 0) return rankCompare;
-          return a.pauseCount.compareTo(b.pauseCount);
-        });
+        ..sort(_compareForBreakPriority);
 
       for (int i = 0;
           i < topHalfSorted.length && breakPlayers.length < count;
@@ -162,5 +144,21 @@ class TournamentService {
     }
 
     return breakPlayers;
+  }
+
+  /// Compare two standings for break prioritization
+  /// Returns positive if 'a' should break before 'b'
+  /// Prioritizes: 1) Most games played, 2) Lowest rank, 3) Fewest pauses
+  int _compareForBreakPriority(PlayerStanding a, PlayerStanding b) {
+    // 1. Most games played first (descending)
+    final gamesCompare = b.matchesPlayed.compareTo(a.matchesPlayed);
+    if (gamesCompare != 0) return gamesCompare;
+
+    // 2. Lowest rank (already in order, but higher rank value = lower position)
+    final rankCompare = b.rank.compareTo(a.rank);
+    if (rankCompare != 0) return rankCompare;
+
+    // 3. Fewest pauses (ascending)
+    return a.pauseCount.compareTo(b.pauseCount);
   }
 }

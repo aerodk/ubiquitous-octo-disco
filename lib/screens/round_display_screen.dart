@@ -24,6 +24,9 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   final StandingsService _standingsService = StandingsService();
   late Tournament _tournament;
 
+  // Navigation delay for tournament completion
+  static const _completionNavigationDelay = Duration(milliseconds: 500);
+
   @override
   void initState() {
     super.initState();
@@ -66,7 +69,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       final completedTournament = _tournament.copyWith(isCompleted: true);
       
       // Navigate to completion screen after a short delay
-      Future.delayed(const Duration(milliseconds: 500), () {
+      Future.delayed(_completionNavigationDelay, () {
         if (mounted) {
           Navigator.pushReplacement(
             context,
