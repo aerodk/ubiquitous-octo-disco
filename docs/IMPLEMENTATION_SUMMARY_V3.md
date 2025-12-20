@@ -61,6 +61,11 @@ A hierarchical 5-level ranking system as specified in the requirements.
 - When all criteria are equal, players share the same rank
 - Example: Two players both at rank #1 means no player gets rank #2
 
+**Break Points:**
+- Players on break in a completed round are awarded 12 points
+- This ensures fairness if the tournament ends before all players have played equal matches
+- Break points only count for total points, not for wins/losses or other statistics
+
 ## Implementation Details
 
 ### New Files Created
@@ -73,6 +78,7 @@ A hierarchical 5-level ranking system as specified in the requirements.
 2. **`lib/services/standings_service.dart`**
    - `calculateStandings()`: Main entry point, returns sorted list of PlayerStanding
    - `_processMatch()`: Extracts statistics from a completed match
+   - `_awardBreakPoints()`: Awards 12 points to players on break
    - `_updatePlayerStats()`: Updates individual player statistics (immutable pattern)
    - `_rankPlayers()`: Implements the 5-level hierarchical sorting
    - `_compareHeadToHead()`: Special comparison for H2H tiebreaker
@@ -126,9 +132,13 @@ A hierarchical 5-level ranking system as specified in the requirements.
 
 Given this tournament state:
 ```
-Players: A, B, C, D
-Match 1: A+B (20) vs C+D (10)  → A and B win
-Match 2: A+C (15) vs B+D (18)  → B and D win
+Players: A, B, C, D, E
+Round 1:
+  Match 1: A+B (20) vs C+D (10)  → A and B win
+  Break: E (awarded 12 points)
+Round 2:
+  Match 2: A+C (15) vs B+D (18)  → B and D win
+  Break: E (awarded 12 points)
 ```
 
 **Calculations:**
@@ -136,12 +146,14 @@ Match 2: A+C (15) vs B+D (18)  → B and D win
 - Player B: 38 points (20+18), 2 wins, 0 losses
 - Player C: 25 points (10+15), 0 wins, 2 losses
 - Player D: 28 points (10+18), 1 win, 1 loss
+- Player E: 24 points (12+12), 0 wins, 0 losses (on break both rounds)
 
 **Final Ranking:**
 1. Player B (38 points, 2 wins)
 2. Player A (35 points, 1 win)
 3. Player D (28 points, 1 win)
 4. Player C (25 points, 0 wins)
+5. Player E (24 points, 0 wins)
 
 ## Usage
 

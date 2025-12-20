@@ -16,10 +16,18 @@ class StandingsService {
       standings[player.id] = PlayerStanding.initial(player);
     }
 
-    // Calculate statistics from all completed matches
+    // Calculate statistics from all completed matches and breaks
     for (final round in tournament.rounds) {
+      // Process completed matches
       for (final match in round.matches.where((m) => m.isCompleted)) {
         _processMatch(match, standings);
+      }
+      
+      // Award 12 points to players on break (only for completed rounds)
+      if (round.isCompleted) {
+        for (final player in round.playersOnBreak) {
+          standings[player.id] = _awardBreakPoints(standings[player.id]!);
+        }
       }
     }
 
@@ -67,6 +75,22 @@ class StandingsService {
       team2Score,
       team1Score,
       [team1Player1.id, team1Player2.id],
+    );
+  }
+
+  /// Award 12 points to a player on break
+  /// Returns a new PlayerStanding with updated points
+  PlayerStanding _awardBreakPoints(PlayerStanding standing) {
+    return PlayerStanding(
+      player: standing.player,
+      totalPoints: standing.totalPoints + 12,
+      wins: standing.wins,
+      losses: standing.losses,
+      matchesPlayed: standing.matchesPlayed,
+      biggestWinMargin: standing.biggestWinMargin,
+      smallestLossMargin: standing.smallestLossMargin,
+      headToHeadPoints: standing.headToHeadPoints,
+      rank: standing.rank,
     );
   }
 
