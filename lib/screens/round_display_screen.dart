@@ -7,6 +7,7 @@ import '../widgets/match_card.dart';
 import '../services/tournament_service.dart';
 import 'setup_screen.dart';
 import 'leaderboard_screen.dart';
+import 'tournament_completion_screen.dart';
 
 class RoundDisplayScreen extends StatefulWidget {
   final Tournament tournament;
@@ -57,6 +58,29 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     
     return true;
   }
+
+  void _checkForTournamentCompletion() {
+    // Check if final round is completed
+    if (_currentRound.isFinalRound && _currentRound.isCompleted) {
+      // Mark tournament as completed
+      final completedTournament = _tournament.copyWith(isCompleted: true);
+      
+      // Navigate to completion screen after a short delay
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => TournamentCompletionScreen(
+                tournament: completedTournament,
+              ),
+            ),
+          );
+        }
+      });
+    }
+  }
+
   Future<void> _resetTournament() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -320,7 +344,10 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                     (match) => MatchCard(
                       key: ValueKey(match.id),
                       match: match,
-                      onScoreChanged: () => setState(() {}),
+                      onScoreChanged: () {
+                        setState(() {});
+                        _checkForTournamentCompletion();
+                      },
                     ),
                   ),
 
