@@ -146,6 +146,17 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   }
 
   void _generateNextRound() {
+    // Check if all scores have been entered in current round
+    if (!_currentRound.isCompleted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Alle kampe skal have score før næste runde kan startes'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+    
     // Simple next round generation (random for now, Version 2.0 will use Americano algorithm)
     final nextRoundNumber = _tournament.rounds.length + 1;
     final nextRound = _tournamentService.generateFirstRound(
@@ -178,9 +189,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   }
 
   Future<void> _generateFinalRound() async {
-    // Show confirmation dialog with leaderboard preview
-    final standings = _standingsService.calculateStandings(_tournament);
-    
+    // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -191,28 +200,9 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
             Text('Start Sidste Runde'),
           ],
         ),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Dette starter den sidste runde. Er du sikker?',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              const Text('Nuværende top 5:'),
-              const SizedBox(height: 8),
-              ...standings.take(5).map((s) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Text(
-                  '${s.rank}. ${s.player.name} - ${s.totalPoints} point',
-                  style: const TextStyle(fontSize: 12),
-                ),
-              )),
-            ],
-          ),
+        content: const Text(
+          'Dette starter den sidste runde. Er du sikker?',
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
           TextButton(
@@ -234,6 +224,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     if (confirmed != true || !mounted) return;
 
     // Generate final round
+    final standings = _standingsService.calculateStandings(_tournament);
     final nextRoundNumber = _tournament.rounds.length + 1;
     final finalRound = _tournamentService.generateFinalRound(
       _tournament.courts,
@@ -416,8 +407,12 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                       ),
                     ),
                   
-                  // Regular next round button
-                  if (!_currentRound.isFinalRound && !_canStartFinalRound)
+                  // Add spacing between buttons when both are shown
+                  if (_canStartFinalRound && !_currentRound.isFinalRound)
+                    const SizedBox(height: 12),
+                  
+                  // Regular next round button (shown when not in final round)
+                  if (!_currentRound.isFinalRound)
                     SizedBox(
                       width: double.infinity,
                       height: 50,
