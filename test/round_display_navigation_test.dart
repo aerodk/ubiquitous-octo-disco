@@ -225,5 +225,104 @@ void main() {
       final IconButton backButton = tester.widget(find.byIcon(Icons.arrow_back).first);
       expect(backButton.onPressed, isNull);
     });
+
+    testWidgets('should show warning when trying to generate next round without all scores', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: RoundDisplayScreen(tournament: tournamentWithOneRound),
+        ),
+      );
+
+      // Tap the next round button
+      await tester.tap(find.text('Generer Næste Runde (2)'));
+      await tester.pump();
+
+      // Should show a snackbar warning
+      expect(find.text('Alle kampe skal have score før næste runde kan startes'), findsOneWidget);
+    });
+
+    testWidgets('should show both next round and final round buttons after 3 completed rounds', (WidgetTester tester) async {
+      // Create tournament with 3 completed rounds
+      final completedMatch1 = Match(
+        court: courts[0],
+        team1: Team(player1: players[0], player2: players[1]),
+        team2: Team(player1: players[2], player2: players[3]),
+        team1Score: 15,
+        team2Score: 9,
+      );
+      final completedMatch2 = Match(
+        court: courts[0],
+        team1: Team(player1: players[0], player2: players[2]),
+        team2: Team(player1: players[1], player2: players[3]),
+        team1Score: 12,
+        team2Score: 12,
+      );
+      final completedMatch3 = Match(
+        court: courts[0],
+        team1: Team(player1: players[0], player2: players[3]),
+        team2: Team(player1: players[1], player2: players[2]),
+        team1Score: 18,
+        team2Score: 6,
+      );
+
+      final tournamentWith3CompletedRounds = Tournament(
+        name: 'Test Tournament',
+        players: players,
+        courts: courts,
+        rounds: [
+          Round(roundNumber: 1, matches: [completedMatch1], playersOnBreak: []),
+          Round(roundNumber: 2, matches: [completedMatch2], playersOnBreak: []),
+          Round(roundNumber: 3, matches: [completedMatch3], playersOnBreak: []),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: RoundDisplayScreen(tournament: tournamentWith3CompletedRounds),
+        ),
+      );
+
+      // Both buttons should be visible
+      expect(find.text('Start Sidste Runde'), findsOneWidget);
+      expect(find.text('Generer Næste Runde (4)'), findsOneWidget);
+    });
+
+    testWidgets('should only show next round button before 3 rounds are completed', (WidgetTester tester) async {
+      // Create tournament with 2 completed rounds
+      final completedMatch1 = Match(
+        court: courts[0],
+        team1: Team(player1: players[0], player2: players[1]),
+        team2: Team(player1: players[2], player2: players[3]),
+        team1Score: 15,
+        team2Score: 9,
+      );
+      final completedMatch2 = Match(
+        court: courts[0],
+        team1: Team(player1: players[0], player2: players[2]),
+        team2: Team(player1: players[1], player2: players[3]),
+        team1Score: 12,
+        team2Score: 12,
+      );
+
+      final tournamentWith2CompletedRounds = Tournament(
+        name: 'Test Tournament',
+        players: players,
+        courts: courts,
+        rounds: [
+          Round(roundNumber: 1, matches: [completedMatch1], playersOnBreak: []),
+          Round(roundNumber: 2, matches: [completedMatch2], playersOnBreak: []),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: RoundDisplayScreen(tournament: tournamentWith2CompletedRounds),
+        ),
+      );
+
+      // Only next round button should be visible
+      expect(find.text('Generer Næste Runde (3)'), findsOneWidget);
+      expect(find.text('Start Sidste Runde'), findsNothing);
+    });
   });
 }
