@@ -2,6 +2,32 @@
 
 This guide explains how to use the test deployment workflow to validate changes before deploying to production.
 
+## Visual Overview
+
+```
+┌─────────────────┐
+│ Feature Branch  │
+│  development    │
+└────────┬────────┘
+         │
+         │ merge
+         ▼
+┌─────────────────┐      ┌──────────────────────┐
+│ Develop Branch  │─────▶│ Test Deployment      │
+│                 │      │ (gh-pages-test)      │
+└────────┬────────┘      │ Automatic on push    │
+         │               └──────────────────────┘
+         │ test & validate
+         │
+         │ merge when ready
+         ▼
+┌─────────────────┐      ┌──────────────────────┐
+│  Main Branch    │─────▶│ Production Deploy    │
+│                 │      │ (gh-pages)           │
+└─────────────────┘      │ Manual trigger only  │
+                         └──────────────────────┘
+```
+
 ## Overview
 
 The project now supports two deployment environments:
