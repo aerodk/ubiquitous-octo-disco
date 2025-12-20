@@ -1,0 +1,60 @@
+name: Deploy to Test Environment
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to deploy to test'
+        required: false
+        default: 'develop'
+
+permissions:
+  contents: write
+
+# Allow only one concurrent test deployment
+concurrency:
+  group: "pages-test"
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch || github.ref }}
+        
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          
+      - name: Install dependencies
+        run: flutter pub get
+        
+      - name: Build Flutter web app for test
+        run: flutter build web --release --base-href /ubiquitous-octo-disco/test/
+        
+      - name: Deploy to test branch
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/web
+          publish_branch: gh-pages-test
+          commit_message: 'Deploy test build from ${{ github.ref_name }}'
+          
+      - name: Display test URL
+        run: |
+          echo "🧪 Test deployment successful!"
+          echo ""
+          echo "📍 Your test app will be available at:"
+          echo "   https://aerodk.github.io/ubiquitous-octo-disco/test/"
+          echo ""
+          echo "⚠️  Note: It may take 2-3 minutes for the test site to update."
+          echo "🔧 To make this URL accessible, configure a second GitHub Pages deployment or use GitHub Pages preview feature."

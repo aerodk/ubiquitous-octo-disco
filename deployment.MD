@@ -4,6 +4,19 @@
 
 This project can be deployed to GitHub Pages using the automated GitHub Action workflow.
 
+### Deployment Environments
+
+This project supports two deployment environments:
+
+1. **Production**: Deployed from `main` branch to `https://aerodk.github.io/ubiquitous-octo-disco/`
+2. **Test/Staging**: Deployed from `develop` branch to `gh-pages-test` branch
+
+**📖 For test/develop deployment instructions, see [docs/TEST_DEPLOYMENT.md](docs/TEST_DEPLOYMENT.md)**
+
+---
+
+## Production Deployment
+
 ### ⚠️ Important: GitHub Pages Configuration Required
 
 **Before the workflow can deploy your app, you MUST configure GitHub Pages to use GitHub Actions as the source.**
