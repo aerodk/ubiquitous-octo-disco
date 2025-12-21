@@ -281,23 +281,31 @@ class _TournamentCompletionScreenState
       return const SizedBox.shrink();
     }
 
+    // Make podium larger on bigger screens
+    final screenWidth = MediaQuery.of(context).size.width;
+    final scaleFactor = screenWidth > 600 ? 1.5 : 1.0;
+    final podiumHeight = 200.0 * scaleFactor;
+    final firstPlaceHeight = 180.0 * scaleFactor;
+    final secondPlaceHeight = 140.0 * scaleFactor;
+    final thirdPlaceHeight = 120.0 * scaleFactor;
+
     return Column(
       children: [
         SizedBox(
-          height: 200,
+          height: podiumHeight,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               // 2nd place
-              if (top3.length > 1) _buildPodiumPlace(top3[1], 2, 140, Colors.grey),
-              const SizedBox(width: 8),
+              if (top3.length > 1) _buildPodiumPlace(top3[1], 2, secondPlaceHeight, Colors.grey, scaleFactor),
+              SizedBox(width: 8 * scaleFactor),
               // 1st place
-              _buildPodiumPlace(top3[0], 1, 180, Colors.amber),
-              const SizedBox(width: 8),
+              _buildPodiumPlace(top3[0], 1, firstPlaceHeight, Colors.amber, scaleFactor),
+              SizedBox(width: 8 * scaleFactor),
               // 3rd place
               if (top3.length > 2)
-                _buildPodiumPlace(top3[2], 3, 120, Colors.brown),
+                _buildPodiumPlace(top3[2], 3, thirdPlaceHeight, Colors.brown, scaleFactor),
             ],
           ),
         ),
@@ -321,6 +329,7 @@ class _TournamentCompletionScreenState
     int place,
     double height,
     Color color,
+    double scaleFactor,
   ) {
     final isRevealed = _revealedPositions.contains(place);
     final medalController = _medalAnimations[place];
@@ -337,20 +346,20 @@ class _TournamentCompletionScreenState
             children: [
               // Medal or revealed content
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: EdgeInsets.all(8 * scaleFactor),
                 decoration: BoxDecoration(
                   color: color,
                   shape: BoxShape.circle,
                 ),
                 child: Text(
                   place == 1 ? '🥇' : place == 2 ? '🥈' : '🥉',
-                  style: const TextStyle(fontSize: 24),
+                  style: TextStyle(fontSize: 24 * scaleFactor),
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4 * scaleFactor),
               // Player name and points (revealed or hidden)
               SizedBox(
-                height: 32, // Fixed height to prevent layout shift
+                height: 32 * scaleFactor, // Fixed height to prevent layout shift
                 child: Stack(
                   children: [
                     // Revealed content
@@ -361,16 +370,16 @@ class _TournamentCompletionScreenState
                         children: [
                           Text(
                             standing.player.name,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              fontSize: 12,
+                              fontSize: 12 * scaleFactor,
                             ),
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
                             '${standing.totalPoints} pt',
-                            style: const TextStyle(fontSize: 11),
+                            style: TextStyle(fontSize: 11 * scaleFactor),
                           ),
                         ],
                       ),
@@ -383,37 +392,37 @@ class _TournamentCompletionScreenState
                             '???',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              fontSize: 12,
+                              fontSize: 12 * scaleFactor,
                               color: Colors.grey[600],
                             ),
                             textAlign: TextAlign.center,
                           ),
                           Text(
                             '? pt',
-                            style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                            style: TextStyle(fontSize: 11 * scaleFactor, color: Colors.grey[600]),
                           ),
                         ],
                       ),
                   ],
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4 * scaleFactor),
               Container(
-                width: 80,
+                width: 80 * scaleFactor,
                 height: height,
                 decoration: BoxDecoration(
                   color: color,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(8),
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(8 * scaleFactor),
                   ),
                 ),
                 alignment: Alignment.topCenter,
-                padding: const EdgeInsets.all(8),
+                padding: EdgeInsets.all(8 * scaleFactor),
                 child: Text(
                   '$place',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 32,
+                    fontSize: 32 * scaleFactor,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -433,12 +442,12 @@ class _TournamentCompletionScreenState
                 child: Container(
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: .95),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(8 * scaleFactor),
                   ),
                   child: Center(
                     child: Text(
                       place == 1 ? '🥇' : place == 2 ? '🥈' : '🥉',
-                      style: const TextStyle(fontSize: 48),
+                      style: TextStyle(fontSize: 48 * scaleFactor),
                     ),
                   ),
                 ),
@@ -531,35 +540,7 @@ class _TournamentCompletionScreenState
   }
   
   Widget _buildLeaderboardTile(PlayerStanding s) {
-    // Top 3 are always shown (revealed in podium)
-    if (s.rank <= 3) {
-      return ListTile(
-        dense: true,
-        leading: CircleAvatar(
-          backgroundColor: _getRankColor(s.rank),
-          child: Text(
-            '${s.rank}',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        title: Text(s.player.name),
-        subtitle: Text(
-          '${s.wins}W-${s.losses}L • ${s.matchesPlayed} kampe',
-        ),
-        trailing: Text(
-          '${s.totalPoints}',
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      );
-    }
-    
-    // Other positions are hidden until revealed
+    // All positions are hidden until revealed (including top 3)
     final isRevealed = _showAllPositions || _revealedPositions.contains(s.rank);
     
     return InkWell(
