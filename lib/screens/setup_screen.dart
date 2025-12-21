@@ -266,146 +266,158 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
             ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Player registration section
-            Text(
-              'Spillere (${_players.length}/${Constants.maxPlayers})',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _playerNameController,
-                    focusNode: _playerNameFocusNode,
-                    decoration: const InputDecoration(
-                      labelText: 'Spiller navn',
-                      suffixIcon: Icon(Icons.person_add),
-                      border: OutlineInputBorder(),
-                    ),
-                    onSubmitted: (_) => _addPlayer(),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Player registration section
+                  Text(
+                    'Spillere (${_players.length}/${Constants.maxPlayers})',
+                    style: Theme.of(context).textTheme.titleLarge,
                   ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: _addPlayer,
-                  child: const Text('Tilføj'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Player list
-            Expanded(
-              child: _players.isEmpty
-                  ? Center(
-                      child: Text(
-                        'Ingen spillere tilføjet endnu.\nTilføj mindst 4 spillere for at starte.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey[600]),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _playerNameController,
+                          focusNode: _playerNameFocusNode,
+                          decoration: const InputDecoration(
+                            labelText: 'Spiller navn',
+                            suffixIcon: Icon(Icons.person_add),
+                            border: OutlineInputBorder(),
+                          ),
+                          onSubmitted: (_) => _addPlayer(),
+                        ),
                       ),
-                    )
-                  : ListView.builder(
-                      itemCount: _players.length,
-                      itemBuilder: (context, index) {
-                        return Card(
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              child: Text('${index + 1}'),
-                            ),
-                            title: Text(_players[index].name),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete),
-                              onPressed: () => _removePlayer(index),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: _addPlayer,
+                        child: const Text('Tilføj'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Player list
+                  _players.isEmpty
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 32),
+                            child: Text(
+                              'Ingen spillere tilføjet endnu.\nTilføj mindst 4 spillere for at starte.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.grey[600]),
                             ),
                           ),
-                        );
-                      },
-                    ),
-            ),
+                        )
+                      : ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _players.length,
+                          itemBuilder: (context, index) {
+                            return Card(
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  child: Text('${index + 1}'),
+                                ),
+                                title: Text(_players[index].name),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.delete),
+                                  onPressed: () => _removePlayer(index),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
 
-            const Divider(height: 32),
+                  const Divider(height: 32),
 
-            // Court registration section
-            Text(
-              'Baner',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            AnimatedBuilder(
-              animation: _animationController,
-              builder: (context, child) {
-                // Create a pulsing highlight effect
-                final highlightColor = _isCourtCountAnimating
-                    ? Color.lerp(
-                        Colors.transparent,
-                        Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                        (1 - (_animationController.value - 0.5).abs() * 2).clamp(0.0, 1.0),
-                      )
-                    : Colors.transparent;
-
-                return Container(
-                  decoration: BoxDecoration(
-                    color: highlightColor,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: child,
-                );
-              },
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.remove),
-                    onPressed: _courtCount > Constants.minCourts
-                        ? () {
-                            setState(() => _courtCount--);
-                            // Save state in background - don't await to keep UI responsive
-                            unawaited(_saveState());
-                          }
-                        : null,
-                  ),
+                  // Court registration section
                   Text(
-                    '$_courtCount ${_courtCount == 1 ? 'bane' : 'baner'}',
-                    style: Theme.of(context).textTheme.titleMedium,
+                    'Baner',
+                    style: Theme.of(context).textTheme.titleLarge,
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.add),
-                    onPressed: _courtCount < Constants.maxCourts
-                        ? () {
-                            setState(() => _courtCount++);
-                            // Save state in background - don't await to keep UI responsive
-                            unawaited(_saveState());
-                          }
-                        : null,
+                  const SizedBox(height: 8),
+                  AnimatedBuilder(
+                    animation: _animationController,
+                    builder: (context, child) {
+                      // Create a pulsing highlight effect
+                      final highlightColor = _isCourtCountAnimating
+                          ? Color.lerp(
+                              Colors.transparent,
+                              Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                              (1 - (_animationController.value - 0.5).abs() * 2).clamp(0.0, 1.0),
+                            )
+                          : Colors.transparent;
+
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: highlightColor,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: child,
+                      );
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.remove),
+                          onPressed: _courtCount > Constants.minCourts
+                              ? () {
+                                  setState(() => _courtCount--);
+                                  // Save state in background - don't await to keep UI responsive
+                                  unawaited(_saveState());
+                                }
+                              : null,
+                        ),
+                        Text(
+                          '$_courtCount ${_courtCount == 1 ? 'bane' : 'baner'}',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.add),
+                          onPressed: _courtCount < Constants.maxCourts
+                              ? () {
+                                  setState(() => _courtCount++);
+                                  // Save state in background - don't await to keep UI responsive
+                                  unawaited(_saveState());
+                                }
+                              : null,
+                        ),
+                      ],
+                    ),
                   ),
+
+                  const SizedBox(height: 16),
+
+                  // Tournament Settings section
+                  TournamentSettingsWidget(
+                    initialSettings: _tournamentSettings,
+                    onSettingsChanged: (settings) {
+                      setState(() {
+                        _tournamentSettings = settings;
+                      });
+                    },
+                    enabled: true,
+                  ),
+
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
-
-            const SizedBox(height: 16),
-
-            // Tournament Settings section
-            TournamentSettingsWidget(
-              initialSettings: _tournamentSettings,
-              onSettingsChanged: (settings) {
-                setState(() {
-                  _tournamentSettings = settings;
-                });
-              },
-              enabled: true,
-            ),
-
-            const SizedBox(height: 16),
-
-            // Generate button
-            SizedBox(
+          ),
+          
+          // Generate button - fixed at bottom
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: SizedBox(
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
@@ -420,8 +432,8 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

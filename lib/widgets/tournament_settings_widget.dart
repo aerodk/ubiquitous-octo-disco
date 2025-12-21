@@ -38,22 +38,6 @@ class _TournamentSettingsWidgetState extends State<TournamentSettingsWidget> {
     widget.onSettingsChanged(newSettings);
   }
 
-  void _incrementRounds() {
-    if (_currentSettings.minRoundsBeforeFinal < 10) {
-      _updateSettings(_currentSettings.copyWith(
-        minRoundsBeforeFinal: _currentSettings.minRoundsBeforeFinal + 1,
-      ));
-    }
-  }
-
-  void _decrementRounds() {
-    if (_currentSettings.minRoundsBeforeFinal > 2) {
-      _updateSettings(_currentSettings.copyWith(
-        minRoundsBeforeFinal: _currentSettings.minRoundsBeforeFinal - 1,
-      ));
-    }
-  }
-
   String _getStrategyTitle(PairingStrategy strategy) {
     switch (strategy) {
       case PairingStrategy.balanced:
@@ -106,11 +90,6 @@ class _TournamentSettingsWidgetState extends State<TournamentSettingsWidget> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Minimum Rounds Setting
-                _buildMinimumRoundsSection(theme),
-                
-                const Divider(height: 32),
-                
                 // Points Per Match Setting
                 _buildPointsPerMatchSection(theme),
                 
@@ -123,73 +102,6 @@ class _TournamentSettingsWidgetState extends State<TournamentSettingsWidget> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildMinimumRoundsSection(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Minimum Runder Før Sidste Runde',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Antal runder der skal spilles før sidste runde kan startes. Standard er 3 runder.',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: Colors.grey[600],
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.remove_circle_outline),
-              onPressed: widget.enabled && _currentSettings.minRoundsBeforeFinal > 2
-                  ? _decrementRounds
-                  : null,
-              tooltip: 'Reducer minimum runder',
-            ),
-            Container(
-              width: 60,
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-              decoration: BoxDecoration(
-                border: Border.all(color: theme.colorScheme.primary),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                '${_currentSettings.minRoundsBeforeFinal}',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.add_circle_outline),
-              onPressed: widget.enabled && _currentSettings.minRoundsBeforeFinal < 10
-                  ? _incrementRounds
-                  : null,
-              tooltip: 'Øg minimum runder',
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Center(
-          child: Text(
-            'Range: 2-10 runder',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: Colors.grey[500],
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-        ),
-      ],
     );
   }
 

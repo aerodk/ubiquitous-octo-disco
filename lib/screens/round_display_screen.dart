@@ -135,6 +135,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       courts: _tournament.courts,
       rounds: _tournament.rounds.sublist(0, _tournament.rounds.length - 1),
       createdAt: _tournament.createdAt,
+      settings: _tournament.settings,
     );
     
     Navigator.pushReplacement(
@@ -178,6 +179,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       courts: _tournament.courts,
       rounds: [..._tournament.rounds, updatedRound],
       createdAt: _tournament.createdAt,
+      settings: _tournament.settings,
     );
     
     Navigator.push(
@@ -240,6 +242,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       courts: _tournament.courts,
       rounds: [..._tournament.rounds, finalRound],
       createdAt: _tournament.createdAt,
+      settings: _tournament.settings,
     );
     
     if (mounted) {
