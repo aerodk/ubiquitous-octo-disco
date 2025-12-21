@@ -55,31 +55,28 @@ void main() {
     });
 
     test('isCustomized returns true when any setting differs from default', () {
-      const settings1 = TournamentSettings(minRoundsBeforeFinal: 5);
+      const settings1 = TournamentSettings(pointsPerMatch: 30);
       expect(settings1.isCustomized, true);
       
-      const settings2 = TournamentSettings(pointsPerMatch: 30);
+      const settings2 = TournamentSettings(finalRoundStrategy: PairingStrategy.topAlliance);
       expect(settings2.isCustomized, true);
-      
-      const settings3 = TournamentSettings(finalRoundStrategy: PairingStrategy.topAlliance);
-      expect(settings3.isCustomized, true);
     });
 
     test('summary returns correctly formatted string', () {
       const settings1 = TournamentSettings();
-      expect(settings1.summary, '3 runder • 24 point • Balanced');
+      expect(settings1.summary, '24 point • Balanced');
       
       const settings2 = TournamentSettings(
         minRoundsBeforeFinal: 5,
         pointsPerMatch: 30,
         finalRoundStrategy: PairingStrategy.topAlliance,
       );
-      expect(settings2.summary, '5 runder • 30 point • Top Alliance');
+      expect(settings2.summary, '30 point • Top Alliance');
       
       const settings3 = TournamentSettings(
         finalRoundStrategy: PairingStrategy.maxCompetition,
       );
-      expect(settings3.summary, '3 runder • 24 point • Max Competition');
+      expect(settings3.summary, '24 point • Max Competition');
     });
 
     test('isValid returns true for valid settings', () {
