@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
-import 'dart:html' as html;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:convert';
 import '../models/player_standing.dart';
 import '../models/tournament.dart';
 import '../services/export_service.dart';
+
+// Conditional import for web vs non-web platforms
+import '../utils/html_stub.dart'
+    if (dart.library.html) 'dart:html' as html;
 
 /// Reusable widget to display export options and handle export operations
 class ExportDialog extends StatefulWidget {
@@ -76,7 +80,21 @@ class _ExportDialogState extends State<ExportDialog> {
   }
 
   void _downloadFile(String content, String fileName, String mimeType) {
-    // Create a blob from the content
+    if (!kIsWeb) {
+      // For mobile platforms, this would need platform-specific implementation
+      // For now, show a message that export is only available on web
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Eksport er kun tilgængelig på web-versionen'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Web-specific download implementation
     final bytes = utf8.encode(content);
     final blob = html.Blob([bytes], mimeType);
     final url = html.Url.createObjectUrlFromBlob(blob);
