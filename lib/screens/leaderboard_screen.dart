@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/tournament.dart';
 import '../models/player_standing.dart';
 import '../services/standings_service.dart';
+import '../widgets/export_dialog.dart';
 
 /// F-007: Live Leaderboard
 /// Displays live tournament standings with detailed player statistics.
@@ -30,6 +31,24 @@ class LeaderboardScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Leaderboard'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          // Only show export if there are matches played
+          if (hasMatches) ...[
+            IconButton(
+              icon: const Icon(Icons.file_download),
+              tooltip: 'Eksporter Resultater',
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => ExportDialog(
+                    standings: standings,
+                    tournament: tournament,
+                  ),
+                );
+              },
+            ),
+          ],
+        ],
       ),
       body: !hasMatches
           ? const Center(
