@@ -253,7 +253,7 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Opsætning af Turnering'),
+        title: const Text('Opsætning af turnering'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         automaticallyImplyLeading: false, // Remove back button
         actions: [

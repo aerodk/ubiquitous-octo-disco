@@ -7,16 +7,31 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:star_cano/main.dart';
 
+// Helper to build app and allow async init/state restoration to complete without hanging on infinite animations
+Future<void> pumpApp(WidgetTester tester) async {
+  await tester.pumpWidget(const PadelTournamentApp());
+  // Kick off async init
+  await tester.pump();
+  // Wait for navigation away from the loading indicator
+  await tester.pumpAndSettle();
+}
+
 void main() {
+  setUp(() {
+    // Ensure clean in-memory prefs for each test run
+    SharedPreferences.setMockInitialValues({});
+  });
+
   testWidgets('Padel tournament app loads setup screen', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const PadelTournamentApp());
+    await pumpApp(tester);
 
     // Verify that the setup screen is loaded
-    expect(find.text('Opsætning af Turnering'), findsOneWidget);
+    expect(find.text('Opsætning af turnering'), findsOneWidget);
     expect(find.text('Spillere (0/24)'), findsOneWidget);
     expect(find.text('Baner'), findsOneWidget);
     expect(find.text('Generer Første Runde'), findsOneWidget);
@@ -24,7 +39,7 @@ void main() {
 
   testWidgets('Setup screen allows adding players', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const PadelTournamentApp());
+    await pumpApp(tester);
 
     // Find the text field and enter a player name
     await tester.enterText(find.byType(TextField), 'Test Player');
@@ -40,7 +55,7 @@ void main() {
 
   testWidgets('TextField gets focus after adding a player', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const PadelTournamentApp());
+    await pumpApp(tester);
 
     // Find the text field
     final textField = find.byType(TextField);
@@ -66,7 +81,7 @@ void main() {
 
   testWidgets('Setup screen prevents empty player names', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const PadelTournamentApp());
+    await pumpApp(tester);
 
     // Try to add an empty name
     await tester.tap(find.text('Tilføj'));
@@ -78,7 +93,7 @@ void main() {
 
   testWidgets('Setup screen prevents duplicate player names', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const PadelTournamentApp());
+    await pumpApp(tester);
 
     // Add first player
     await tester.enterText(find.byType(TextField), 'Test Player');
@@ -96,7 +111,7 @@ void main() {
 
   testWidgets('Setup screen allows adjusting court count', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const PadelTournamentApp());
+    await pumpApp(tester);
 
     // Initial court count should be 1
     expect(find.text('1 bane'), findsOneWidget);
@@ -111,7 +126,7 @@ void main() {
 
   testWidgets('Court count automatically adjusts when adding players', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const PadelTournamentApp());
+    await pumpApp(tester);
 
     // Initial court count should be 1
     expect(find.text('1 bane'), findsOneWidget);
@@ -163,7 +178,7 @@ void main() {
 
   testWidgets('Court count automatically adjusts when removing players', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const PadelTournamentApp());
+    await pumpApp(tester);
 
     // Add 12 players to get 3 courts
     for (int i = 1; i <= 12; i++) {
@@ -197,11 +212,12 @@ void main() {
 
   testWidgets('Manual court adjustment still works despite auto-adjustment', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const PadelTournamentApp());
+    await pumpApp(tester);
 
     // Add 4 players (auto-suggests 1 court)
     for (int i = 1; i <= 4; i++) {
       await tester.enterText(find.byType(TextField), 'Player $i');
+      await tester.ensureVisible(find.text('Tilføj'));
       await tester.tap(find.text('Tilføj'));
       await tester.pump();
     }
@@ -209,13 +225,16 @@ void main() {
     expect(find.text('1 bane'), findsOneWidget);
     
     // Manually increase court count
+    await tester.ensureVisible(find.byIcon(Icons.add).last);
     await tester.tap(find.byIcon(Icons.add).last);
     await tester.pump();
     
     expect(find.text('2 baner'), findsOneWidget);
     
     // Add another player - auto-adjustment should still kick in
+    await tester.ensureVisible(find.byType(TextField));
     await tester.enterText(find.byType(TextField), 'Player 5');
+    await tester.ensureVisible(find.text('Tilføj'));
     await tester.tap(find.text('Tilføj'));
     await tester.pump();
     
@@ -223,6 +242,7 @@ void main() {
     expect(find.text('1 bane'), findsOneWidget);
     
     // Manually increase court count again
+    await tester.ensureVisible(find.byIcon(Icons.add).last);
     await tester.tap(find.byIcon(Icons.add).last);
     await tester.pump();
     
@@ -230,7 +250,9 @@ void main() {
     
     // Add more players to 8 total - auto-adjustment should kick in
     for (int i = 6; i <= 8; i++) {
+      await tester.ensureVisible(find.byType(TextField));
       await tester.enterText(find.byType(TextField), 'Player $i');
+      await tester.ensureVisible(find.text('Tilføj'));
       await tester.tap(find.text('Tilføj'));
       await tester.pump();
     }
@@ -239,6 +261,7 @@ void main() {
     expect(find.text('2 baner'), findsOneWidget);
     
     // Manually decrease court count
+    await tester.ensureVisible(find.byIcon(Icons.remove).last);
     await tester.tap(find.byIcon(Icons.remove).last);
     await tester.pump();
     

@@ -110,8 +110,8 @@ void main() {
         // Should still have headers
         expect(csvData, contains('Rank'));
         
-        // Should not have player data
-        expect(csvData.split('\n').length, equals(2)); // Header + empty line
+        // Should only have header (no empty line at end)
+        expect(csvData.split('\n').length, equals(1)); // Header only
       });
 
       test('should calculate win rate correctly', () {
@@ -208,7 +208,7 @@ void main() {
           format: ExportFormat.csv,
         );
 
-        expect(fileName, contains('Test Tournament'));
+        expect(fileName, contains('Test_Tournament'));
         expect(fileName, endsWith('.csv'));
         expect(fileName, matches(RegExp(r'\d{4}-\d{2}-\d{2}')));
       });
@@ -219,7 +219,7 @@ void main() {
           format: ExportFormat.json,
         );
 
-        expect(fileName, contains('Test Tournament'));
+        expect(fileName, contains('Test_Tournament'));
         expect(fileName, endsWith('.json'));
       });
 

@@ -105,10 +105,12 @@ void main() {
       );
 
       // Should have a back button
-      expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+      expect(find.widgetWithIcon(IconButton, Icons.arrow_back), findsOneWidget);
       
       // Back button should be enabled (not null onPressed)
-      final IconButton backButton = tester.widget(find.byIcon(Icons.arrow_back).first);
+      final IconButton backButton = tester.widget(
+        find.widgetWithIcon(IconButton, Icons.arrow_back).first,
+      );
       expect(backButton.onPressed, isNotNull);
     });
 
@@ -124,10 +126,12 @@ void main() {
       );
 
       // Should have a back button
-      expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+      expect(find.widgetWithIcon(IconButton, Icons.arrow_back), findsOneWidget);
       
       // Back button should be disabled (null onPressed)
-      final IconButton backButton = tester.widget(find.byIcon(Icons.arrow_back).first);
+      final IconButton backButton = tester.widget(
+        find.widgetWithIcon(IconButton, Icons.arrow_back).first,
+      );
       expect(backButton.onPressed, isNull);
     });
 
@@ -151,10 +155,12 @@ void main() {
       );
 
       // Should have a back button
-      expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+      expect(find.widgetWithIcon(IconButton, Icons.arrow_back), findsOneWidget);
       
       // Back button should be enabled (not null onPressed)
-      final IconButton backButton = tester.widget(find.byIcon(Icons.arrow_back).first);
+      final IconButton backButton = tester.widget(
+        find.widgetWithIcon(IconButton, Icons.arrow_back).first,
+      );
       expect(backButton.onPressed, isNotNull);
     });
 
@@ -170,10 +176,12 @@ void main() {
       );
 
       // Should have a back button
-      expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+      expect(find.widgetWithIcon(IconButton, Icons.arrow_back), findsOneWidget);
       
       // Back button should be disabled (null onPressed)
-      final IconButton backButton = tester.widget(find.byIcon(Icons.arrow_back).first);
+      final IconButton backButton = tester.widget(
+        find.widgetWithIcon(IconButton, Icons.arrow_back).first,
+      );
       expect(backButton.onPressed, isNull);
     });
 
@@ -219,10 +227,12 @@ void main() {
       );
 
       // Should have a back button
-      expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+      expect(find.widgetWithIcon(IconButton, Icons.arrow_back), findsOneWidget);
       
       // Back button should be disabled (null onPressed) even with partial score
-      final IconButton backButton = tester.widget(find.byIcon(Icons.arrow_back).first);
+      final IconButton backButton = tester.widget(
+        find.widgetWithIcon(IconButton, Icons.arrow_back).first,
+      );
       expect(backButton.onPressed, isNull);
     });
 
