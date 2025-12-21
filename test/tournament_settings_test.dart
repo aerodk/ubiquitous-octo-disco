@@ -18,6 +18,7 @@ void main() {
       expect(settings.minRoundsBeforeFinal, 3);
       expect(settings.pointsPerMatch, 24);
       expect(settings.finalRoundStrategy, PairingStrategy.balanced);
+      expect(settings.pausePointsAwarded, 12);
     });
 
     test('constructor accepts custom values', () {
@@ -25,11 +26,13 @@ void main() {
         minRoundsBeforeFinal: 5,
         pointsPerMatch: 30,
         finalRoundStrategy: PairingStrategy.topAlliance,
+        pausePointsAwarded: 0,
       );
       
       expect(settings.minRoundsBeforeFinal, 5);
       expect(settings.pointsPerMatch, 30);
       expect(settings.finalRoundStrategy, PairingStrategy.topAlliance);
+      expect(settings.pausePointsAwarded, 0);
     });
 
     test('copyWith creates new instance with updated values', () {
@@ -60,23 +63,27 @@ void main() {
       
       const settings2 = TournamentSettings(finalRoundStrategy: PairingStrategy.topAlliance);
       expect(settings2.isCustomized, true);
+      
+      const settings3 = TournamentSettings(pausePointsAwarded: 0);
+      expect(settings3.isCustomized, true);
     });
 
     test('summary returns correctly formatted string', () {
       const settings1 = TournamentSettings();
-      expect(settings1.summary, '24 point • Balanced');
+      expect(settings1.summary, '24 point • Balanced • Pause: 12 pt');
       
       const settings2 = TournamentSettings(
         minRoundsBeforeFinal: 5,
         pointsPerMatch: 30,
         finalRoundStrategy: PairingStrategy.topAlliance,
+        pausePointsAwarded: 0,
       );
-      expect(settings2.summary, '30 point • Top Alliance');
+      expect(settings2.summary, '30 point • Top Alliance • Pause: 0 pt');
       
       const settings3 = TournamentSettings(
         finalRoundStrategy: PairingStrategy.maxCompetition,
       );
-      expect(settings3.summary, '24 point • Max Competition');
+      expect(settings3.summary, '24 point • Max Competition • Pause: 12 pt');
     });
 
     test('isValid returns true for valid settings', () {
@@ -118,11 +125,32 @@ void main() {
       expect(settings3.isValid(), false);
     });
 
+    test('isValid returns false for invalid pausePointsAwarded', () {
+      // Only 0 or 12 are valid
+      const settings1 = TournamentSettings(pausePointsAwarded: 6);
+      expect(settings1.isValid(), false);
+      
+      const settings2 = TournamentSettings(pausePointsAwarded: 24);
+      expect(settings2.isValid(), false);
+      
+      const settings3 = TournamentSettings(pausePointsAwarded: -1);
+      expect(settings3.isValid(), false);
+    });
+
+    test('isValid returns true for valid pausePointsAwarded', () {
+      const settings1 = TournamentSettings(pausePointsAwarded: 0);
+      expect(settings1.isValid(), true);
+      
+      const settings2 = TournamentSettings(pausePointsAwarded: 12);
+      expect(settings2.isValid(), true);
+    });
+
     test('toJson serializes correctly', () {
       const settings = TournamentSettings(
         minRoundsBeforeFinal: 5,
         pointsPerMatch: 30,
         finalRoundStrategy: PairingStrategy.maxCompetition,
+        pausePointsAwarded: 0,
       );
       
       final json = settings.toJson();
@@ -130,6 +158,7 @@ void main() {
       expect(json['minRoundsBeforeFinal'], 5);
       expect(json['pointsPerMatch'], 30);
       expect(json['finalRoundStrategy'], 'maxCompetition');
+      expect(json['pausePointsAwarded'], 0);
     });
 
     test('fromJson deserializes correctly', () {
@@ -137,6 +166,7 @@ void main() {
         'minRoundsBeforeFinal': 5,
         'pointsPerMatch': 30,
         'finalRoundStrategy': 'topAlliance',
+        'pausePointsAwarded': 0,
       };
       
       final settings = TournamentSettings.fromJson(json);
@@ -144,6 +174,7 @@ void main() {
       expect(settings.minRoundsBeforeFinal, 5);
       expect(settings.pointsPerMatch, 30);
       expect(settings.finalRoundStrategy, PairingStrategy.topAlliance);
+      expect(settings.pausePointsAwarded, 0);
     });
 
     test('fromJson uses defaults for missing fields', () {
@@ -154,6 +185,7 @@ void main() {
       expect(settings.minRoundsBeforeFinal, 3);
       expect(settings.pointsPerMatch, 24);
       expect(settings.finalRoundStrategy, PairingStrategy.balanced);
+      expect(settings.pausePointsAwarded, 12);
     });
 
     test('fromJson handles invalid strategy gracefully', () {
@@ -172,22 +204,33 @@ void main() {
         minRoundsBeforeFinal: 5,
         pointsPerMatch: 30,
         finalRoundStrategy: PairingStrategy.topAlliance,
+        pausePointsAwarded: 0,
       );
       
       const settings2 = TournamentSettings(
         minRoundsBeforeFinal: 5,
         pointsPerMatch: 30,
         finalRoundStrategy: PairingStrategy.topAlliance,
+        pausePointsAwarded: 0,
       );
       
       const settings3 = TournamentSettings(
         minRoundsBeforeFinal: 5,
         pointsPerMatch: 24, // Different
         finalRoundStrategy: PairingStrategy.topAlliance,
+        pausePointsAwarded: 0,
+      );
+      
+      const settings4 = TournamentSettings(
+        minRoundsBeforeFinal: 5,
+        pointsPerMatch: 30,
+        finalRoundStrategy: PairingStrategy.topAlliance,
+        pausePointsAwarded: 12, // Different
       );
       
       expect(settings1, settings2);
       expect(settings1 == settings3, false);
+      expect(settings1 == settings4, false);
     });
 
     test('hashCode is consistent', () {
@@ -211,6 +254,7 @@ void main() {
         minRoundsBeforeFinal: 7,
         pointsPerMatch: 28,
         finalRoundStrategy: PairingStrategy.maxCompetition,
+        pausePointsAwarded: 0,
       );
       
       final json = original.toJson();

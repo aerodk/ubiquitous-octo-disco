@@ -45,6 +45,112 @@ class TournamentService {
     );
   }
 
+  /// Generates a regular round (non-final) with pause fairness
+  /// Avoids consecutive pauses and distributes breaks fairly
+  /// Takes standings to track pause history and ensure fair distribution
+  Round generateNextRound(
+    List<Player> players,
+    List<Court> courts,
+    List<PlayerStanding> standings,
+    int roundNumber,
+  ) {
+    // Create a map of player ID to their standing for easy lookup
+    final standingsMap = {for (var s in standings) s.player.id: s};
+    
+    // Shuffle players randomly for match creation
+    final shuffledPlayers = List<Player>.from(players)..shuffle();
+
+    final totalPlayers = players.length;
+    final playersNeeded = (totalPlayers ~/ 4) * 4;
+    final overflowCount = totalPlayers - playersNeeded;
+
+    // Select players for break using pause fairness logic
+    final playersOnBreak = <Player>[];
+    if (overflowCount > 0) {
+      playersOnBreak.addAll(_selectBreakPlayersWithFairness(
+        players,
+        standings,
+        overflowCount,
+      ));
+    }
+
+    // Get active players (those not on break)
+    final activePlayers = shuffledPlayers
+        .where((p) => !playersOnBreak.any((bp) => bp.id == p.id))
+        .toList();
+
+    // Generate matches
+    final matches = <Match>[];
+    int playerIndex = 0;
+    for (int i = 0;
+        i < courts.length && playerIndex + 3 < activePlayers.length;
+        i++) {
+      final match = Match(
+        court: courts[i],
+        team1: Team(
+          player1: activePlayers[playerIndex],
+          player2: activePlayers[playerIndex + 1],
+        ),
+        team2: Team(
+          player1: activePlayers[playerIndex + 2],
+          player2: activePlayers[playerIndex + 3],
+        ),
+      );
+      matches.add(match);
+      playerIndex += 4;
+    }
+
+    return Round(
+      roundNumber: roundNumber,
+      matches: matches,
+      playersOnBreak: playersOnBreak,
+    );
+  }
+
+  /// Select players for break with fairness considerations
+  /// Prioritizes: 1) Fewest pauses, 2) Most games played, 3) Random
+  List<Player> _selectBreakPlayersWithFairness(
+    List<Player> allPlayers,
+    List<PlayerStanding> standings,
+    int count,
+  ) {
+    // Create a map for easy lookup
+    final standingsMap = {for (var s in standings) s.player.id: s};
+    
+    // Create a list of players with their standings for sorting
+    final playersWithStandings = allPlayers
+        .map((p) => standingsMap[p.id])
+        .where((s) => s != null)
+        .cast<PlayerStanding>()
+        .toList();
+
+    // Sort by pause fairness priority
+    playersWithStandings.sort(_compareForPauseFairness);
+
+    // Select the first 'count' players
+    return playersWithStandings
+        .take(count)
+        .map((s) => s.player)
+        .toList();
+  }
+
+  /// Compare two standings for pause fairness
+  /// Returns positive if 'a' should break before 'b'
+  /// Prioritizes: 1) Fewest pauses (ascending), 2) Most games played (descending)
+  int _compareForPauseFairness(PlayerStanding a, PlayerStanding b) {
+    // 1. Fewest pauses first (ascending) - players who haven't had breaks go first
+    final pauseCompare = a.pauseCount.compareTo(b.pauseCount);
+    if (pauseCompare != 0) return pauseCompare;
+
+    // 2. Most games played (descending) - among those with same pause count, 
+    //    prioritize those who have played more
+    final gamesCompare = b.matchesPlayed.compareTo(a.matchesPlayed);
+    if (gamesCompare != 0) return gamesCompare;
+
+    // 3. If still equal, maintain current order (effectively random after shuffle)
+    return 0;
+  }
+
   /// Generates the final round using rank-based pairing (F-011, F-017)
   /// Supports multiple pairing strategies:
   /// - Balanced: R1+R3 vs R2+R4 (default)

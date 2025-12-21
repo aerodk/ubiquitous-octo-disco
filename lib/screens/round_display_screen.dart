@@ -158,18 +158,18 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       return;
     }
     
-    // Simple next round generation (random for now, Version 2.0 will use Americano algorithm)
+    // Generate next round with pause fairness
     final nextRoundNumber = _tournament.rounds.length + 1;
-    final nextRound = _tournamentService.generateFirstRound(
+    
+    // Calculate current standings to track pause history
+    final standings = _standingsService.calculateStandings(_tournament);
+    
+    // Generate next round with pause fairness logic
+    final nextRound = _tournamentService.generateNextRound(
       _tournament.players,
       _tournament.courts,
-    );
-    
-    // Update round number
-    final updatedRound = Round(
-      roundNumber: nextRoundNumber,
-      matches: nextRound.matches,
-      playersOnBreak: nextRound.playersOnBreak,
+      standings,
+      nextRoundNumber,
     );
     
     final updatedTournament = Tournament(
@@ -177,7 +177,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       name: _tournament.name,
       players: _tournament.players,
       courts: _tournament.courts,
-      rounds: [..._tournament.rounds, updatedRound],
+      rounds: [..._tournament.rounds, nextRound],
       createdAt: _tournament.createdAt,
       settings: _tournament.settings,
     );
