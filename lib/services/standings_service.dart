@@ -21,10 +21,13 @@ class StandingsService {
         _processMatch(match, standings);
       }
       
-      // Award 12 points to players on break (only for completed rounds)
+      // Award points to players on break based on tournament settings (only for completed rounds)
       if (round.isCompleted) {
         for (final player in round.playersOnBreak) {
-          standings[player.id] = _awardBreakPoints(standings[player.id]!);
+          standings[player.id] = _awardBreakPoints(
+            standings[player.id]!,
+            tournament.settings.pausePointsAwarded,
+          );
         }
       }
     }
@@ -76,13 +79,13 @@ class StandingsService {
     );
   }
 
-  /// Award 12 points to a player on break
+  /// Award points to a player on break
   /// Returns a new PlayerStanding with updated points and incremented pause count
   /// Note: pauseCount tracks cumulative breaks throughout tournament and never decrements
-  PlayerStanding _awardBreakPoints(PlayerStanding standing) {
+  PlayerStanding _awardBreakPoints(PlayerStanding standing, int points) {
     return PlayerStanding(
       player: standing.player,
-      totalPoints: standing.totalPoints + 12,
+      totalPoints: standing.totalPoints + points,
       wins: standing.wins,
       losses: standing.losses,
       matchesPlayed: standing.matchesPlayed,

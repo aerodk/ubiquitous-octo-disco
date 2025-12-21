@@ -4,6 +4,7 @@ import 'package:star_cano/models/court.dart';
 import 'package:star_cano/models/match.dart';
 import 'package:star_cano/models/round.dart';
 import 'package:star_cano/models/tournament.dart';
+import 'package:star_cano/models/tournament_settings.dart';
 import 'package:star_cano/models/player_standing.dart';
 import 'package:star_cano/services/standings_service.dart';
 
@@ -730,6 +731,110 @@ void main() {
 
       // E: 12 (break in round1) + 0 (match2 incomplete, no points) = 12 points
       expect(standingE.totalPoints, 12);
+    });
+
+    test('should award 0 points to players on break when pausePointsAwarded is 0', () {
+      final playerA = Player(id: 'A', name: 'Player A');
+      final playerB = Player(id: 'B', name: 'Player B');
+      final playerC = Player(id: 'C', name: 'Player C');
+      final playerD = Player(id: 'D', name: 'Player D');
+      final playerE = Player(id: 'E', name: 'Player E');
+
+      final court = Court(id: '1', name: 'Bane 1');
+
+      // Match 1: A+B (20) vs C+D (10), E on break
+      final match1 = Match(
+        court: court,
+        team1: Team(player1: playerA, player2: playerB),
+        team2: Team(player1: playerC, player2: playerD),
+        team1Score: 20,
+        team2Score: 10,
+      );
+
+      final round1 = Round(
+        roundNumber: 1,
+        matches: [match1],
+        playersOnBreak: [playerE],
+      );
+
+      // Match 2: A+E (15) vs C+D (18), B on break
+      final match2 = Match(
+        court: court,
+        team1: Team(player1: playerA, player2: playerE),
+        team2: Team(player1: playerC, player2: playerD),
+        team1Score: 15,
+        team2Score: 18,
+      );
+
+      final round2 = Round(
+        roundNumber: 2,
+        matches: [match2],
+        playersOnBreak: [playerB],
+      );
+
+      final tournament = Tournament(
+        name: 'Test',
+        players: [playerA, playerB, playerC, playerD, playerE],
+        courts: [court],
+        rounds: [round1, round2],
+        settings: const TournamentSettings(pausePointsAwarded: 0),
+      );
+
+      final standings = service.calculateStandings(tournament);
+
+      final standingA = standings.firstWhere((s) => s.player.id == 'A');
+      final standingB = standings.firstWhere((s) => s.player.id == 'B');
+      final standingC = standings.firstWhere((s) => s.player.id == 'C');
+      final standingD = standings.firstWhere((s) => s.player.id == 'D');
+      final standingE = standings.firstWhere((s) => s.player.id == 'E');
+
+      // A: 20 (match1) + 15 (match2) = 35 points
+      expect(standingA.totalPoints, 35);
+
+      // B: 20 (match1) + 0 (break in round2, no points) = 20 points
+      expect(standingB.totalPoints, 20);
+
+      // C: 10 (match1) + 18 (match2) = 28 points
+      expect(standingC.totalPoints, 28);
+
+      // D: 10 (match1) + 18 (match2) = 28 points
+      expect(standingD.totalPoints, 28);
+
+      // E: 0 (break in round1, no points) + 15 (match2) = 15 points
+      expect(standingE.totalPoints, 15);
+      
+      // Verify pause counts are still tracked
+      expect(standingB.pauseCount, 1);
+      expect(standingE.pauseCount, 1);
+    });
+
+    test('should award 12 points to players on break when pausePointsAwarded is 12 (default)', () {
+      final playerA = Player(id: 'A', name: 'Player A');
+      final playerE = Player(id: 'E', name: 'Player E');
+
+      final court = Court(id: '1', name: 'Bane 1');
+
+      final round1 = Round(
+        roundNumber: 1,
+        matches: [],
+        playersOnBreak: [playerE],
+      );
+
+      final tournament = Tournament(
+        name: 'Test',
+        players: [playerA, playerE],
+        courts: [court],
+        rounds: [round1],
+        settings: const TournamentSettings(pausePointsAwarded: 12),
+      );
+
+      final standings = service.calculateStandings(tournament);
+
+      final standingE = standings.firstWhere((s) => s.player.id == 'E');
+
+      // E: 12 (break in round1 with 12 point setting)
+      expect(standingE.totalPoints, 12);
+      expect(standingE.pauseCount, 1);
     });
   });
 }

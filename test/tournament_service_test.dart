@@ -593,4 +593,216 @@ void main() {
       }
     });
   });
+
+  group('TournamentService - Pause Fairness (Regular Rounds)', () {
+    late TournamentService service;
+
+    setUp(() {
+      service = TournamentService();
+    });
+
+    test('should avoid consecutive pauses for same player', () {
+      // Create 9 players (1 will need to sit out each round)
+      final players = List.generate(
+        9,
+        (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
+      );
+
+      final courts = [
+        Court(id: '1', name: 'Bane 1'),
+        Court(id: '2', name: 'Bane 2'),
+      ];
+
+      // Create standings where player 1 had a pause in previous round
+      final standings = List.generate(
+        9,
+        (i) => PlayerStanding(
+          player: players[i],
+          totalPoints: 40 - i * 2,
+          wins: 2,
+          losses: 0,
+          matchesPlayed: 2,
+          biggestWinMargin: 10,
+          smallestLossMargin: 5,
+          headToHeadPoints: {},
+          rank: i + 1,
+          pauseCount: i == 0 ? 1 : 0, // Player 1 had a pause before
+        ),
+      );
+
+      final round = service.generateNextRound(players, courts, standings, 2);
+
+      // Player 1 should NOT be on break again (they already had 1 pause)
+      expect(round.playersOnBreak.length, 1);
+      expect(round.playersOnBreak[0].id, isNot('1'));
+    });
+
+    test('should distribute pauses fairly across multiple rounds', () {
+      final players = List.generate(
+        9,
+        (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
+      );
+
+      final courts = [
+        Court(id: '1', name: 'Bane 1'),
+        Court(id: '2', name: 'Bane 2'),
+      ];
+
+      // Simulate 3 rounds where different players had pauses
+      // Players 1, 2, 3 each had 1 pause; others had 0
+      final standings = List.generate(
+        9,
+        (i) => PlayerStanding(
+          player: players[i],
+          totalPoints: 40 - i * 2,
+          wins: 2,
+          losses: 0,
+          matchesPlayed: 2,
+          biggestWinMargin: 10,
+          smallestLossMargin: 5,
+          headToHeadPoints: {},
+          rank: i + 1,
+          pauseCount: i < 3 ? 1 : 0, // Players 1-3 had pauses
+        ),
+      );
+
+      final round = service.generateNextRound(players, courts, standings, 4);
+
+      // The player on break should be someone who hasn't had a pause yet (players 4-9)
+      expect(round.playersOnBreak.length, 1);
+      final breakPlayerId = int.parse(round.playersOnBreak[0].id);
+      expect(breakPlayerId, greaterThanOrEqualTo(4));
+    });
+
+    test('should prioritize players with fewest pauses over most games', () {
+      final players = List.generate(
+        9,
+        (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
+      );
+
+      final courts = [
+        Court(id: '1', name: 'Bane 1'),
+        Court(id: '2', name: 'Bane 2'),
+      ];
+
+      // Player 1: 5 games, 0 pauses
+      // Player 2: 3 games, 1 pause
+      // Player 3-9: 4 games, 0 pauses
+      final standings = List.generate(
+        9,
+        (i) => PlayerStanding(
+          player: players[i],
+          totalPoints: 40 - i * 2,
+          wins: 2,
+          losses: 0,
+          matchesPlayed: i == 0 ? 5 : (i == 1 ? 3 : 4),
+          biggestWinMargin: 10,
+          smallestLossMargin: 5,
+          headToHeadPoints: {},
+          rank: i + 1,
+          pauseCount: i == 1 ? 1 : 0,
+        ),
+      );
+
+      final round = service.generateNextRound(players, courts, standings, 3);
+
+      // Player 1 should sit out (0 pauses, most games among 0-pause players)
+      // Even though player 2 has fewer games, they already had a pause
+      expect(round.playersOnBreak.length, 1);
+      expect(round.playersOnBreak[0].id, '1');
+    });
+
+    test('should handle all players with equal pause counts', () {
+      final players = List.generate(
+        9,
+        (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
+      );
+
+      final courts = [
+        Court(id: '1', name: 'Bane 1'),
+        Court(id: '2', name: 'Bane 2'),
+      ];
+
+      // All players have equal pause counts
+      final standings = List.generate(
+        9,
+        (i) => PlayerStanding(
+          player: players[i],
+          totalPoints: 40 - i * 2,
+          wins: 2,
+          losses: 0,
+          matchesPlayed: 3,
+          biggestWinMargin: 10,
+          smallestLossMargin: 5,
+          headToHeadPoints: {},
+          rank: i + 1,
+          pauseCount: 0, // All equal
+        ),
+      );
+
+      final round = service.generateNextRound(players, courts, standings, 2);
+
+      // Should select 1 player (any is fair since all have equal pause counts)
+      expect(round.playersOnBreak.length, 1);
+      expect(round.matches.length, 2);
+    });
+
+    test('should handle multiple overflow players fairly', () {
+      final players = List.generate(
+        10,
+        (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
+      );
+
+      final courts = [
+        Court(id: '1', name: 'Bane 1'),
+        Court(id: '2', name: 'Bane 2'),
+      ];
+
+      // 2 players need to sit out
+      // Players 1-2 have 1 pause each, players 3-10 have 0 pauses
+      final standings = List.generate(
+        10,
+        (i) => PlayerStanding(
+          player: players[i],
+          totalPoints: 40 - i * 2,
+          wins: 2,
+          losses: 0,
+          matchesPlayed: 3,
+          biggestWinMargin: 10,
+          smallestLossMargin: 5,
+          headToHeadPoints: {},
+          rank: i + 1,
+          pauseCount: i < 2 ? 1 : 0,
+        ),
+      );
+
+      final round = service.generateNextRound(players, courts, standings, 3);
+
+      // 2 players should sit out, and neither should be from players 1-2
+      expect(round.playersOnBreak.length, 2);
+      final breakPlayerIds = round.playersOnBreak.map((p) => int.parse(p.id)).toList();
+      expect(breakPlayerIds.every((id) => id >= 3), true);
+    });
+
+    test('should work correctly with first round (no pause history)', () {
+      final players = List.generate(
+        9,
+        (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
+      );
+
+      final courts = [
+        Court(id: '1', name: 'Bane 1'),
+        Court(id: '2', name: 'Bane 2'),
+      ];
+
+      // All players have initial standings (no games, no pauses)
+      final standings = players.map((p) => PlayerStanding.initial(p)).toList();
+
+      final round = service.generateNextRound(players, courts, standings, 1);
+
+      expect(round.matches.length, 2);
+      expect(round.playersOnBreak.length, 1);
+      expect(round.roundNumber, 1);
+    });
+  });
 }

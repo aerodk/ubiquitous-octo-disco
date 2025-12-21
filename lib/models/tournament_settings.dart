@@ -32,10 +32,15 @@ class TournamentSettings {
   /// Default: balanced (R1+R3 vs R2+R4)
   final PairingStrategy finalRoundStrategy;
 
+  /// Points awarded to players on pause/break
+  /// Default: 12, Options: 0 or 12
+  final int pausePointsAwarded;
+
   const TournamentSettings({
     this.minRoundsBeforeFinal = 3,
     this.pointsPerMatch = 24,
     this.finalRoundStrategy = PairingStrategy.balanced,
+    this.pausePointsAwarded = 12,
   });
 
   /// Create a copy with modified fields
@@ -43,25 +48,29 @@ class TournamentSettings {
     int? minRoundsBeforeFinal,
     int? pointsPerMatch,
     PairingStrategy? finalRoundStrategy,
+    int? pausePointsAwarded,
   }) {
     return TournamentSettings(
       minRoundsBeforeFinal: minRoundsBeforeFinal ?? this.minRoundsBeforeFinal,
       pointsPerMatch: pointsPerMatch ?? this.pointsPerMatch,
       finalRoundStrategy: finalRoundStrategy ?? this.finalRoundStrategy,
+      pausePointsAwarded: pausePointsAwarded ?? this.pausePointsAwarded,
     );
   }
 
   /// Check if settings differ from defaults
   bool get isCustomized {
     return pointsPerMatch != 24 ||
-        finalRoundStrategy != PairingStrategy.balanced;
+        finalRoundStrategy != PairingStrategy.balanced ||
+        pausePointsAwarded != 12;
   }
 
   /// Get a short summary of settings for display
   String get summary {
     final points = '$pointsPerMatch point';
     final strategy = _strategyName(finalRoundStrategy);
-    return '$points • $strategy';
+    final pausePoints = 'Pause: $pausePointsAwarded pt';
+    return '$points • $strategy • $pausePoints';
   }
 
   String _strategyName(PairingStrategy strategy) {
@@ -83,6 +92,9 @@ class TournamentSettings {
     if (pointsPerMatch < 18 || pointsPerMatch > 32 || pointsPerMatch % 2 != 0) {
       return false;
     }
+    if (pausePointsAwarded != 0 && pausePointsAwarded != 12) {
+      return false;
+    }
     return true;
   }
 
@@ -93,6 +105,7 @@ class TournamentSettings {
       finalRoundStrategy: _strategyFromString(
         json['finalRoundStrategy'] as String?,
       ),
+      pausePointsAwarded: json['pausePointsAwarded'] as int? ?? 12,
     );
   }
 
@@ -101,6 +114,7 @@ class TournamentSettings {
       'minRoundsBeforeFinal': minRoundsBeforeFinal,
       'pointsPerMatch': pointsPerMatch,
       'finalRoundStrategy': _strategyToString(finalRoundStrategy),
+      'pausePointsAwarded': pausePointsAwarded,
     };
   }
 
@@ -133,7 +147,8 @@ class TournamentSettings {
     return other is TournamentSettings &&
         other.minRoundsBeforeFinal == minRoundsBeforeFinal &&
         other.pointsPerMatch == pointsPerMatch &&
-        other.finalRoundStrategy == finalRoundStrategy;
+        other.finalRoundStrategy == finalRoundStrategy &&
+        other.pausePointsAwarded == pausePointsAwarded;
   }
 
   @override
@@ -142,6 +157,7 @@ class TournamentSettings {
       minRoundsBeforeFinal,
       pointsPerMatch,
       finalRoundStrategy,
+      pausePointsAwarded,
     );
   }
 }
