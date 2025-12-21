@@ -167,6 +167,7 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
         // Auto-calculate team 1 score (total points - team2)
         _team1Score = widget.maxPoints - score;
       }
+      popClose();
     });
   }
 
@@ -266,19 +267,15 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('Annuller'),
-        ),
-        ElevatedButton(
-          onPressed: _team1Score != null && _team2Score != null
-              ? () {
-                  Navigator.pop(context, {
+        )
+      ],
+    );
+  }
+
+  void popClose() {
+    Navigator.pop(context, {
                     'team1Score': _team1Score,
                     'team2Score': _team2Score,
                   });
-                }
-              : null,
-          child: const Text('Gem Score'),
-        ),
-      ],
-    );
   }
 }
