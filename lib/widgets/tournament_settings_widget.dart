@@ -74,7 +74,7 @@ class _TournamentSettingsWidgetState extends State<TournamentSettingsWidget> {
           color: isCustomized ? theme.colorScheme.primary : null,
         ),
         title: Text(
-          'Turnering Indstillinger',
+          'Turnering indstillinger',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: isCustomized ? theme.colorScheme.primary : null,
@@ -115,7 +115,7 @@ class _TournamentSettingsWidgetState extends State<TournamentSettingsWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Point Per Kamp',
+          'Point per kamp',
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -161,7 +161,7 @@ class _TournamentSettingsWidgetState extends State<TournamentSettingsWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Point til Spillere På Pause',
+          'Point til spillere på pause',
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -211,7 +211,7 @@ class _TournamentSettingsWidgetState extends State<TournamentSettingsWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Sidste Runde Pairing',
+          'Sidste runde parring',
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),

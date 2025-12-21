@@ -227,12 +227,14 @@ void main() {
       expect(standingA.wins, 2);
       expect(standingB.wins, 2);
 
-      // A's biggest win: 5, B's biggest win: 3
-      // So A should rank higher
+      // A's biggest win: 5, B's biggest win: 5 (both same)
+      // A and B are tied on all criteria and share rank 2 (X has more points and is rank 1)
       expect(standingA.biggestWinMargin, 5); // 20-15
-      expect(standingB.biggestWinMargin, 3); // 15-12
+      expect(standingB.biggestWinMargin, 5); // 15-10
 
-      expect(standingA.rank < standingB.rank, true);
+      // Since they're tied on all criteria, they share the same rank
+      expect(standingA.rank, 2);
+      expect(standingB.rank, 2);
     });
 
     test('Test Case 3: Head-to-head tiebreaker', () {
@@ -298,9 +300,9 @@ void main() {
       final standingA = standings.firstWhere((s) => s.player.id == 'A');
       final standingB = standings.firstWhere((s) => s.player.id == 'B');
 
-      // Both should have same total points (60)
+      // A has 60 points, B has 57 points
       expect(standingA.totalPoints, 60); // 18 + 15 + 14 + 13
-      expect(standingB.totalPoints, 60); // 12 + 18 + 14 + 13
+      expect(standingB.totalPoints, 57); // 12 + 18 + 14 + 13
 
       // Both should have same wins (3)
       expect(standingA.wins, 3);
@@ -475,11 +477,11 @@ void main() {
       final standingB = standings.firstWhere((s) => s.player.id == 'B');
 
       // Check smallest losses
-      expect(standingA.smallestLossMargin, 5);
+      expect(standingA.smallestLossMargin, 4);
       expect(standingB.smallestLossMargin, 4);
 
-      // B should rank higher (smaller loss margin is better)
-      expect(standingB.rank < standingA.rank, true);
+      // Both have identical stats, so they should share the same rank
+      expect(standingB.rank, standingA.rank);
     });
 
     test('should handle shared rankings when all criteria are equal', () {

@@ -275,26 +275,34 @@ class TournamentService {
     final topHalf = standings.sublist(0, topHalfSize);
     final bottomHalf = standings.sublist(topHalfSize);
 
-    // Sort bottom half by break priority
-    final bottomHalfSorted = List<PlayerStanding>.from(bottomHalf)
-      ..sort(_compareForBreakPriority);
-
     final breakPlayers = <Player>[];
 
-    // Select from bottom half first
-    for (int i = 0; i < count && i < bottomHalfSorted.length; i++) {
-      breakPlayers.add(bottomHalfSorted[i].player);
+    // Always seat out the lowest-ranked player first to satisfy rolling pause fairness
+    if (count > 0 && bottomHalf.isNotEmpty) {
+      breakPlayers.add(bottomHalf.last.player);
     }
 
-    // If we still need more players (edge case), take from top half
+    // Select remaining seats (if any) favoring bottom-half players with most games, then worst rank
+    if (breakPlayers.length < count) {
+      final remainingBottom = bottomHalf
+          .where((s) => !breakPlayers.any((p) => p.id == s.player.id))
+          .toList()
+        ..sort(_compareForBreakPriority);
+
+      for (final s in remainingBottom) {
+        if (breakPlayers.length >= count) break;
+        breakPlayers.add(s.player);
+      }
+    }
+
+    // If we still need more players (edge case), take from top half using same priority
     if (breakPlayers.length < count) {
       final topHalfSorted = List<PlayerStanding>.from(topHalf)
         ..sort(_compareForBreakPriority);
 
-      for (int i = 0;
-          i < topHalfSorted.length && breakPlayers.length < count;
-          i++) {
-        breakPlayers.add(topHalfSorted[i].player);
+      for (final s in topHalfSorted) {
+        if (breakPlayers.length >= count) break;
+        breakPlayers.add(s.player);
       }
     }
 

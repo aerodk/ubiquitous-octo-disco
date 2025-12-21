@@ -138,8 +138,8 @@ class _TournamentCompletionScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Turnering Afsluttet'),
-        backgroundColor: Colors.amber[700],
+        title: const Text('Turnering afsluttet'),
+        backgroundColor: Colors.amber[700], 
         automaticallyImplyLeading: false,
         actions: [
           // Export button
@@ -312,8 +312,9 @@ class _TournamentCompletionScreenState
     // Make podium larger on bigger screens
     final screenWidth = MediaQuery.of(context).size.width;
     final scaleFactor = screenWidth > 600 ? 1.5 : 1.0;
-    final podiumHeight = 200.0 * scaleFactor;
+    // Leave extra headroom for medal/name so columns do not overflow the bottom
     final firstPlaceHeight = 180.0 * scaleFactor;
+    final podiumHeight = firstPlaceHeight + (90.0 * scaleFactor);
     final secondPlaceHeight = 140.0 * scaleFactor;
     final thirdPlaceHeight = 120.0 * scaleFactor;
 
