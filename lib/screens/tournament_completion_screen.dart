@@ -71,7 +71,7 @@ class _TournamentCompletionScreenState
     final minutes = duration.inMinutes.remainder(60);
     
     if (hours > 0) {
-      return '$hours t ${minutes} min';
+      return '$hours t $minutes min';
     } else {
       return '$minutes min';
     }
@@ -261,7 +261,7 @@ class _TournamentCompletionScreenState
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.amber.withOpacity(0.3),
+                        Colors.amber.withValues(alpha: .3),
                         Colors.transparent,
                       ],
                     ),
@@ -432,7 +432,7 @@ class _TournamentCompletionScreenState
                 ),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.95),
+                    color: color.withValues(alpha: .95),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Center(
@@ -630,7 +630,7 @@ class _CelebrationPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = color.withOpacity((1 - animationValue) * 0.8)
+      ..color = color.withValues(alpha: (1 - animationValue) * 0.8)
       ..style = PaintingStyle.fill;
     
     final random = 42; // Fixed seed for consistent particle positions

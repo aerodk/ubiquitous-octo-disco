@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/tournament.dart';
 import '../models/player.dart';
-import '../models/court.dart';
 
 class PersistenceService {
   static const String _tournamentKey = 'current_tournament';

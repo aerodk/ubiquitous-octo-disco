@@ -124,7 +124,7 @@ class _TournamentSettingsWidgetState extends State<TournamentSettingsWidget> {
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<int>(
-          value: _currentSettings.pointsPerMatch,
+          initialValue: _currentSettings.pointsPerMatch,
           decoration: InputDecoration(
             border: const OutlineInputBorder(),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
