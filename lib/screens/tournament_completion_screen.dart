@@ -4,6 +4,7 @@ import '../models/tournament.dart';
 import '../models/player_standing.dart';
 import '../services/standings_service.dart';
 import '../services/persistence_service.dart';
+import '../widgets/export_dialog.dart';
 import 'setup_screen.dart';
 
 class TournamentCompletionScreen extends StatefulWidget {
@@ -140,6 +141,33 @@ class _TournamentCompletionScreenState
         title: const Text('Turnering Afsluttet'),
         backgroundColor: Colors.amber[700],
         automaticallyImplyLeading: false,
+        actions: [
+          // Export button
+          IconButton(
+            icon: const Icon(Icons.file_download),
+            tooltip: 'Eksporter Resultater',
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => ExportDialog(
+                  standings: _standings,
+                  tournament: widget.tournament,
+                ),
+              );
+            },
+          ),
+          // Future options info button
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            tooltip: 'Se fremtidige eksport muligheder',
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => const FutureExportOptionsDialog(),
+              );
+            },
+          ),
+        ],
       ),
       body: Stack(
         children: [
