@@ -95,6 +95,11 @@ class _TournamentSettingsWidgetState extends State<TournamentSettingsWidget> {
                 
                 const Divider(height: 32),
                 
+                // Pause Points Setting
+                _buildPausePointsSection(theme),
+                
+                const Divider(height: 32),
+                
                 // Pairing Strategy Setting
                 _buildPairingStrategySection(theme),
               ],
@@ -142,6 +147,56 @@ class _TournamentSettingsWidgetState extends State<TournamentSettingsWidget> {
                   if (value != null) {
                     _updateSettings(_currentSettings.copyWith(
                       pointsPerMatch: value,
+                    ));
+                  }
+                }
+              : null,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPausePointsSection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Point til Spillere På Pause',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Vælg om spillere på pause skal få point. Standard er 12 point.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: Colors.grey[600],
+          ),
+        ),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<int>(
+          value: _currentSettings.pausePointsAwarded,
+          decoration: InputDecoration(
+            border: const OutlineInputBorder(),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            suffixIcon: const Icon(Icons.timer_off),
+            enabled: widget.enabled,
+          ),
+          items: const [
+            DropdownMenuItem(
+              value: 0,
+              child: Text('0 point (ingen belønning)'),
+            ),
+            DropdownMenuItem(
+              value: 12,
+              child: Text('12 point (standard)'),
+            ),
+          ],
+          onChanged: widget.enabled
+              ? (value) {
+                  if (value != null) {
+                    _updateSettings(_currentSettings.copyWith(
+                      pausePointsAwarded: value,
                     ));
                   }
                 }
