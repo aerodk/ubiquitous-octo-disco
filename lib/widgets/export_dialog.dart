@@ -100,7 +100,7 @@ class _ExportDialogState extends State<ExportDialog> {
     final url = html.Url.createObjectUrlFromBlob(blob);
 
     // Create a temporary anchor element and trigger download
-    final anchor = html.AnchorElement(href: url)
+    html.AnchorElement(href: url)
       ..setAttribute('download', fileName)
       ..click();
 

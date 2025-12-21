@@ -46,7 +46,7 @@ class _MatchCardState extends State<MatchCard> {
     final hasScores = widget.match.team1Score != null && widget.match.team2Score != null;
     
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.zero,
       child: InkWell(
         onTap: _showScoreInput,
         child: Padding(

@@ -88,7 +88,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Nulstil Turnering'),
+        title: const Text('Nulstil turnering'),
         content: const Text(
           'Er du sikker på at du vil nulstille turneringen? '
           'Alt data vil blive slettet.',
@@ -334,53 +334,82 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
         body: Column(
           children: [
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  // Display all matches
-                  ..._currentRound.matches.map(
-                    (match) => MatchCard(
-                      key: ValueKey(match.id),
-                      match: match,
-                      maxPoints: _tournament.settings.pointsPerMatch,
-                      onScoreChanged: () {
-                        setState(() {});
-                        _checkForTournamentCompletion();
-                      },
-                    ),
-                  ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  // Determine number of columns based on screen width
+                  final int crossAxisCount;
+                  if (constraints.maxWidth >= 1200) {
+                    crossAxisCount = 3; // 3 columns on extra large screens
+                  } else if (constraints.maxWidth >= 800) {
+                    crossAxisCount = 2; // 2 columns on large screens
+                  } else {
+                    crossAxisCount = 1; // 1 column on small screens
+                  }
 
-                  // Display players on break
-                  if (_currentRound.playersOnBreak.isNotEmpty)
-                    Card(
-                      color: Colors.orange[50],
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Row(
+                  return ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      // Display matches in a responsive grid
+                      if (_currentRound.matches.isNotEmpty)
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: crossAxisCount,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                            childAspectRatio: 1.7, // Adjust height ratio as needed
+                          ),
+                          itemCount: _currentRound.matches.length,
+                          itemBuilder: (context, index) {
+                            final match = _currentRound.matches[index];
+                            return MatchCard(
+                              key: ValueKey(match.id),
+                              match: match,
+                              maxPoints: _tournament.settings.pointsPerMatch,
+                              onScoreChanged: () {
+                                setState(() {});
+                                _checkForTournamentCompletion();
+                              },
+                            );
+                          },
+                        ),
+
+                      // Display players on break
+                      if (_currentRound.playersOnBreak.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        Card(
+                          color: Colors.orange[50],
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Icon(Icons.pause_circle, color: Colors.orange),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Pause',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                const Row(
+                                  children: [
+                                    Icon(Icons.pause_circle, color: Colors.orange),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Pause',
+                                      style: TextStyle(fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 8,
+                                  children: _currentRound.playersOnBreak
+                                      .map((player) => Chip(label: Text(player.name)))
+                                      .toList(),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              children: _currentRound.playersOnBreak
-                                  .map((player) => Chip(label: Text(player.name)))
-                                  .toList(),
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ),
-                ],
+                      ],
+                    ],
+                  );
+                },
               ),
             ),
             
