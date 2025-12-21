@@ -289,7 +289,7 @@ class _TournamentCompletionScreenState
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.amber.withValues(alpha: .3),
+                        Colors.amber.withOpacity(0.3),
                         Colors.transparent,
                       ],
                     ),
@@ -470,7 +470,7 @@ class _TournamentCompletionScreenState
                 ),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: color.withValues(alpha: .95),
+                    color: color.withOpacity(0.95),
                     borderRadius: BorderRadius.circular(8 * scaleFactor),
                   ),
                   child: Center(
@@ -640,7 +640,7 @@ class _CelebrationPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = color.withValues(alpha: (1 - animationValue) * 0.8)
+      ..color = color.withOpacity((1 - animationValue) * 0.8)
       ..style = PaintingStyle.fill;
     
     final random = 42; // Fixed seed for consistent particle positions

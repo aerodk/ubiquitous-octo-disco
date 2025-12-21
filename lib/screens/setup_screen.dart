@@ -349,7 +349,7 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
                       final highlightColor = _isCourtCountAnimating
                           ? Color.lerp(
                               Colors.transparent,
-                              Theme.of(context).colorScheme.primary.withValues(alpha: .2),
+                              Theme.of(context).colorScheme.primary.withOpacity(0.2),
                               (1 - (_animationController.value - 0.5).abs() * 2).clamp(0.0, 1.0),
                             )
                           : Colors.transparent;
