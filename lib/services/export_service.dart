@@ -170,7 +170,7 @@ class ExportService {
       sanitizedName = 'tournament';
     }
     
-    return '${sanitizedName}_${timestamp}.${strategy.fileExtension}';
+    return '${sanitizedName}_$timestamp.${strategy.fileExtension}';
   }
   
   /// Get MIME type for the export format

@@ -54,9 +54,6 @@ class TournamentService {
     List<PlayerStanding> standings,
     int roundNumber,
   ) {
-    // Create a map of player ID to their standing for easy lookup
-    final standingsMap = {for (var s in standings) s.player.id: s};
-    
     // Shuffle players randomly for match creation
     final shuffledPlayers = List<Player>.from(players)..shuffle();
 
