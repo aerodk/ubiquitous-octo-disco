@@ -4,6 +4,7 @@ import 'package:star_cano/models/player.dart';
 import 'package:star_cano/models/player_standing.dart';
 import 'package:star_cano/models/tournament.dart';
 import 'package:star_cano/models/court.dart';
+import 'package:star_cano/utils/constants.dart';
 
 void main() {
   group('ExportService', () {
@@ -23,7 +24,7 @@ void main() {
           losses: 0,
           matchesPlayed: 2,
           biggestWinMargin: 10,
-          smallestLossMargin: 999,
+          smallestLossMargin: Constants.noLossesSentinel,
           headToHeadPoints: {},
           rank: 1,
           pauseCount: 0,
@@ -141,7 +142,7 @@ void main() {
         final lines = csvData.split('\n');
         final aliceLine = lines.firstWhere((line) => line.contains('Alice'));
         
-        // The CSV should have '-' for smallest loss margin when it's 999
+        // The CSV should have '-' for smallest loss margin when it's Constants.noLossesSentinel
         expect(aliceLine, contains(',-,'));
       });
     });
@@ -195,7 +196,7 @@ void main() {
           format: ExportFormat.json,
         );
 
-        // Alice has 999 smallest loss, should be null in JSON
+        // Alice has Constants.noLossesSentinel smallest loss, should be null in JSON
         expect(jsonData, contains('"smallestLossMargin": null'));
       });
     });
@@ -238,6 +239,56 @@ void main() {
         expect(fileName, isNot(contains('/')));
         expect(fileName, isNot(contains('*')));
         expect(fileName, isNot(contains('?')));
+      });
+
+      test('should handle empty tournament name after sanitization', () {
+        final tournamentWithOnlySpecialChars = Tournament(
+          name: '***///???',
+          players: [],
+          courts: [],
+        );
+
+        final fileName = ExportService.getFileName(
+          tournament: tournamentWithOnlySpecialChars,
+          format: ExportFormat.csv,
+        );
+
+        // Should use default name 'tournament'
+        expect(fileName, startsWith('tournament_'));
+        expect(fileName, endsWith('.csv'));
+      });
+
+      test('should replace spaces with underscores in file name', () {
+        final tournamentWithSpaces = Tournament(
+          name: 'My Tournament Name',
+          players: [],
+          courts: [],
+        );
+
+        final fileName = ExportService.getFileName(
+          tournament: tournamentWithSpaces,
+          format: ExportFormat.csv,
+        );
+
+        // Spaces should be replaced with underscores
+        expect(fileName, contains('My_Tournament_Name'));
+        expect(fileName, isNot(contains(' ')));
+      });
+
+      test('should remove consecutive underscores in file name', () {
+        final tournamentWithMultipleSpaces = Tournament(
+          name: 'Test    Tournament',
+          players: [],
+          courts: [],
+        );
+
+        final fileName = ExportService.getFileName(
+          tournament: tournamentWithMultipleSpaces,
+          format: ExportFormat.csv,
+        );
+
+        // Multiple underscores should be collapsed to single
+        expect(fileName, isNot(contains('__')));
       });
     });
 

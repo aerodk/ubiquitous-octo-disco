@@ -16,6 +16,9 @@ class Constants {
   // Default names
   static String getDefaultCourtName(int index) => 'Bane ${index + 1}';
 
+  // Player standing constants
+  static const int noLossesSentinel = 999; // Used to represent no losses in smallestLossMargin
+
   // Validation messages
   static const String emptyNameError = 'Spillernavn kan ikke være tomt';
   static const String duplicateNameError = 'Spilleren findes allerede';

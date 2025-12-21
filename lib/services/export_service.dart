@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:csv/csv.dart';
 import '../models/player_standing.dart';
 import '../models/tournament.dart';
+import '../utils/constants.dart';
 
 /// Supported export formats
 enum ExportFormat {
@@ -67,7 +68,9 @@ class CsvExportStrategy implements ExportStrategy {
         standing.matchesPlayed,
         winRate,
         standing.biggestWinMargin,
-        standing.smallestLossMargin == 999 ? '-' : standing.smallestLossMargin,
+        standing.smallestLossMargin == Constants.noLossesSentinel 
+            ? '-' 
+            : standing.smallestLossMargin,
         standing.pauseCount,
       ]);
     }
@@ -105,7 +108,9 @@ class JsonExportStrategy implements ExportStrategy {
         'matchesPlayed': s.matchesPlayed,
         'winRate': s.matchesPlayed > 0 ? s.wins / s.matchesPlayed : 0,
         'biggestWinMargin': s.biggestWinMargin,
-        'smallestLossMargin': s.smallestLossMargin == 999 ? null : s.smallestLossMargin,
+        'smallestLossMargin': s.smallestLossMargin == Constants.noLossesSentinel 
+            ? null 
+            : s.smallestLossMargin,
         'pauseCount': s.pauseCount,
       }).toList(),
     };
@@ -148,7 +153,23 @@ class ExportService {
   }) {
     final timestamp = DateTime.now().toIso8601String().split('T')[0];
     final strategy = _getStrategy(format);
-    final sanitizedName = tournament.name.replaceAll(RegExp(r'[^\w\s-]'), '');
+    
+    // Sanitize the tournament name for use in filename
+    // Keep only alphanumeric characters, spaces, hyphens, and underscores
+    var sanitizedName = tournament.name.replaceAll(RegExp(r'[^\w\s-]'), '');
+    
+    // Replace spaces with underscores and remove multiple consecutive underscores
+    sanitizedName = sanitizedName.replaceAll(RegExp(r'\s+'), '_');
+    sanitizedName = sanitizedName.replaceAll(RegExp(r'_+'), '_');
+    
+    // Trim underscores and hyphens from start/end
+    sanitizedName = sanitizedName.replaceAll(RegExp(r'^[-_]+|[-_]+$'), '');
+    
+    // If sanitization resulted in empty string, use a default name
+    if (sanitizedName.isEmpty) {
+      sanitizedName = 'tournament';
+    }
+    
     return '${sanitizedName}_${timestamp}.${strategy.fileExtension}';
   }
   
