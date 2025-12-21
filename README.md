@@ -36,6 +36,16 @@ This implementation includes the core features needed to set up and start a Pade
 - Display of players on break (if any)
 - Professional card-based UI
 
+#### 5. Export Functionality (NEW)
+- **CSV Export**: Export tournament results to CSV format for spreadsheet applications
+- **JSON Export**: Export structured data for integration and archiving
+- **Extensible Design**: Easy to add new export formats (PDF, Excel planned)
+- **Platform Support**: Full support on web, with mobile support planned
+- **Available on**:
+  - Tournament Completion Screen (final results)
+  - Leaderboard Screen (live standings)
+- See [Export Documentation](docs/EXPORT_FUNCTIONALITY.md) for details
+
 ### Project Structure
 
 ```
@@ -46,14 +56,24 @@ lib/
 │   ├── court.dart                  # Court model
 │   ├── match.dart                  # Match and Team models with score tracking
 │   ├── round.dart                  # Round model with matches and break players
-│   └── tournament.dart             # Tournament model for complete tournament state
+│   ├── tournament.dart             # Tournament model for complete tournament state
+│   └── player_standing.dart        # Player standings with statistics
 ├── services/                       # Business logic
-│   └── tournament_service.dart     # Round generation and player distribution
+│   ├── tournament_service.dart     # Round generation and player distribution
+│   ├── standings_service.dart      # Leaderboard and ranking calculations
+│   ├── persistence_service.dart    # Tournament data persistence
+│   └── export_service.dart         # Export functionality (CSV, JSON, etc.)
 ├── screens/                        # UI screens
 │   ├── setup_screen.dart          # Player and court registration
-│   └── round_display_screen.dart  # Round display with matches
-└── widgets/                        # Reusable widgets
-    └── match_card.dart            # Card widget for displaying match details
+│   ├── round_display_screen.dart  # Round display with matches
+│   ├── leaderboard_screen.dart    # Live tournament standings
+│   └── tournament_completion_screen.dart  # Final results and statistics
+├── widgets/                        # Reusable widgets
+│   ├── match_card.dart            # Card widget for displaying match details
+│   └── export_dialog.dart         # Export options dialog
+└── utils/                          # Utilities
+    ├── constants.dart              # App-wide constants
+    └── html_stub.dart              # Platform compatibility stub
 ```
 
 ### Testing
