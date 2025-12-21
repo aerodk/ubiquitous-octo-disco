@@ -53,17 +53,15 @@ class TournamentSettings {
 
   /// Check if settings differ from defaults
   bool get isCustomized {
-    return minRoundsBeforeFinal != 3 ||
-        pointsPerMatch != 24 ||
+    return pointsPerMatch != 24 ||
         finalRoundStrategy != PairingStrategy.balanced;
   }
 
   /// Get a short summary of settings for display
   String get summary {
-    final rounds = '$minRoundsBeforeFinal runder';
     final points = '$pointsPerMatch point';
     final strategy = _strategyName(finalRoundStrategy);
-    return '$rounds • $points • $strategy';
+    return '$points • $strategy';
   }
 
   String _strategyName(PairingStrategy strategy) {
