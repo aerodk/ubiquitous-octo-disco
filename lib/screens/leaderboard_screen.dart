@@ -93,7 +93,7 @@ class LeaderboardScreen extends StatelessWidget {
                   height: 40,
                   decoration: BoxDecoration(
                     color: isTop3
-                        ? Colors.white.withOpacity(0.3)
+                        ? Colors.white.withValues(alpha: 0.3)
                         : Colors.grey[300],
                     shape: BoxShape.circle,
                   ),

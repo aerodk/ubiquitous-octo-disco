@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../models/match.dart';
-import '../utils/constants.dart';
 
 class MatchCard extends StatefulWidget {
   final Match match;

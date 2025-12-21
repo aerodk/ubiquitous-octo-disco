@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../models/tournament.dart';
 import '../models/player_standing.dart';
@@ -17,11 +18,17 @@ class TournamentCompletionScreen extends StatefulWidget {
 }
 
 class _TournamentCompletionScreenState
-    extends State<TournamentCompletionScreen> with SingleTickerProviderStateMixin {
+    extends State<TournamentCompletionScreen> with TickerProviderStateMixin {
   final StandingsService _standingsService = StandingsService();
   final PersistenceService _persistenceService = PersistenceService();
   late List<PlayerStanding> _standings;
   late AnimationController _confettiController;
+  
+  // Track which positions have been revealed
+  final Set<int> _revealedPositions = {};
+  final Map<int, AnimationController> _medalAnimations = {};
+  final Map<int, AnimationController> _celebrationAnimations = {};
+  bool _showAllPositions = false;
 
   @override
   void initState() {
@@ -33,11 +40,29 @@ class _TournamentCompletionScreenState
       duration: const Duration(seconds: 2),
       vsync: this,
     )..forward();
+    
+    // Setup medal animations for top 3
+    for (int i = 1; i <= 3 && i <= _standings.length; i++) {
+      _medalAnimations[i] = AnimationController(
+        duration: const Duration(milliseconds: 800),
+        vsync: this,
+      );
+      _celebrationAnimations[i] = AnimationController(
+        duration: const Duration(milliseconds: 1500),
+        vsync: this,
+      );
+    }
   }
 
   @override
   void dispose() {
     _confettiController.dispose();
+    for (final controller in _medalAnimations.values) {
+      controller.dispose();
+    }
+    for (final controller in _celebrationAnimations.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -47,7 +72,7 @@ class _TournamentCompletionScreenState
     final minutes = duration.inMinutes.remainder(60);
     
     if (hours > 0) {
-      return '$hours t ${minutes} min';
+      return '$hours t $minutes min';
     } else {
       return '$minutes min';
     }
@@ -224,30 +249,7 @@ class _TournamentCompletionScreenState
                           ),
                         ),
                         const Divider(),
-                        ..._standings.map((s) => ListTile(
-                              dense: true,
-                              leading: CircleAvatar(
-                                backgroundColor: _getRankColor(s.rank),
-                                child: Text(
-                                  '${s.rank}',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              title: Text(s.player.name),
-                              subtitle: Text(
-                                '${s.wins}W-${s.losses}L • ${s.matchesPlayed} kampe',
-                              ),
-                              trailing: Text(
-                                '${s.totalPoints}',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            )),
+                        ..._standings.map((s) => _buildLeaderboardTile(s)),
                       ],
                     ),
                   ),
@@ -287,7 +289,7 @@ class _TournamentCompletionScreenState
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.amber.withOpacity(0.3),
+                        Colors.amber.withValues(alpha: .3),
                         Colors.transparent,
                       ],
                     ),
@@ -307,23 +309,46 @@ class _TournamentCompletionScreenState
       return const SizedBox.shrink();
     }
 
-    return SizedBox(
-      height: 200,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          // 2nd place
-          if (top3.length > 1) _buildPodiumPlace(top3[1], 2, 140, Colors.grey),
-          const SizedBox(width: 8),
-          // 1st place
-          _buildPodiumPlace(top3[0], 1, 180, Colors.amber),
-          const SizedBox(width: 8),
-          // 3rd place
-          if (top3.length > 2)
-            _buildPodiumPlace(top3[2], 3, 120, Colors.brown),
-        ],
-      ),
+    // Make podium larger on bigger screens
+    final screenWidth = MediaQuery.of(context).size.width;
+    final scaleFactor = screenWidth > 600 ? 1.5 : 1.0;
+    final podiumHeight = 200.0 * scaleFactor;
+    final firstPlaceHeight = 180.0 * scaleFactor;
+    final secondPlaceHeight = 140.0 * scaleFactor;
+    final thirdPlaceHeight = 120.0 * scaleFactor;
+
+    return Column(
+      children: [
+        SizedBox(
+          height: podiumHeight,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              // 2nd place
+              if (top3.length > 1) _buildPodiumPlace(top3[1], 2, secondPlaceHeight, Colors.grey, scaleFactor),
+              SizedBox(width: 8 * scaleFactor),
+              // 1st place
+              _buildPodiumPlace(top3[0], 1, firstPlaceHeight, Colors.amber, scaleFactor),
+              SizedBox(width: 8 * scaleFactor),
+              // 3rd place
+              if (top3.length > 2)
+                _buildPodiumPlace(top3[2], 3, thirdPlaceHeight, Colors.brown, scaleFactor),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Show All button for remaining positions
+        if (_standings.length > 3 && !_showAllPositions)
+          ElevatedButton.icon(
+            onPressed: _revealAllPositions,
+            icon: const Icon(Icons.visibility),
+            label: const Text('Vis Alle Placeringer'),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+          ),
+      ],
     );
   }
 
@@ -332,58 +357,185 @@ class _TournamentCompletionScreenState
     int place,
     double height,
     Color color,
+    double scaleFactor,
   ) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
+    final isRevealed = _revealedPositions.contains(place);
+    final medalController = _medalAnimations[place];
+    final celebrationController = _celebrationAnimations[place];
+    
+    return GestureDetector(
+      onTap: () => _revealPodiumPlace(place),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Main podium content
+          Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              // Medal or revealed content
+              Container(
+                padding: EdgeInsets.all(8 * scaleFactor),
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  place == 1 ? '🥇' : place == 2 ? '🥈' : '🥉',
+                  style: TextStyle(fontSize: 24 * scaleFactor),
+                ),
+              ),
+              SizedBox(height: 4 * scaleFactor),
+              // Player name and points (revealed or hidden)
+              SizedBox(
+                height: 32 * scaleFactor, // Fixed height to prevent layout shift
+                child: Stack(
+                  children: [
+                    // Revealed content
+                    AnimatedOpacity(
+                      opacity: isRevealed ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 500),
+                      child: Column(
+                        children: [
+                          Text(
+                            standing.player.name,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12 * scaleFactor,
+                            ),
+                            textAlign: TextAlign.center,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            '${standing.totalPoints} pt',
+                            style: TextStyle(fontSize: 11 * scaleFactor),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Hidden placeholder
+                    if (!isRevealed)
+                      Column(
+                        children: [
+                          Text(
+                            '???',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12 * scaleFactor,
+                              color: Colors.grey[600],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          Text(
+                            '? pt',
+                            style: TextStyle(fontSize: 11 * scaleFactor, color: Colors.grey[600]),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 4 * scaleFactor),
+              Container(
+                width: 80 * scaleFactor,
+                height: height,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(8 * scaleFactor),
+                  ),
+                ),
+                alignment: Alignment.topCenter,
+                padding: EdgeInsets.all(8 * scaleFactor),
+                child: Text(
+                  '$place',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 32 * scaleFactor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
           ),
-          child: Text(
-            place == 1 ? '🥇' : place == 2 ? '🥈' : '🥉',
-            style: const TextStyle(fontSize: 24),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          standing.player.name,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-          ),
-          textAlign: TextAlign.center,
-          overflow: TextOverflow.ellipsis,
-        ),
-        Text(
-          '${standing.totalPoints} pt',
-          style: const TextStyle(fontSize: 11),
-        ),
-        const SizedBox(height: 4),
-        Container(
-          width: 80,
-          height: height,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(8),
+          // Medal overlay that fades out when revealed
+          if (!isRevealed && medalController != null)
+            Positioned.fill(
+              child: FadeTransition(
+                opacity: Tween<double>(begin: 1.0, end: 0.0).animate(
+                  CurvedAnimation(
+                    parent: medalController,
+                    curve: Curves.easeOut,
+                  ),
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: .95),
+                    borderRadius: BorderRadius.circular(8 * scaleFactor),
+                  ),
+                  child: Center(
+                    child: Text(
+                      place == 1 ? '🥇' : place == 2 ? '🥈' : '🥉',
+                      style: TextStyle(fontSize: 48 * scaleFactor),
+                    ),
+                  ),
+                ),
+              ),
             ),
-          ),
-          alignment: Alignment.topCenter,
-          padding: const EdgeInsets.all(8),
-          child: Text(
-            '$place',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
+          // Celebration particles when revealed
+          if (isRevealed && celebrationController != null)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: AnimatedBuilder(
+                  animation: celebrationController,
+                  builder: (context, child) {
+                    if (!celebrationController.isAnimating && 
+                        celebrationController.value == 0) {
+                      return const SizedBox.shrink();
+                    }
+                    return CustomPaint(
+                      painter: _CelebrationPainter(
+                        animationValue: celebrationController.value,
+                        color: color,
+                      ),
+                    );
+                  },
+                ),
+              ),
             ),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
+  }
+  
+  void _revealPodiumPlace(int place) {
+    if (_revealedPositions.contains(place)) return;
+    
+    setState(() {
+      _revealedPositions.add(place);
+    });
+    
+    // Animate medal fade out
+    _medalAnimations[place]?.forward();
+    
+    // Start celebration animation
+    Future.delayed(const Duration(milliseconds: 400), () {
+      _celebrationAnimations[place]?.forward().then((_) {
+        _celebrationAnimations[place]?.reset();
+      });
+    });
+  }
+  
+  void _revealAllPositions() {
+    setState(() {
+      _showAllPositions = true;
+      // Reveal all top 3 positions
+      for (int i = 1; i <= 3 && i <= _standings.length; i++) {
+        if (!_revealedPositions.contains(i)) {
+          _revealedPositions.add(i);
+          _medalAnimations[i]?.forward();
+        }
+      }
+    });
   }
 
   Widget _buildStatRow(String label, String value) {
@@ -413,5 +565,103 @@ class _TournamentCompletionScreenState
       default:
         return Colors.blue;
     }
+  }
+  
+  Widget _buildLeaderboardTile(PlayerStanding s) {
+    // All positions are hidden until revealed (including top 3)
+    final isRevealed = _showAllPositions || _revealedPositions.contains(s.rank);
+    
+    return InkWell(
+      onTap: isRevealed ? null : () => _revealLeaderboardPosition(s.rank),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        decoration: BoxDecoration(
+          color: isRevealed ? null : Colors.grey[200],
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: ListTile(
+          dense: true,
+          leading: CircleAvatar(
+            backgroundColor: isRevealed ? _getRankColor(s.rank) : Colors.grey,
+            child: Text(
+              isRevealed ? '${s.rank}' : '?',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          title: Text(
+            isRevealed ? s.player.name : '???',
+            style: TextStyle(
+              color: isRevealed ? Colors.black : Colors.grey[600],
+            ),
+          ),
+          subtitle: Text(
+            isRevealed 
+              ? '${s.wins}W-${s.losses}L • ${s.matchesPlayed} kampe'
+              : 'Tryk for at afsløre',
+            style: TextStyle(
+              color: isRevealed ? null : Colors.grey[500],
+              fontStyle: isRevealed ? null : FontStyle.italic,
+            ),
+          ),
+          trailing: Text(
+            isRevealed ? '${s.totalPoints}' : '?',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: isRevealed ? Colors.black : Colors.grey[600],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+  
+  void _revealLeaderboardPosition(int rank) {
+    setState(() {
+      _revealedPositions.add(rank);
+    });
+  }
+}
+
+// Custom painter for celebration particles
+class _CelebrationPainter extends CustomPainter {
+  final double animationValue;
+  final Color color;
+  
+  _CelebrationPainter({
+    required this.animationValue,
+    required this.color,
+  });
+  
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color.withValues(alpha: (1 - animationValue) * 0.8)
+      ..style = PaintingStyle.fill;
+    
+    final random = 42; // Fixed seed for consistent particle positions
+    
+    // Draw celebration particles (stars/sparkles)
+    for (int i = 0; i < 12; i++) {
+      final angle = (i * 30) * 3.14159 / 180;
+      final distance = animationValue * size.width * 0.6;
+      final x = size.width / 2 + distance * cos(angle + random);
+      final y = size.height / 2 + distance * sin(angle + random);
+      final particleSize = 4 * (1 - animationValue);
+      
+      canvas.drawCircle(
+        Offset(x, y),
+        particleSize,
+        paint,
+      );
+    }
+  }
+  
+  @override
+  bool shouldRepaint(_CelebrationPainter oldDelegate) {
+    return oldDelegate.animationValue != animationValue;
   }
 }
