@@ -349,46 +349,54 @@ class _TournamentCompletionScreenState
               ),
               const SizedBox(height: 4),
               // Player name and points (revealed or hidden)
-              AnimatedOpacity(
-                opacity: isRevealed ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 500),
-                child: Column(
+              SizedBox(
+                height: 32, // Fixed height to prevent layout shift
+                child: Stack(
                   children: [
-                    Text(
-                      standing.player.name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
+                    // Revealed content
+                    AnimatedOpacity(
+                      opacity: isRevealed ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 500),
+                      child: Column(
+                        children: [
+                          Text(
+                            standing.player.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                            textAlign: TextAlign.center,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            '${standing.totalPoints} pt',
+                            style: const TextStyle(fontSize: 11),
+                          ),
+                        ],
                       ),
-                      textAlign: TextAlign.center,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                    Text(
-                      '${standing.totalPoints} pt',
-                      style: const TextStyle(fontSize: 11),
-                    ),
+                    // Hidden placeholder
+                    if (!isRevealed)
+                      Column(
+                        children: [
+                          Text(
+                            '???',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          Text(
+                            '? pt',
+                            style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                          ),
+                        ],
+                      ),
                   ],
                 ),
               ),
-              // Hidden placeholder
-              if (!isRevealed)
-                Column(
-                  children: [
-                    Text(
-                      '???',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    Text(
-                      '? pt',
-                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                    ),
-                  ],
-                ),
               const SizedBox(height: 4),
               Container(
                 width: 80,
