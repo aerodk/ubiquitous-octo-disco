@@ -334,11 +334,8 @@ class TournamentService {
     required List<Court> courts,
     required Player overridePlayer,
     required bool forceToActive,
+    List<PlayerStanding>? standings,
   }) {
-    // Calculate maximum allowed players on break
-    final totalPlayers = allPlayers.length;
-    final maxPlayersOnBreak = totalPlayers - (courts.length * 4);
-    
     // Validate the override request
     if (forceToActive) {
       // Player must currently be on break
@@ -351,10 +348,19 @@ class TournamentService {
         return null; // Player is already on break
       }
       
-      // Check if we can add more players to break
-      if (currentRound.playersOnBreak.length >= maxPlayersOnBreak) {
-        return null; // Already at max players on break
+      // Can force to break if:
+      // 1. No one on break yet (transitioning from 0→1), OR
+      // 2. Someone on break (swap is OK as long as total doesn't increase beyond max)
+      //
+      // The key insight: if someone is on break, we swap, so the total doesn't change.
+      // If no one is on break, we allow going from 0→1 as a special case.
+      //
+      // Simply: allow swaps if someone is on break, allow first transition from 0→1 anyway
+      if (currentRound.playersOnBreak.isNotEmpty) {
+        // Someone on break already - swapping is OK (maintains count)
+        // No additional validation needed
       }
+      // If no one on break, allow the transition from 0→1
     }
     
     // Create new lists for the override
@@ -380,12 +386,31 @@ class TournamentService {
       final overflowCount = currentlyActive.length - playersNeeded;
       
       if (overflowCount > 0) {
-        // Randomly select someone else to go on break (excluding override player)
-        final candidatesForBreak = currentlyActive
-            .where((p) => p.id != overridePlayer.id)
-            .toList()..shuffle();
+        // Select someone to go on break using fairness logic if standings available
+        if (standings != null) {
+          // Get standings for only the active players (excluding override player)
+          final candidatesStandings = standings
+              .where((s) => currentlyActive.any((p) => p.id == s.player.id) && 
+                           s.player.id != overridePlayer.id)
+              .toList();
+          
+          // Use fairness logic to select who should take the break
+          final toBreak = _selectBreakPlayersWithFairness(
+            candidatesStandings.map((s) => s.player).toList(),
+            candidatesStandings,
+            overflowCount,
+          );
+          
+          newPlayersOnBreak.addAll(toBreak);
+        } else {
+          // Fallback to random selection if no standings provided
+          final candidatesForBreak = currentlyActive
+              .where((p) => p.id != overridePlayer.id)
+              .toList()..shuffle();
+          
+          newPlayersOnBreak.addAll(candidatesForBreak.take(overflowCount));
+        }
         
-        newPlayersOnBreak.addAll(candidatesForBreak.take(overflowCount));
         newActivePlayers = currentlyActive
             .where((p) => !newPlayersOnBreak.any((bp) => bp.id == p.id))
             .toList()..shuffle();
@@ -393,13 +418,50 @@ class TournamentService {
         newActivePlayers = currentlyActive..shuffle();
       }
     } else {
-      // Force player to break
-      newPlayersOnBreak = [...currentRound.playersOnBreak, overridePlayer];
+      // Force player to break - swap with someone on break if possible to maintain structure
+      newPlayersOnBreak = [...currentRound.playersOnBreak];
       
-      // Remove player from active pool
-      newActivePlayers = allPlayers
-          .where((p) => !newPlayersOnBreak.any((bp) => bp.id == p.id))
-          .toList()..shuffle();
+      // If there are players on break, swap the forced player with one of them
+      if (newPlayersOnBreak.isNotEmpty) {
+        // Select someone to swap with using fairness logic if available
+        Player playerToReturn;
+        
+        if (standings != null) {
+          // Get standings for players on break
+          final breakStandings = standings
+              .where((s) => newPlayersOnBreak.any((p) => p.id == s.player.id))
+              .toList();
+          
+          if (breakStandings.isNotEmpty) {
+            // Sort to find who has been on break the most (fairness)
+            breakStandings.sort(_compareForPauseFairness);
+            playerToReturn = breakStandings.last.player; // Last in list has most pauses
+          } else {
+            // Fallback to random
+            newPlayersOnBreak.shuffle();
+            playerToReturn = newPlayersOnBreak.first;
+          }
+        } else {
+          // Random selection
+          newPlayersOnBreak.shuffle();
+          playerToReturn = newPlayersOnBreak.first;
+        }
+        
+        // Perform the swap
+        newPlayersOnBreak.remove(playerToReturn);
+        newPlayersOnBreak.add(overridePlayer);
+        
+        // Active players include everyone except new break list
+        newActivePlayers = allPlayers
+            .where((p) => !newPlayersOnBreak.any((bp) => bp.id == p.id))
+            .toList()..shuffle();
+      } else {
+        // No one currently on break, so just add the override player to break
+        newPlayersOnBreak.add(overridePlayer);
+        newActivePlayers = allPlayers
+            .where((p) => !newPlayersOnBreak.any((bp) => bp.id == p.id))
+            .toList()..shuffle();
+      }
     }
     
     // Generate new matches from active players

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:star_cano/models/player.dart';
 import 'package:star_cano/models/round.dart';
 import '../models/tournament.dart';
 import '../services/persistence_service.dart';
@@ -300,6 +301,9 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
 
     if (confirmed != true || !mounted) return;
 
+    // Calculate current standings for fairness-based player selection
+    final standings = _standingsService.calculateStandings(_tournament);
+
     // Attempt to regenerate the round with the override
     final newRound = _tournamentService.regenerateRoundWithOverride(
       currentRound: _currentRound,
@@ -307,6 +311,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       courts: _tournament.courts,
       overridePlayer: player,
       forceToActive: forceToActive,
+      standings: standings,
     );
 
     if (newRound == null) {

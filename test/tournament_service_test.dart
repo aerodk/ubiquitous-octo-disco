@@ -959,12 +959,13 @@ void main() {
       ];
 
       // 9 players, 2 courts = max 1 player on pause (9 - 2*4 = 1)
+      // With 1 already on break, forcing another with swap should work
       final round = service.generateFirstRound(players, courts);
       expect(round.playersOnBreak.length, 1);
 
       final activePlayer = round.matches[0].team1.player1;
 
-      // Try to force another player to pause (would exceed max)
+      // Try to force another player to pause (would swap, maintaining 1 on break)
       final newRound = service.regenerateRoundWithOverride(
         currentRound: round,
         allPlayers: players,
@@ -973,7 +974,10 @@ void main() {
         forceToActive: false,
       );
 
-      expect(newRound, isNull);
+      // Should succeed because it's a swap (maintains structure)
+      expect(newRound, isNotNull);
+      expect(newRound!.playersOnBreak.length, 1);
+      expect(newRound.matches.length, 2);
     });
 
     test('should handle perfect divisibility after override', () {
