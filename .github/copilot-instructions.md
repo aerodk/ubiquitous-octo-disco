@@ -10,22 +10,34 @@ Purpose: Help AI coding agents be immediately productive in this Flutter codebas
 - Entry point: `lib/main.dart` — use this to wire temporary screens while developing features.
 - Source-of-truth spec: `docs/SPECIFICATION.md` — follow IDs like `F-001` when implementing features.
 
+## Implemented Features (Versions 1.0-5.0)
+- **Player & Court Registration (F-001, F-002)**: Add/remove players, configure courts, validation rules.
+- **Round Generation (F-003, F-004)**: Automatic first round with random pairing, display matches.
+- **Score Input (F-005)**: Configurable score grid (18-32 points), score tracking per match.
+- **Leaderboard (F-007)**: Hierarchical ranking with detailed statistics (points, wins, head-to-head).
+- **Final Round System (F-010-F-013)**: Rank-based pairing, tournament completion screen, podium display.
+- **Tournament Settings (F-014-F-017)**: Configurable minimum rounds, points per match, pairing strategies.
+- **Export Functionality**: CSV and JSON export for tournament results and standings.
+- **Persistence**: Save/load tournament state using SharedPreferences.
+
 ## Where to start (priority)
-- Review implemented code: Most Version 1.0 MVP models and screens are complete.
+- Review implemented code: Version 1.0-5.0 features are substantially complete.
 - Check `docs/TODO.md` for current status and next tasks.
-- Core models exist: `lib/models/player.dart`, `lib/models/court.dart`, `lib/models/match.dart`, `lib/models/round.dart`, `lib/models/tournament.dart`.
-- Core service exists: `lib/services/tournament_service.dart` (round generation implemented).
-- Primary screens exist: `lib/screens/setup_screen.dart`, `lib/screens/round_display_screen.dart`.
-- For Version 2.0 features (scoring, Americano algorithm), see `docs/SPECIFICATION.md` sections F-005 and F-006.
+- Core models exist: `lib/models/player.dart`, `lib/models/court.dart`, `lib/models/match.dart`, `lib/models/round.dart`, `lib/models/tournament.dart`, `lib/models/player_standing.dart`, `lib/models/tournament_settings.dart`.
+- Services implemented: `lib/services/tournament_service.dart` (round generation, final round logic), `lib/services/standings_service.dart` (leaderboard), `lib/services/persistence_service.dart` (data storage), `lib/services/export_service.dart` (CSV/JSON export).
+- Primary screens exist: `lib/screens/setup_screen.dart`, `lib/screens/round_display_screen.dart`, `lib/screens/leaderboard_screen.dart`, `lib/screens/tournament_completion_screen.dart`.
+- For detailed feature specifications, see `docs/SPECIFICATION.md` through `docs/SPECIFICATION_V5.md`.
 
 ## Key conventions & patterns (repo-specific)
 - Use JSON serialization helpers (`fromJson`/`toJson`) on model classes for persistence and testing.
 - Tournament generation follows the example in `docs/SPECIFICATION.md` (shuffle players, group into matches of 4, leftover players are `playersOnBreak`). Search for `generateFirstRound` in docs for the canonical algorithm snippet.
-- Scoring UI: `ScoreButtonGrid` concept (buttons 0–24) — prefer a `Wrap` of fixed-size `ElevatedButton`s that return an `int` score.
+- Final round pairing uses rank-based strategies (balanced, top alliance, max competition) configurable in TournamentSettings.
+- Scoring UI: `ScoreButtonGrid` concept (buttons 0–24 or configurable max) — prefer a `Wrap` of fixed-size `ElevatedButton`s that return an `int` score.
 - State management: project uses `provider` (see `pubspec.yaml`). Prefer simple `ChangeNotifier` services for now; Riverpod may be used but is not required by existing code.
-- Persistence: `shared_preferences` is the expected lightweight storage for MVP data.
+- Persistence: `shared_preferences` is used for tournament data storage. Use `PersistenceService` for all save/load operations.
+- Export functionality: Use `ExportService` for CSV and JSON exports. Platform-specific handling implemented.
 - Lints & analysis: `flutter_lints` is configured. Run `flutter analyze` and fix reported issues before committing.
-- Dependencies: `provider` (state management), `shared_preferences` (storage), `uuid` (ID generation). Don't add new dependencies without justification.
+- Dependencies: `provider` (state management), `shared_preferences` (storage), `uuid` (ID generation), `csv` (export functionality). Don't add new dependencies without justification.
 
 ## Build & developer workflows
 - Install deps:
@@ -53,6 +65,12 @@ flutter run -d chrome
 flutter devices
 ```
 - Hot reload: press `r` in the running terminal; hot restart: `R`.
+
+## Deployment
+- Web deployment to GitHub Pages is configured for both production and test environments.
+- Production deployment: Manual from `main` branch to `https://aerodk.github.io/ubiquitous-octo-disco/`
+- Test deployment: Automatic from `develop` branch for testing.
+- See `deployment.MD` and `docs/TEST_DEPLOYMENT.md` for complete deployment workflows.
 
 ## How to ask Copilot / Chat (examples proven in this repo)
 - Always reference the spec for features:
@@ -86,9 +104,12 @@ flutter devices
   4. Review changed files to ensure only intended changes are included
 
 ## Files to inspect for context
-- `docs/SPECIFICATION.md` — canonical requirements and code snippets.
+- `docs/SPECIFICATION.md` through `docs/SPECIFICATION_V5.md` — canonical requirements and code snippets for all versions.
+- `docs/TODO.md` — current development status and task tracking.
 - `docs/GETTING_STARTED.md` — Copilot usage patterns and local dev steps.
-- `lib/main.dart` — temporary home screen wiring for manual testing.
+- `lib/main.dart` — app entry point and navigation setup.
+- `README.md` — project overview, features, and deployment information.
+- `pubspec.yaml` — dependencies and project configuration.
 
 ## Notes for agents
 - Only implement behavior that is discoverable from the repo (spec, code, or docs). If a decision is ambiguous, propose an option and add a one-line TODO referencing the spec ID.
