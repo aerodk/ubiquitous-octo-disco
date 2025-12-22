@@ -256,8 +256,8 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   }
 
   /// Override a player's pause status
-  /// If forceToActive is false, player is currently on pause and should be forced to active
-  /// If forceToActive is true, player is currently active and should be forced to pause
+  /// If forceToActive is true, player is currently on pause and should be forced to active
+  /// If forceToActive is false, player is currently active and should be forced to pause
   Future<void> _overridePlayerToPause(Player player, bool forceToActive) async {
     // Don't allow overrides if any scores have been entered
     if (_currentRound.matches.any((m) => m.team1Score != null || m.team2Score != null)) {
