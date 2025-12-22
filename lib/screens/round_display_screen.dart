@@ -358,7 +358,8 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                             crossAxisCount: crossAxisCount,
                             crossAxisSpacing: 16,
                             mainAxisSpacing: 16,
-                            childAspectRatio: 1.7, // Adjust height ratio as needed
+                            // Ensure enough vertical space for match content in tight test layouts
+                            mainAxisExtent: 260,
                           ),
                           itemCount: _currentRound.matches.length,
                           itemBuilder: (context, index) {
