@@ -805,4 +805,268 @@ void main() {
       expect(round.roundNumber, 1);
     });
   });
+
+  group('TournamentService - Player Override', () {
+    late TournamentService service;
+
+    setUp(() {
+      service = TournamentService();
+    });
+
+    test('should force player from pause to active', () {
+      final players = List.generate(
+        9,
+        (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
+      );
+
+      final courts = [
+        Court(id: '1', name: 'Bane 1'),
+        Court(id: '2', name: 'Bane 2'),
+      ];
+
+      // Generate initial round
+      final initialRound = service.generateFirstRound(players, courts);
+      expect(initialRound.playersOnBreak.length, 1);
+      
+      final playerOnBreak = initialRound.playersOnBreak[0];
+
+      // Force player from break to active
+      final newRound = service.regenerateRoundWithOverride(
+        currentRound: initialRound,
+        allPlayers: players,
+        courts: courts,
+        overridePlayer: playerOnBreak,
+        forceToActive: true,
+      );
+
+      expect(newRound, isNotNull);
+      expect(newRound!.playersOnBreak.any((p) => p.id == playerOnBreak.id), false);
+      expect(newRound.matches.length, 2);
+      
+      // Verify the override player is now in a match
+      final allMatchPlayers = newRound.matches.expand((m) => [
+        m.team1.player1,
+        m.team1.player2,
+        m.team2.player1,
+        m.team2.player2,
+      ]).toList();
+      
+      expect(allMatchPlayers.any((p) => p.id == playerOnBreak.id), true);
+    });
+
+    test('should force player from active to pause', () {
+      final players = List.generate(
+        9,
+        (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
+      );
+
+      final courts = [
+        Court(id: '1', name: 'Bane 1'),
+        Court(id: '2', name: 'Bane 2'),
+      ];
+
+      // Generate initial round
+      final initialRound = service.generateFirstRound(players, courts);
+      
+      // Get a player who is currently active (in a match)
+      final activePlayer = initialRound.matches[0].team1.player1;
+
+      // Force player from active to break
+      final newRound = service.regenerateRoundWithOverride(
+        currentRound: initialRound,
+        allPlayers: players,
+        courts: courts,
+        overridePlayer: activePlayer,
+        forceToActive: false,
+      );
+
+      expect(newRound, isNotNull);
+      expect(newRound!.playersOnBreak.any((p) => p.id == activePlayer.id), true);
+      expect(newRound.matches.length, 2);
+      
+      // Verify the override player is NOT in any match
+      final allMatchPlayers = newRound.matches.expand((m) => [
+        m.team1.player1,
+        m.team1.player2,
+        m.team2.player1,
+        m.team2.player2,
+      ]).toList();
+      
+      expect(allMatchPlayers.any((p) => p.id == activePlayer.id), false);
+    });
+
+    test('should return null when forcing already active player to active', () {
+      final players = List.generate(
+        8,
+        (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
+      );
+
+      final courts = [
+        Court(id: '1', name: 'Bane 1'),
+        Court(id: '2', name: 'Bane 2'),
+      ];
+
+      final round = service.generateFirstRound(players, courts);
+      final activePlayer = round.matches[0].team1.player1;
+
+      // Try to force already active player to active
+      final newRound = service.regenerateRoundWithOverride(
+        currentRound: round,
+        allPlayers: players,
+        courts: courts,
+        overridePlayer: activePlayer,
+        forceToActive: true,
+      );
+
+      expect(newRound, isNull);
+    });
+
+    test('should return null when forcing already paused player to pause', () {
+      final players = List.generate(
+        9,
+        (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
+      );
+
+      final courts = [
+        Court(id: '1', name: 'Bane 1'),
+        Court(id: '2', name: 'Bane 2'),
+      ];
+
+      final round = service.generateFirstRound(players, courts);
+      final pausedPlayer = round.playersOnBreak[0];
+
+      // Try to force already paused player to pause
+      final newRound = service.regenerateRoundWithOverride(
+        currentRound: round,
+        allPlayers: players,
+        courts: courts,
+        overridePlayer: pausedPlayer,
+        forceToActive: false,
+      );
+
+      expect(newRound, isNull);
+    });
+
+    test('should return null when trying to exceed max pause players', () {
+      final players = List.generate(
+        9,
+        (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
+      );
+
+      final courts = [
+        Court(id: '1', name: 'Bane 1'),
+        Court(id: '2', name: 'Bane 2'),
+      ];
+
+      // 9 players, 2 courts = max 1 player on pause (9 - 2*4 = 1)
+      final round = service.generateFirstRound(players, courts);
+      expect(round.playersOnBreak.length, 1);
+
+      final activePlayer = round.matches[0].team1.player1;
+
+      // Try to force another player to pause (would exceed max)
+      final newRound = service.regenerateRoundWithOverride(
+        currentRound: round,
+        allPlayers: players,
+        courts: courts,
+        overridePlayer: activePlayer,
+        forceToActive: false,
+      );
+
+      expect(newRound, isNull);
+    });
+
+    test('should handle perfect divisibility after override', () {
+      final players = List.generate(
+        8,
+        (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
+      );
+
+      final courts = [
+        Court(id: '1', name: 'Bane 1'),
+        Court(id: '2', name: 'Bane 2'),
+      ];
+
+      // 8 players, 2 courts = perfect fit, no one on pause
+      final round = service.generateFirstRound(players, courts);
+      expect(round.playersOnBreak.length, 0);
+      expect(round.matches.length, 2);
+
+      final activePlayer = round.matches[0].team1.player1;
+
+      // Force one player to pause
+      final newRound = service.regenerateRoundWithOverride(
+        currentRound: round,
+        allPlayers: players,
+        courts: courts,
+        overridePlayer: activePlayer,
+        forceToActive: false,
+      );
+
+      expect(newRound, isNotNull);
+      expect(newRound!.playersOnBreak.length, 1);
+      expect(newRound.playersOnBreak[0].id, activePlayer.id);
+      expect(newRound.matches.length, 1); // Only 1 match now (7 active players)
+    });
+
+    test('should maintain round properties after override', () {
+      final players = List.generate(
+        9,
+        (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
+      );
+
+      final courts = [
+        Court(id: '1', name: 'Bane 1'),
+        Court(id: '2', name: 'Bane 2'),
+      ];
+
+      final initialRound = service.generateFirstRound(players, courts);
+      final playerOnBreak = initialRound.playersOnBreak[0];
+
+      final newRound = service.regenerateRoundWithOverride(
+        currentRound: initialRound,
+        allPlayers: players,
+        courts: courts,
+        overridePlayer: playerOnBreak,
+        forceToActive: true,
+      );
+
+      expect(newRound, isNotNull);
+      expect(newRound!.roundNumber, initialRound.roundNumber);
+      expect(newRound.isFinalRound, initialRound.isFinalRound);
+    });
+
+    test('should handle 10 players with 2 courts (2 on pause)', () {
+      final players = List.generate(
+        10,
+        (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
+      );
+
+      final courts = [
+        Court(id: '1', name: 'Bane 1'),
+        Court(id: '2', name: 'Bane 2'),
+      ];
+
+      // 10 players, 2 courts = 2 players on pause (10 - 2*4 = 2)
+      final round = service.generateFirstRound(players, courts);
+      expect(round.playersOnBreak.length, 2);
+
+      final playerOnBreak = round.playersOnBreak[0];
+
+      // Force one paused player to active
+      final newRound = service.regenerateRoundWithOverride(
+        currentRound: round,
+        allPlayers: players,
+        courts: courts,
+        overridePlayer: playerOnBreak,
+        forceToActive: true,
+      );
+
+      expect(newRound, isNotNull);
+      // Still 2 on pause, but different players
+      expect(newRound!.playersOnBreak.length, 2);
+      expect(newRound.playersOnBreak.any((p) => p.id == playerOnBreak.id), false);
+      expect(newRound.matches.length, 2);
+    });
+  });
 }
