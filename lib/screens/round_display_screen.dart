@@ -259,7 +259,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   /// Override a player's pause status
   /// If forceToActive is true, player is currently on pause and should be forced to active
   /// If forceToActive is false, player is currently active and should be forced to pause
-  Future<void> _overridePlayerToPause(Player player, bool forceToActive) async {
+  Future<void> _overridePlayerPauseStatus(Player player, bool forceToActive) async {
     // Don't allow overrides if any scores have been entered
     if (_currentRound.matches.any((m) => m.team1Score != null || m.team2Score != null)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -272,10 +272,10 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     }
 
     // Show confirmation dialog
-    final String actionText = forceToActive ? 'pause' : 'spille';
+    final String actionText = forceToActive ? 'spille' : 'pause';
     final String explanationText = forceToActive
-        ? 'Dette vil tvinge ${player.name} til at holde pause og omarrangere de andre spillere.'
-        : 'Dette vil tvinge ${player.name} til at spille og omarrangere de andre spillere.';
+        ? 'Dette vil tvinge ${player.name} til at spille og omarrangere de andre spillere.'
+        : 'Dette vil tvinge ${player.name} til at holde pause og omarrangere de andre spillere.';
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -485,7 +485,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                                 setState(() {});
                                 _checkForTournamentCompletion();
                               },
-                              onPlayerForceToPause: (player) => _overridePlayerToPause(player, true),
+                              onPlayerForceToPause: (player) => _overridePlayerPauseStatus(player, false),
                             );
                           },
                         ),
@@ -517,7 +517,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                                       .map((player) => ActionChip(
                                             label: Text(player.name),
                                             avatar: const Icon(Icons.play_arrow, size: 18),
-                                            onPressed: () => _overridePlayerToPause(player, false),
+                                            onPressed: () => _overridePlayerPauseStatus(player, true),
                                           ))
                                       .toList(),
                                 ),
