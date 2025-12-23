@@ -101,7 +101,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
           'Alt data vil blive slettet.',
         ),
         actions: [
-          TextButton(
+          TextButton (
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Annuller'),
           ),

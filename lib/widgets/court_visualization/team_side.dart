@@ -24,6 +24,7 @@ class TeamSide extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         // Team label
@@ -36,7 +37,7 @@ class TeamSide extends StatelessWidget {
             letterSpacing: 1.2,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 8),
         // Player 1
         PlayerMarker(
           player: team.player1,
@@ -44,7 +45,7 @@ class TeamSide extends StatelessWidget {
               ? () => onPlayerLongPress!(team.player1)
               : null,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 6),
         // Player 2
         PlayerMarker(
           player: team.player2,
@@ -52,7 +53,7 @@ class TeamSide extends StatelessWidget {
               ? () => onPlayerLongPress!(team.player2)
               : null,
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 8),
         // Score display
         ScoreDisplay(score: score),
       ],

@@ -17,7 +17,7 @@ class PlayerMarker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Widget marker = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(20),

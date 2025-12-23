@@ -58,9 +58,10 @@ class _MatchCardState extends State<MatchCard> {
         borderRadius: BorderRadius.circular(16),
         side: const BorderSide(color: AppColors.courtBorder, width: 3),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
+      child: IntrinsicHeight(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
           // Header Section - Court Name & Actions
           Container(
             padding: const EdgeInsets.all(16),
@@ -91,20 +92,21 @@ class _MatchCardState extends State<MatchCard> {
           ),
           
           // Court Body Layout - Three-Column Layout
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  AppColors.courtBackgroundLight,
-                  AppColors.courtBackgroundDark,
-                ],
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    AppColors.courtBackgroundLight,
+                    AppColors.courtBackgroundDark,
+                  ],
+                ),
+                borderRadius: BorderRadius.vertical(bottom: Radius.circular(13)),
               ),
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(13)),
-            ),
-            child: IntrinsicHeight(
+              child: IntrinsicHeight(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -143,7 +145,9 @@ class _MatchCardState extends State<MatchCard> {
               ),
             ),
           ),
-        ],
+        ),
+          ],
+        ),
       ),
     );
   }
@@ -376,25 +380,6 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
                 ),
               ),
             ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Annuller'),
-        )
-      ],
-    );
-  }
-
-  void popClose() {
-    Navigator.pop(context, {
-                    'team1Score': _team1Score,
-                    'team2Score': _team2Score,
-                  });
-  }
-}
           ],
         ),
       ),
