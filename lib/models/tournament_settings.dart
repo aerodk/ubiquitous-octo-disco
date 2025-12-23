@@ -110,9 +110,9 @@ class TournamentSettings {
   String _laneStrategyName(LaneAssignmentStrategy strategy) {
     switch (strategy) {
       case LaneAssignmentStrategy.sequential:
-        return 'Baner: Sekventiel';
+        return 'Sekventiel';
       case LaneAssignmentStrategy.random:
-        return 'Baner: Tilfældig';
+        return 'Tilfældig';
     }
   }
 

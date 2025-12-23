@@ -87,7 +87,7 @@ void main() {
 
     test('summary returns correctly formatted string', () {
       const settings1 = TournamentSettings();
-      expect(settings1.summary, '24 point • Balanced • Pause: 12 pt • Baner: Sekventiel');
+      expect(settings1.summary, '24 point • Balanced • Pause: 12 pt • Sekventiel');
       
       const settings2 = TournamentSettings(
         minRoundsBeforeFinal: 5,
@@ -96,12 +96,12 @@ void main() {
         pausePointsAwarded: 0,
         laneAssignmentStrategy: LaneAssignmentStrategy.random,
       );
-      expect(settings2.summary, '30 point • Top Alliance • Pause: 0 pt • Baner: Tilfældig');
+      expect(settings2.summary, '30 point • Top Alliance • Pause: 0 pt • Tilfældig');
       
       const settings3 = TournamentSettings(
         finalRoundStrategy: PairingStrategy.maxCompetition,
       );
-      expect(settings3.summary, '24 point • Max Competition • Pause: 12 pt • Baner: Sekventiel');
+      expect(settings3.summary, '24 point • Max Competition • Pause: 12 pt • Sekventiel');
     });
 
     test('isValid returns true for valid settings', () {
