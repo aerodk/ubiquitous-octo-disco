@@ -100,6 +100,14 @@ class TournamentService {
     );
   }
 
+  /// Beregn hvor mange spillere der skal på pause ud fra banekapacitet og hele hold (4)
+  int _computeOverflowCount(int totalPlayers, int courtCount) {
+    final capacity = courtCount * 4;
+    final playableByCount = (totalPlayers ~/ 4) * 4; // nærmeste nedre multiplum af 4
+    final playable = capacity < playableByCount ? capacity : playableByCount;
+    return totalPlayers - playable;
+  }
+
   /// Generates a regular round (non-final) with pause fairness
   /// Avoids consecutive pauses and distributes breaks fairly
   /// Takes standings to track pause history and ensure fair distribution
@@ -114,8 +122,7 @@ class TournamentService {
     final shuffledPlayers = List<Player>.from(players)..shuffle();
 
     final totalPlayers = players.length;
-    final playersNeeded = (totalPlayers ~/ 4) * 4;
-    final overflowCount = totalPlayers - playersNeeded;
+    final overflowCount = _computeOverflowCount(totalPlayers, courts.length);
 
     // Select players for break using pause fairness logic
     final playersOnBreak = <Player>[];
@@ -224,8 +231,7 @@ class TournamentService {
       ..sort((a, b) => a.rank.compareTo(b.rank));
 
     final totalPlayers = rankedStandings.length;
-    final playersNeeded = (totalPlayers ~/ 4) * 4; // Round down to nearest multiple of 4
-    final overflowCount = totalPlayers - playersNeeded;
+    final overflowCount = _computeOverflowCount(totalPlayers, courts.length);
 
     // Select players who will sit out using rolling pause system
     final playersOnBreak = <Player>[];
