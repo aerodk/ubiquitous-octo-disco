@@ -1133,11 +1133,12 @@ void main() {
 
       // Expect at least some variation in court assignments across rounds
       final firstMatchCourts = rounds.map((r) => r.matches[0].court.id).toSet();
-      
+
       // With random assignment, we should see variation (not all the same)
       // This test may occasionally fail due to randomness, but the probability is low
       expect(rounds.length, 10);
       expect(rounds.every((r) => r.matches.length == 4), true);
+      expect(firstMatchCourts.length, greaterThan(1));
     });
 
     test('should apply lane strategy to generateNextRound', () {

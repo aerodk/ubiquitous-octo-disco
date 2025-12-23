@@ -714,9 +714,11 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                     crossAxisCount = 1; // 1 column on small screens
                   }
 
-                  return ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
+                  return SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
                       // Display matches in a responsive grid
                       if (_currentRound.matches.isNotEmpty)
                         GridView.builder(
@@ -834,32 +836,46 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                 children: [
                                   Expanded(
-                                    child: ElevatedButton.icon(
+                                    child: ElevatedButton(
                                       onPressed: _tournament.courts.length < Constants.maxCourts &&
                                               !_currentRound.matches.any((m) => m.team1Score != null || m.team2Score != null) &&
                                               _currentRound.playersOnBreak.length >= 4
                                           ? _addCourt
                                           : null,
-                                      icon: const Icon(Icons.add),
-                                      label: const Text('Tilføj bane'),
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.green[100],
                                         foregroundColor: Colors.green[900],
+                                      ),
+                                      child: const Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.add),
+                                          SizedBox(width: 6),
+                                          Text('Tilføj bane'),
+                                        ],
                                       ),
                                     ),
                                   ),
                                   const SizedBox(width: 8),
                                   Expanded(
-                                    child: ElevatedButton.icon(
+                                    child: ElevatedButton(
                                       onPressed: _tournament.courts.length > Constants.minCourts &&
                                               !_currentRound.matches.any((m) => m.team1Score != null || m.team2Score != null)
                                           ? _removeCourt
                                           : null,
-                                      icon: const Icon(Icons.remove),
-                                      label: const Text('Fjern bane'),
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.red[100],
                                         foregroundColor: Colors.red[900],
+                                      ),
+                                      child: const Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.remove),
+                                          SizedBox(width: 6),
+                                          Text('Fjern bane'),
+                                        ],
                                       ),
                                     ),
                                   ),
@@ -870,7 +886,9 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                         ),
                       ),
                     ],
-                  );
+                  ),
+                ),
+              );
                 },
               ),
             ),
