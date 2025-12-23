@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import '../models/match.dart';
 import '../models/player.dart';
+import '../utils/colors.dart';
+import 'court_visualization/team_side.dart';
+import 'court_visualization/net_divider.dart';
 
+/// Match card with court visualization layout
+/// F-018, F-019: Court Visualization with Side-by-Side Layout & Match Card Redesign
 class MatchCard extends StatefulWidget {
   final Match match;
   final VoidCallback? onScoreChanged;
@@ -46,115 +51,131 @@ class _MatchCardState extends State<MatchCard> {
 
   @override
   Widget build(BuildContext context) {
-    final hasScores = widget.match.team1Score != null && widget.match.team2Score != null;
-    
     return Card(
       margin: EdgeInsets.zero,
-      child: InkWell(
-        onTap: _showScoreInput,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+      elevation: 6,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppColors.courtBorder, width: 3),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header Section - Court Name & Actions
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: const BoxDecoration(
+              color: AppColors.courtHeader,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(13)),
+            ),
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.sports_tennis, color: Colors.green),
-                    const SizedBox(width: 8),
-                    Text(
-                      widget.match.court.name,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Spacer(),
-                    if (hasScores)
-                      const Icon(Icons.check_circle, color: Colors.green)
-                    else
-                      const Icon(Icons.edit, color: Colors.grey),
-                  ],
-                ),
-                const Divider(height: 24),
-                _buildTeam('Par 1', widget.match.team1, widget.match.team1Score),
-                const SizedBox(height: 12),
-                const Center(
-                  child: Text(
-                    'VS',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                const Icon(Icons.sports_tennis, color: AppColors.textLight, size: 24),
+                const SizedBox(width: 8),
+                Text(
+                  widget.match.court.name,
+                  style: const TextStyle(
+                    color: AppColors.textLight,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 12),
-                _buildTeam('Par 2', widget.match.team2, widget.match.team2Score),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.edit, color: AppColors.textLight),
+                  onPressed: _showScoreInput,
+                  tooltip: 'Indtast score',
+                ),
               ],
             ),
           ),
-        ),
+          
+          // Court Body Layout - Three-Column Layout
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  AppColors.courtBackgroundLight,
+                  AppColors.courtBackgroundDark,
+                ],
+              ),
+            ),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Par 1 (Left side) - 40%
+                  Expanded(
+                    flex: 4,
+                    child: TeamSide(
+                      team: widget.match.team1,
+                      label: 'PAR 1',
+                      score: widget.match.team1Score,
+                    ),
+                  ),
+                  
+                  // Net (Center) - 20%
+                  const Expanded(
+                    flex: 2,
+                    child: NetDivider(),
+                  ),
+                  
+                  // Par 2 (Right side) - 40%
+                  Expanded(
+                    flex: 4,
+                    child: TeamSide(
+                      team: widget.match.team2,
+                      label: 'PAR 2',
+                      score: widget.match.team2Score,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          // Optional: Player override section (only shown when onPlayerForceToPause is provided)
+          if (widget.onPlayerForceToPause != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(13)),
+              ),
+              child: Column(
+                children: [
+                  const Text(
+                    'Tving spillere til pause:',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 4),
+                  Wrap(
+                    spacing: 4,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      _buildPlayerOverrideChip(widget.match.team1.player1),
+                      _buildPlayerOverrideChip(widget.match.team1.player2),
+                      _buildPlayerOverrideChip(widget.match.team2.player1),
+                      _buildPlayerOverrideChip(widget.match.team2.player2),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
 
-  Widget _buildTeam(String label, Team team, int? score) {
-    final canOverride = widget.onPlayerForceToPause != null;
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 12,
-              ),
-            ),
-            const Spacer(),
-            if (score != null)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.blue[100],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '$score',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        if (canOverride)
-          Wrap(
-            spacing: 4,
-            children: [
-              ActionChip(
-                label: Text(team.player1.name),
-                avatar: const Icon(Icons.pause, size: 16),
-                onPressed: () => widget.onPlayerForceToPause!(team.player1),
-                visualDensity: VisualDensity.compact,
-              ),
-              const Text(' & ', style: TextStyle(fontSize: 16)),
-              ActionChip(
-                label: Text(team.player2.name),
-                avatar: const Icon(Icons.pause, size: 16),
-                onPressed: () => widget.onPlayerForceToPause!(team.player2),
-                visualDensity: VisualDensity.compact,
-              ),
-            ],
-          )
-        else
-          Text(
-            '${team.player1.name} & ${team.player2.name}',
-            style: const TextStyle(fontSize: 16),
-          ),
-      ],
+  Widget _buildPlayerOverrideChip(Player player) {
+    return ActionChip(
+      label: Text(player.name),
+      avatar: const Icon(Icons.pause, size: 16),
+      onPressed: () => widget.onPlayerForceToPause!(player),
+      visualDensity: VisualDensity.compact,
     );
   }
 }

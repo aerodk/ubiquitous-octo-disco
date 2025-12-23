@@ -6,6 +6,7 @@ import '../models/court.dart';
 import '../services/persistence_service.dart';
 import '../services/standings_service.dart';
 import '../widgets/match_card.dart';
+import '../widgets/court_visualization/bench_section.dart';
 import '../services/tournament_service.dart';
 import '../utils/constants.dart';
 import 'setup_screen.dart';
@@ -750,60 +751,9 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                       // Display players on break
                       if (_currentRound.playersOnBreak.isNotEmpty) ...[
                         const SizedBox(height: 16),
-                        Card(
-                          color: Colors.orange[50],
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Row(
-                                  children: [
-                                    Icon(Icons.pause_circle, color: Colors.orange),
-                                    SizedBox(width: 8),
-                                    Text(
-                                      'Pause',
-                                      style: TextStyle(fontWeight: FontWeight.bold),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children: _currentRound.playersOnBreak
-                                      .map((player) {
-                                        final isNewlyPaused = _newlyPausedPlayerIds.contains(player.id);
-                                        return ActionChip(
-                                          label: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(
-                                                player.name,
-                                                style: TextStyle(
-                                                  fontWeight: isNewlyPaused ? FontWeight.bold : FontWeight.normal,
-                                                ),
-                                              ),
-                                              if (isNewlyPaused) ...[
-                                                const SizedBox(width: 4),
-                                                const Icon(
-                                                  Icons.new_releases,
-                                                  size: 16,
-                                                  color: Colors.deepOrange,
-                                                ),
-                                              ],
-                                            ],
-                                          ),
-                                          avatar: const Icon(Icons.play_arrow, size: 18),
-                                          backgroundColor: isNewlyPaused ? Colors.orange[200] : null,
-                                          onPressed: () => _overridePlayerPauseStatus(player, true),
-                                        );
-                                      })
-                                      .toList(),
-                                ),
-                              ],
-                            ),
-                          ),
+                        BenchSection(
+                          playersOnBreak: _currentRound.playersOnBreak,
+                          onPlayerTap: (player) => _overridePlayerPauseStatus(player, true),
                         ),
                       ],
 
