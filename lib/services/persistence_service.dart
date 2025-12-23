@@ -7,6 +7,7 @@ class PersistenceService {
   static const String _tournamentKey = 'current_tournament';
   static const String _setupPlayersKey = 'setup_players';
   static const String _setupCourtsKey = 'setup_courts';
+  static const String _fullTournamentHistoryKey = 'full_tournament_history';
 
   /// Save the current tournament to local storage
   Future<void> saveTournament(Tournament tournament) async {
@@ -35,6 +36,36 @@ class PersistenceService {
   Future<void> clearTournament() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tournamentKey);
+    await prefs.remove(_fullTournamentHistoryKey);
+  }
+  
+  /// Save the full tournament history (used when navigating back to preserve future rounds)
+  Future<void> saveFullTournamentHistory(Tournament tournament) async {
+    final prefs = await SharedPreferences.getInstance();
+    final json = jsonEncode(tournament.toJson());
+    await prefs.setString(_fullTournamentHistoryKey, json);
+  }
+  
+  /// Load the full tournament history
+  Future<Tournament?> loadFullTournamentHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final json = prefs.getString(_fullTournamentHistoryKey);
+    if (json == null || json.isEmpty) return null;
+    
+    try {
+      final Map<String, dynamic> data = jsonDecode(json);
+      return Tournament.fromJson(data);
+    } catch (e) {
+      // If deserialization fails, clear the corrupted data
+      await prefs.remove(_fullTournamentHistoryKey);
+      return null;
+    }
+  }
+  
+  /// Clear the full tournament history
+  Future<void> clearFullTournamentHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_fullTournamentHistoryKey);
   }
 
   /// Save setup screen state (players and court count)
