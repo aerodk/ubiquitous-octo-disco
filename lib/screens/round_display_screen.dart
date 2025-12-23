@@ -27,9 +27,6 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   final TournamentService _tournamentService = TournamentService();
   final StandingsService _standingsService = StandingsService();
   late Tournament _tournament;
-
-  // Navigation delay for tournament completion
-  static const _completionNavigationDelay = Duration(milliseconds: 500);
   
   // Track players who were newly moved to pause after court adjustment
   Set<String> _newlyPausedPlayerIds = {};
@@ -69,26 +66,19 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     return true;
   }
 
-  void _checkForTournamentCompletion() {
-    // Check if final round is completed
-    if (_currentRound.isFinalRound && _currentRound.isCompleted) {
-      // Mark tournament as completed
-      final completedTournament = _tournament.copyWith(isCompleted: true);
-      
-      // Navigate to completion screen after a short delay
-      Future.delayed(_completionNavigationDelay, () {
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => TournamentCompletionScreen(
-                tournament: completedTournament,
-              ),
-            ),
-          );
-        }
-      });
-    }
+  void _showTournamentCompletion() {
+    // Mark tournament as completed
+    final completedTournament = _tournament.copyWith(isCompleted: true);
+    
+    // Navigate to completion screen
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TournamentCompletionScreen(
+          tournament: completedTournament,
+        ),
+      ),
+    );
   }
 
   Future<void> _resetTournament() async {
@@ -741,7 +731,6 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                               maxPoints: _tournament.settings.pointsPerMatch,
                               onScoreChanged: () {
                                 setState(() {});
-                                _checkForTournamentCompletion();
                               },
                               onPlayerForceToPause: (player) => _overridePlayerPauseStatus(player, false),
                             );
@@ -874,6 +863,29 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                   // Add spacing between buttons when both are shown
                   if (_canStartFinalRound && !_currentRound.isFinalRound)
                     const SizedBox(height: 12),
+                  
+                  // Show result button when final round is completed
+                  if (_currentRound.isFinalRound && _currentRound.isCompleted)
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton.icon(
+                        onPressed: _showTournamentCompletion,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.amber[600],
+                          foregroundColor: Colors.black,
+                          elevation: 8,
+                        ),
+                        icon: const Icon(Icons.emoji_events, size: 28),
+                        label: const Text(
+                          'Vis Resultat',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
                   
                   // Regular next round button (shown when not in final round)
                   if (!_currentRound.isFinalRound)

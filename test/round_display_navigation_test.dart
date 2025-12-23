@@ -334,5 +334,93 @@ void main() {
       expect(find.text('Generer Næste Runde (3)'), findsOneWidget);
       expect(find.text('Start Sidste Runde'), findsNothing);
     });
+
+    testWidgets('should show "Vis Resultat" button when final round is completed', (WidgetTester tester) async {
+      // Create tournament with completed final round
+      final completedFinalMatch = Match(
+        court: courts[0],
+        team1: Team(player1: players[0], player2: players[1]),
+        team2: Team(player1: players[2], player2: players[3]),
+        team1Score: 15,
+        team2Score: 9,
+      );
+
+      final finalRound = Round(
+        roundNumber: 4,
+        matches: [completedFinalMatch],
+        playersOnBreak: [],
+        isFinalRound: true,
+      );
+
+      final tournamentWithCompletedFinalRound = Tournament(
+        name: 'Test Tournament',
+        players: players,
+        courts: courts,
+        rounds: [
+          Round(roundNumber: 1, matches: [completedFinalMatch], playersOnBreak: []),
+          Round(roundNumber: 2, matches: [completedFinalMatch], playersOnBreak: []),
+          Round(roundNumber: 3, matches: [completedFinalMatch], playersOnBreak: []),
+          finalRound,
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: RoundDisplayScreen(tournament: tournamentWithCompletedFinalRound),
+        ),
+      );
+
+      // Should show "Vis Resultat" button
+      expect(find.text('Vis Resultat'), findsOneWidget);
+      // Should NOT show "Generer Næste Runde" button (in final round)
+      expect(find.textContaining('Generer Næste Runde'), findsNothing);
+    });
+
+    testWidgets('should not show "Vis Resultat" button when final round is not completed', (WidgetTester tester) async {
+      // Create tournament with incomplete final round
+      final incompleteFinalMatch = Match(
+        court: courts[0],
+        team1: Team(player1: players[0], player2: players[1]),
+        team2: Team(player1: players[2], player2: players[3]),
+      );
+
+      final finalRound = Round(
+        roundNumber: 4,
+        matches: [incompleteFinalMatch],
+        playersOnBreak: [],
+        isFinalRound: true,
+      );
+
+      final completedMatch = Match(
+        court: courts[0],
+        team1: Team(player1: players[0], player2: players[1]),
+        team2: Team(player1: players[2], player2: players[3]),
+        team1Score: 15,
+        team2Score: 9,
+      );
+
+      final tournamentWithIncompleteFinalRound = Tournament(
+        name: 'Test Tournament',
+        players: players,
+        courts: courts,
+        rounds: [
+          Round(roundNumber: 1, matches: [completedMatch], playersOnBreak: []),
+          Round(roundNumber: 2, matches: [completedMatch], playersOnBreak: []),
+          Round(roundNumber: 3, matches: [completedMatch], playersOnBreak: []),
+          finalRound,
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: RoundDisplayScreen(tournament: tournamentWithIncompleteFinalRound),
+        ),
+      );
+
+      // Should NOT show "Vis Resultat" button (final round not completed)
+      expect(find.text('Vis Resultat'), findsNothing);
+      // Should NOT show "Generer Næste Runde" button (in final round)
+      expect(find.textContaining('Generer Næste Runde'), findsNothing);
+    });
   });
 }

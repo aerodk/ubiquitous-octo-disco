@@ -309,12 +309,13 @@ class _TournamentCompletionScreenState
       return const SizedBox.shrink();
     }
 
-    // Make podium larger on bigger screens
+    // Make podium significantly larger
     final screenWidth = MediaQuery.of(context).size.width;
-    final scaleFactor = screenWidth > 600 ? 1.5 : 1.0;
+    // Increase scale factor for larger podiums
+    final scaleFactor = screenWidth > 600 ? 2.5 : 1.8;
     // Leave extra headroom for medal/name so columns do not overflow the bottom
     final firstPlaceHeight = 180.0 * scaleFactor;
-    final podiumHeight = firstPlaceHeight + (90.0 * scaleFactor);
+    final podiumHeight = firstPlaceHeight + (120.0 * scaleFactor); // More vertical space
     final secondPlaceHeight = 140.0 * scaleFactor;
     final thirdPlaceHeight = 120.0 * scaleFactor;
 
@@ -328,17 +329,17 @@ class _TournamentCompletionScreenState
             children: [
               // 2nd place
               if (top3.length > 1) _buildPodiumPlace(top3[1], 2, secondPlaceHeight, Colors.grey, scaleFactor),
-              SizedBox(width: 8 * scaleFactor),
+              SizedBox(width: 12 * scaleFactor),
               // 1st place
               _buildPodiumPlace(top3[0], 1, firstPlaceHeight, Colors.amber, scaleFactor),
-              SizedBox(width: 8 * scaleFactor),
+              SizedBox(width: 12 * scaleFactor),
               // 3rd place
               if (top3.length > 2)
                 _buildPodiumPlace(top3[2], 3, thirdPlaceHeight, Colors.brown, scaleFactor),
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 24),
         // Show All button for remaining positions
         if (_standings.length > 3 && !_showAllPositions)
           ElevatedButton.icon(
@@ -375,20 +376,27 @@ class _TournamentCompletionScreenState
             children: [
               // Medal or revealed content
               Container(
-                padding: EdgeInsets.all(8 * scaleFactor),
+                padding: EdgeInsets.all(12 * scaleFactor), // Increased padding
                 decoration: BoxDecoration(
                   color: color,
                   shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 8 * scaleFactor,
+                      offset: Offset(0, 4 * scaleFactor),
+                    ),
+                  ],
                 ),
                 child: Text(
                   place == 1 ? '🥇' : place == 2 ? '🥈' : '🥉',
-                  style: TextStyle(fontSize: 24 * scaleFactor),
+                  style: TextStyle(fontSize: 36 * scaleFactor), // Significantly larger emoji
                 ),
               ),
-              SizedBox(height: 4 * scaleFactor),
+              SizedBox(height: 8 * scaleFactor), // More spacing
               // Player name and points (revealed or hidden)
               SizedBox(
-                height: 32 * scaleFactor, // Fixed height to prevent layout shift
+                height: 50 * scaleFactor, // Increased height for larger text
                 child: Stack(
                   children: [
                     // Revealed content
@@ -401,14 +409,18 @@ class _TournamentCompletionScreenState
                             standing.player.name,
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              fontSize: 12 * scaleFactor,
+                              fontSize: 16 * scaleFactor, // Larger text
                             ),
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
                           ),
+                          SizedBox(height: 2 * scaleFactor),
                           Text(
                             '${standing.totalPoints} pt',
-                            style: TextStyle(fontSize: 11 * scaleFactor),
+                            style: TextStyle(
+                              fontSize: 14 * scaleFactor, // Larger text
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ],
                       ),
@@ -421,38 +433,65 @@ class _TournamentCompletionScreenState
                             '???',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              fontSize: 12 * scaleFactor,
+                              fontSize: 16 * scaleFactor,
                               color: Colors.grey[600],
                             ),
                             textAlign: TextAlign.center,
                           ),
+                          SizedBox(height: 2 * scaleFactor),
                           Text(
                             '? pt',
-                            style: TextStyle(fontSize: 11 * scaleFactor, color: Colors.grey[600]),
+                            style: TextStyle(
+                              fontSize: 14 * scaleFactor, 
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ],
                       ),
                   ],
                 ),
               ),
-              SizedBox(height: 4 * scaleFactor),
+              SizedBox(height: 8 * scaleFactor), // More spacing
               Container(
-                width: 80 * scaleFactor,
+                width: 100 * scaleFactor, // Wider podium
                 height: height,
                 decoration: BoxDecoration(
                   color: color,
                   borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(8 * scaleFactor),
+                    top: Radius.circular(12 * scaleFactor),
                   ),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      color,
+                      color.withOpacity(0.7),
+                    ],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 10 * scaleFactor,
+                      offset: Offset(0, 5 * scaleFactor),
+                    ),
+                  ],
                 ),
                 alignment: Alignment.topCenter,
-                padding: EdgeInsets.all(8 * scaleFactor),
+                padding: EdgeInsets.all(12 * scaleFactor),
                 child: Text(
                   '$place',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 32 * scaleFactor,
+                    fontSize: 48 * scaleFactor, // Larger place number
                     fontWeight: FontWeight.bold,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black.withOpacity(0.5),
+                        blurRadius: 4 * scaleFactor,
+                        offset: Offset(2 * scaleFactor, 2 * scaleFactor),
+                      ),
+                    ],
                   ),
                 ),
               ),
