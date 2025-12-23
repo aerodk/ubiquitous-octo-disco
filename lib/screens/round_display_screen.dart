@@ -728,8 +728,8 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                             crossAxisCount: crossAxisCount,
                             crossAxisSpacing: 16,
                             mainAxisSpacing: 16,
-                            // Ensure enough vertical space for match content in tight test layouts
-                            mainAxisExtent: 260,
+                            // Ensure enough vertical space for match content with scores
+                            mainAxisExtent: 300,
                           ),
                           itemCount: _currentRound.matches.length,
                           itemBuilder: (context, index) {
