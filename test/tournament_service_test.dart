@@ -1159,6 +1159,9 @@ void main() {
         matchesPlayed: 0,
         wins: 0,
         losses: 0,
+        biggestWinMargin: 0,
+        smallestLossMargin: 999,
+        headToHeadPoints: {},
         rank: 1,
       )).toList();
 
@@ -1199,6 +1202,9 @@ void main() {
           matchesPlayed: 3,
           wins: 3 - (i ~/ 4),
           losses: i ~/ 4,
+          biggestWinMargin: 5,
+          smallestLossMargin: 3,
+          headToHeadPoints: {},
           rank: i + 1,
         ),
       );
@@ -1246,6 +1252,9 @@ void main() {
         matchesPlayed: 0,
         wins: 0,
         losses: 0,
+        biggestWinMargin: 0,
+        smallestLossMargin: 999,
+        headToHeadPoints: {},
         rank: 1,
       )).toList();
 
