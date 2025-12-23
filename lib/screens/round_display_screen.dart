@@ -171,6 +171,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       _tournament.courts,
       standings,
       nextRoundNumber,
+      laneStrategy: _tournament.settings.laneAssignmentStrategy,
     );
     
     final updatedTournament = Tournament(
@@ -234,6 +235,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       standings,
       nextRoundNumber,
       strategy: _tournament.settings.finalRoundStrategy,
+      laneStrategy: _tournament.settings.laneAssignmentStrategy,
     );
     
     final updatedTournament = Tournament(
@@ -312,6 +314,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       overridePlayer: player,
       forceToActive: forceToActive,
       standings: standings,
+      laneStrategy: _tournament.settings.laneAssignmentStrategy,
     );
 
     if (newRound == null) {

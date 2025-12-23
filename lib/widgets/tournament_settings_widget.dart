@@ -100,6 +100,11 @@ class _TournamentSettingsWidgetState extends State<TournamentSettingsWidget> {
                 
                 const Divider(height: 32),
                 
+                // Lane Assignment Strategy Setting
+                _buildLaneAssignmentSection(theme),
+                
+                const Divider(height: 32),
+                
                 // Pairing Strategy Setting
                 _buildPairingStrategySection(theme),
               ],
@@ -244,5 +249,63 @@ class _TournamentSettingsWidgetState extends State<TournamentSettingsWidget> {
         }),
       ],
     );
+  }
+
+  Widget _buildLaneAssignmentSection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Bane fordeling',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Vælg hvordan kampe fordeles på baner.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: Colors.grey[600],
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...LaneAssignmentStrategy.values.map((strategy) {
+          return RadioListTile<LaneAssignmentStrategy>(
+            title: Text(_getLaneStrategyTitle(strategy)),
+            subtitle: Text(_getLaneStrategySubtitle(strategy)),
+            value: strategy,
+            groupValue: _currentSettings.laneAssignmentStrategy,
+            onChanged: widget.enabled
+                ? (value) {
+                    if (value != null) {
+                      _updateSettings(_currentSettings.copyWith(
+                        laneAssignmentStrategy: value,
+                      ));
+                    }
+                  }
+                : null,
+            contentPadding: EdgeInsets.zero,
+          );
+        }),
+      ],
+    );
+  }
+
+  String _getLaneStrategyTitle(LaneAssignmentStrategy strategy) {
+    switch (strategy) {
+      case LaneAssignmentStrategy.sequential:
+        return 'Sekventiel (bedste spillere på bane 1)';
+      case LaneAssignmentStrategy.random:
+        return 'Tilfældig (blandet fordeling)';
+    }
+  }
+
+  String _getLaneStrategySubtitle(LaneAssignmentStrategy strategy) {
+    switch (strategy) {
+      case LaneAssignmentStrategy.sequential:
+        return 'Standard - bedste på første baner';
+      case LaneAssignmentStrategy.random:
+        return 'Tilfældig banefordeling';
+    }
   }
 }

@@ -212,7 +212,11 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
     );
 
     // Generate first round
-    final firstRound = _tournamentService.generateFirstRound(_players, courts);
+    final firstRound = _tournamentService.generateFirstRound(
+      _players,
+      courts,
+      laneStrategy: _tournamentSettings.laneAssignmentStrategy,
+    );
 
     // Create tournament
     final tournament = Tournament(
