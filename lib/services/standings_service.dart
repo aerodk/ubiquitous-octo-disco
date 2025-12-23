@@ -1,6 +1,8 @@
 import '../models/match.dart';
 import '../models/tournament.dart';
 import '../models/player_standing.dart';
+import '../models/player.dart';
+import '../models/round.dart';
 
 /// Service for calculating tournament standings and rankings.
 /// Implements the hierarchical ranking algorithm from SPECIFICATION_V3.md (F-008).
@@ -12,14 +14,20 @@ class StandingsService {
     final currentRoundNumber = tournament.rounds.isEmpty ? 0 : tournament.rounds.last.roundNumber;
     
     // Calculate current standings
-    final standings = _calculateStandingsForRounds(tournament.rounds);
+    final standings = _calculateStandingsForRounds(
+      tournament.rounds,
+      pausePointsAwarded: tournament.settings.pausePointsAwarded,
+    );
     
     // If we have 3+ completed rounds, calculate previous standings for comparison
     Map<String, int>? previousRanks;
     if (currentRoundNumber >= 3 && tournament.completedRounds >= 2) {
       // Calculate standings up to (but not including) the current round
       final previousRounds = tournament.rounds.sublist(0, tournament.rounds.length - 1);
-      final previousStandings = _calculateStandingsForRounds(previousRounds);
+      final previousStandings = _calculateStandingsForRounds(
+        previousRounds,
+        pausePointsAwarded: tournament.settings.pausePointsAwarded,
+      );
       
       // Create map of player ID to previous rank
       previousRanks = {
@@ -40,7 +48,10 @@ class StandingsService {
   }
   
   /// Internal method to calculate standings for a specific set of rounds
-  List<PlayerStanding> _calculateStandingsForRounds(List<Round> rounds) {
+  List<PlayerStanding> _calculateStandingsForRounds(
+    List<Round> rounds, {
+    required int pausePointsAwarded,
+  }) {
     // Get all players from first round (all rounds have same player set)
     if (rounds.isEmpty) return [];
     
@@ -77,7 +88,7 @@ class StandingsService {
           if (standings.containsKey(player.id)) {
             standings[player.id] = _awardBreakPoints(
               standings[player.id]!,
-              18, // Default pause points - will be updated when settings available
+              pausePointsAwarded,
             );
           }
         }
