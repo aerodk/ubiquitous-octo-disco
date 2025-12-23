@@ -30,6 +30,9 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
 
   // Navigation delay for tournament completion
   static const _completionNavigationDelay = Duration(milliseconds: 500);
+  
+  // Track players who were newly moved to pause after court adjustment
+  Set<String> _newlyPausedPlayerIds = {};
 
   @override
   void initState() {
@@ -363,6 +366,8 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     
     setState(() {
       _tournament = updatedTournament;
+      // Clear newly paused tracking after manual override
+      _newlyPausedPlayerIds.clear();
     });
 
     if (mounted) {
@@ -400,6 +405,22 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       return;
     }
 
+    // Check if there are enough players on pause to fill an additional court
+    // A court needs 4 players, so we need at least 4 players on pause
+    if (_currentRound.playersOnBreak.length < 4) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Kan ikke tilføje bane: Kun ${_currentRound.playersOnBreak.length} spillere på pause. '
+            'Der skal være mindst 4 spillere på pause for at tilføje en bane.',
+          ),
+          backgroundColor: Colors.orange,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
     // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
@@ -423,6 +444,11 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     );
 
     if (confirmed != true) return;
+
+    // Clear newly paused players tracking when adding a court (reduces pause)
+    setState(() {
+      _newlyPausedPlayerIds.clear();
+    });
 
     // Create new court
     final newCourtIndex = _tournament.courts.length;
@@ -534,6 +560,9 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
 
     if (confirmed != true) return;
 
+    // Track players currently on pause before removing the court
+    final previouslyPausedIds = _currentRound.playersOnBreak.map((p) => p.id).toSet();
+
     // Remove last court
     final removedCourt = _tournament.courts.last;
     final updatedCourts = _tournament.courts.sublist(0, _tournament.courts.length - 1);
@@ -571,11 +600,18 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       rounds: updatedRounds,
     );
 
+    // Identify newly paused players (those on pause now but not before)
+    final newlyPausedIds = newRound.playersOnBreak
+        .map((p) => p.id)
+        .where((id) => !previouslyPausedIds.contains(id))
+        .toSet();
+
     // Save and refresh
     await _persistenceService.saveTournament(updatedTournament);
     
     setState(() {
       _tournament = updatedTournament;
+      _newlyPausedPlayerIds = newlyPausedIds;
     });
 
     if (mounted) {
@@ -733,12 +769,35 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                                 const SizedBox(height: 8),
                                 Wrap(
                                   spacing: 8,
+                                  runSpacing: 8,
                                   children: _currentRound.playersOnBreak
-                                      .map((player) => ActionChip(
-                                            label: Text(player.name),
-                                            avatar: const Icon(Icons.play_arrow, size: 18),
-                                            onPressed: () => _overridePlayerPauseStatus(player, true),
-                                          ))
+                                      .map((player) {
+                                        final isNewlyPaused = _newlyPausedPlayerIds.contains(player.id);
+                                        return ActionChip(
+                                          label: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                player.name,
+                                                style: TextStyle(
+                                                  fontWeight: isNewlyPaused ? FontWeight.bold : FontWeight.normal,
+                                                ),
+                                              ),
+                                              if (isNewlyPaused) ...[
+                                                const SizedBox(width: 4),
+                                                const Icon(
+                                                  Icons.new_releases,
+                                                  size: 16,
+                                                  color: Colors.deepOrange,
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                          avatar: const Icon(Icons.play_arrow, size: 18),
+                                          backgroundColor: isNewlyPaused ? Colors.orange[200] : null,
+                                          onPressed: () => _overridePlayerPauseStatus(player, true),
+                                        );
+                                      })
                                       .toList(),
                                 ),
                               ],
@@ -778,7 +837,8 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                                   Expanded(
                                     child: ElevatedButton.icon(
                                       onPressed: _tournament.courts.length < Constants.maxCourts &&
-                                              !_currentRound.matches.any((m) => m.team1Score != null || m.team2Score != null)
+                                              !_currentRound.matches.any((m) => m.team1Score != null || m.team2Score != null) &&
+                                              _currentRound.playersOnBreak.length >= 4
                                           ? _addCourt
                                           : null,
                                       icon: const Icon(Icons.add),
