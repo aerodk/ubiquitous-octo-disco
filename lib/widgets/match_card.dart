@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import '../models/match.dart';
 import '../models/player.dart';
+import '../utils/colors.dart';
+import 'court_visualization/team_side.dart';
+import 'court_visualization/net_divider.dart';
 
+/// Match card with court visualization layout
+/// F-018, F-019: Court Visualization with Side-by-Side Layout & Match Card Redesign
 class MatchCard extends StatefulWidget {
   final Match match;
   final VoidCallback? onScoreChanged;
@@ -46,115 +51,143 @@ class _MatchCardState extends State<MatchCard> {
 
   @override
   Widget build(BuildContext context) {
-    final hasScores = widget.match.team1Score != null && widget.match.team2Score != null;
-    
     return Card(
       margin: EdgeInsets.zero,
-      child: InkWell(
-        onTap: _showScoreInput,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+      elevation: 6,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppColors.courtBorder, width: 3),
+      ),
+      child: IntrinsicHeight(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+          // Header Section - Court Name & Actions
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: const BoxDecoration(
+              color: AppColors.courtHeader,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(13)),
+            ),
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.sports_tennis, color: Colors.green),
-                    const SizedBox(width: 8),
-                    Text(
-                      widget.match.court.name,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Spacer(),
-                    if (hasScores)
-                      const Icon(Icons.check_circle, color: Colors.green)
-                    else
-                      const Icon(Icons.edit, color: Colors.grey),
-                  ],
-                ),
-                const Divider(height: 24),
-                _buildTeam('Par 1', widget.match.team1, widget.match.team1Score),
-                const SizedBox(height: 12),
-                const Center(
-                  child: Text(
-                    'VS',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                const Icon(Icons.sports_tennis, color: AppColors.textLight, size: 24),
+                const SizedBox(width: 8),
+                Text(
+                  widget.match.court.name,
+                  style: const TextStyle(
+                    color: AppColors.textLight,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 12),
-                _buildTeam('Par 2', widget.match.team2, widget.match.team2Score),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.edit, color: AppColors.textLight),
+                  onPressed: _showScoreInput,
+                  tooltip: 'Indtast score',
+                ),
               ],
             ),
           ),
+          
+          // Court Body Layout - Three-Column Layout
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    AppColors.courtBackgroundLight,
+                    AppColors.courtBackgroundDark,
+                  ],
+                ),
+                borderRadius: BorderRadius.vertical(bottom: Radius.circular(13)),
+              ),
+              child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Par 1 (Left side) - 40%
+                  Expanded(
+                    flex: 4,
+                    child: TeamSide(
+                      team: widget.match.team1,
+                      label: 'PAR 1',
+                      score: widget.match.team1Score,
+                      onPlayerLongPress: widget.onPlayerForceToPause != null
+                          ? _showPlayerOptionsMenu
+                          : null,
+                      onScoreTap: _showScoreInput,
+                    ),
+                  ),
+                  
+                  // Net (Center) - 20%
+                  const Expanded(
+                    flex: 2,
+                    child: NetDivider(),
+                  ),
+                  
+                  // Par 2 (Right side) - 40%
+                  Expanded(
+                    flex: 4,
+                    child: TeamSide(
+                      team: widget.match.team2,
+                      label: 'PAR 2',
+                      score: widget.match.team2Score,
+                      onPlayerLongPress: widget.onPlayerForceToPause != null
+                          ? _showPlayerOptionsMenu
+                          : null,
+                      onScoreTap: _showScoreInput,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildTeam(String label, Team team, int? score) {
-    final canOverride = widget.onPlayerForceToPause != null;
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+  void _showPlayerOptionsMenu(Player player) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
           children: [
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 12,
-              ),
-            ),
-            const Spacer(),
-            if (score != null)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.blue[100],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '$score',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+            const Icon(Icons.person, color: AppColors.playerIcon),
+            const SizedBox(width: 8),
+            Expanded(child: Text(player.name)),
           ],
         ),
-        const SizedBox(height: 4),
-        if (canOverride)
-          Wrap(
-            spacing: 4,
-            children: [
-              ActionChip(
-                label: Text(team.player1.name),
-                avatar: const Icon(Icons.pause, size: 16),
-                onPressed: () => widget.onPlayerForceToPause!(team.player1),
-                visualDensity: VisualDensity.compact,
-              ),
-              const Text(' & ', style: TextStyle(fontSize: 16)),
-              ActionChip(
-                label: Text(team.player2.name),
-                avatar: const Icon(Icons.pause, size: 16),
-                onPressed: () => widget.onPlayerForceToPause!(team.player2),
-                visualDensity: VisualDensity.compact,
-              ),
-            ],
-          )
-        else
-          Text(
-            '${team.player1.name} & ${team.player2.name}',
-            style: const TextStyle(fontSize: 16),
+        content: const Text(
+          'Tving spilleren til at holde pause denne runde?',
+          style: TextStyle(fontSize: 16),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuller'),
           ),
-      ],
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+              widget.onPlayerForceToPause!(player);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.benchBorder,
+              foregroundColor: AppColors.textLight,
+            ),
+            icon: const Icon(Icons.pause_circle, size: 20),
+            label: const Text('Tving til pause'),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -202,7 +235,15 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('Indtast Score - ${widget.match.court.name}'),
+      title: Row(
+        children: [
+          const Icon(Icons.sports_tennis, color: AppColors.courtHeader),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text('Indtast Score - ${widget.match.court.name}'),
+          ),
+        ],
+      ),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -210,7 +251,11 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
           children: [
             // Team 1
             Card(
-              color: Colors.blue[50],
+              color: AppColors.courtBackgroundLight,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: const BorderSide(color: AppColors.courtBorder, width: 2),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(
@@ -218,20 +263,42 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
                   children: [
                     const Text(
                       'Par 1',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.teamLabel,
+                        fontSize: 14,
+                      ),
                     ),
-                    Text(
-                      '${widget.match.team1.player1.name} & ${widget.match.team1.player2.name}',
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.person, size: 16, color: AppColors.playerIcon),
+                        const SizedBox(width: 4),
+                        Text(widget.match.team1.player1.name),
+                        const Text(' & '),
+                        const Icon(Icons.person, size: 16, color: AppColors.playerIcon),
+                        const SizedBox(width: 4),
+                        Text(widget.match.team1.player2.name),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    if (_team1Score != null)
-                      Text(
-                        'Score: $_team1Score',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                    if (_team1Score != null) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.scoreEntered,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Score: $_team1Score',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textLight,
+                          ),
                         ),
                       ),
+                    ],
                   ],
                 ),
               ),
@@ -248,9 +315,10 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
                   child: ElevatedButton(
                     onPressed: () => _selectScore(true, index),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isSelected ? Colors.blue : Colors.grey[300],
-                      foregroundColor: isSelected ? Colors.white : Colors.black87,
+                      backgroundColor: isSelected ? AppColors.courtHeader : AppColors.scoreEmpty,
+                      foregroundColor: isSelected ? AppColors.textLight : AppColors.textDark,
                       padding: EdgeInsets.zero,
+                      elevation: isSelected ? 4 : 1,
                     ),
                     child: Text('$index'),
                   ),
@@ -262,7 +330,11 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
             const SizedBox(height: 16),
             // Team 2
             Card(
-              color: Colors.red[50],
+              color: AppColors.courtBackgroundLight,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: const BorderSide(color: AppColors.courtBorder, width: 2),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(
@@ -270,20 +342,42 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
                   children: [
                     const Text(
                       'Par 2',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.teamLabel,
+                        fontSize: 14,
+                      ),
                     ),
-                    Text(
-                      '${widget.match.team2.player1.name} & ${widget.match.team2.player2.name}',
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.person, size: 16, color: AppColors.playerIcon),
+                        const SizedBox(width: 4),
+                        Text(widget.match.team2.player1.name),
+                        const Text(' & '),
+                        const Icon(Icons.person, size: 16, color: AppColors.playerIcon),
+                        const SizedBox(width: 4),
+                        Text(widget.match.team2.player2.name),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    if (_team2Score != null)
-                      Text(
-                        'Score: $_team2Score',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                    if (_team2Score != null) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.scoreEntered,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Score: $_team2Score',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textLight,
+                          ),
                         ),
                       ),
+                    ],
                   ],
                 ),
               ),

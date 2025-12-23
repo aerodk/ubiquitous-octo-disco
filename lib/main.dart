@@ -15,7 +15,7 @@ class PadelTournamentApp extends StatelessWidget {
     return MaterialApp(
       title: 'Padel Turnering',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
       home: const AppInitializer(),

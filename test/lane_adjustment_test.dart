@@ -206,7 +206,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Check that pause section is shown
-      expect(find.text('Pause'), findsOneWidget);
+      expect(find.text('PÅ BÆNKEN DENNE RUNDE'), findsOneWidget);
       
       // Check that both players on pause are displayed
       expect(find.text('Player 5'), findsOneWidget);

@@ -124,4 +124,34 @@
   - [x] Tests for settings validation and serialization
   - [x] Backward compatibility verified
 
+## Version 7.0 - Visual Redesign (SPECIFICATION_V7.md)
+- [x] Color System & Theme
+  - [x] Create AppColors utility class with spec-defined colors (F-018)
+  - [x] Court colors (blue theme) - blue[50] to blue[900]
+  - [x] Bench colors (orange theme) - orange[50] to orange[900]
+  - [x] Score colors (green/grey)
+  - [x] Update app theme to use blue seed color
+- [x] Court Visualization Components
+  - [x] PlayerMarker widget (F-021) - person icon + name with blue border
+  - [x] NetDivider widget (F-022) - vertical gradient with VS badge
+  - [x] ScoreDisplay widget (F-023) - grey placeholder or green scored
+  - [x] TeamSide widget (F-020) - team label + players + score
+  - [x] BenchPlayerChip widget (F-024) - bench emoji + person icon
+  - [x] BenchSection widget (F-024) - orange themed pause section
+- [x] Match Card Redesign (F-019)
+  - [x] Blue header with court name and edit button
+  - [x] Blue gradient background
+  - [x] Three-column layout (Team 1 | Net | Team 2)
+  - [x] Increased elevation (6) and rounded borders
+  - [x] Preserved player override functionality
+- [x] Round Display Updates
+  - [x] Integrated BenchSection for players on pause
+  - [x] Consistent orange theme for pause section
+- [ ] Testing & Validation
+  - [ ] Flutter analyze verification
+  - [ ] Unit/widget tests for new components
+  - [ ] Manual testing in browser
+  - [ ] Visual regression testing
+  - [ ] Responsive layout testing
+
 
