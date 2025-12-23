@@ -17,6 +17,20 @@ enum PairingStrategy {
   maxCompetition,
 }
 
+/// Lane assignment strategy for distributing matches to courts
+/// Defines how matches are assigned to lanes/courts based on player rankings
+enum LaneAssignmentStrategy {
+  /// Sequential assignment: Best ranked players on first lanes
+  /// R1+R2+R3+R4 → Lane 1, R5+R6+R7+R8 → Lane 2, etc.
+  /// Default strategy - provides predictable court assignments
+  sequential,
+
+  /// Random assignment: Randomize lane distribution
+  /// Mix best and worst ranked players across lanes
+  /// Ensures no preference for specific courts
+  random,
+}
+
 /// Settings for tournament configuration
 /// Controls game rules and behavior
 class TournamentSettings {
@@ -36,11 +50,16 @@ class TournamentSettings {
   /// Default: 12, Options: 0 or 12
   final int pausePointsAwarded;
 
+  /// Strategy for assigning matches to lanes/courts
+  /// Default: sequential (best players on first lanes)
+  final LaneAssignmentStrategy laneAssignmentStrategy;
+
   const TournamentSettings({
     this.minRoundsBeforeFinal = 3,
     this.pointsPerMatch = 24,
     this.finalRoundStrategy = PairingStrategy.balanced,
     this.pausePointsAwarded = 12,
+    this.laneAssignmentStrategy = LaneAssignmentStrategy.sequential,
   });
 
   /// Create a copy with modified fields
@@ -49,12 +68,14 @@ class TournamentSettings {
     int? pointsPerMatch,
     PairingStrategy? finalRoundStrategy,
     int? pausePointsAwarded,
+    LaneAssignmentStrategy? laneAssignmentStrategy,
   }) {
     return TournamentSettings(
       minRoundsBeforeFinal: minRoundsBeforeFinal ?? this.minRoundsBeforeFinal,
       pointsPerMatch: pointsPerMatch ?? this.pointsPerMatch,
       finalRoundStrategy: finalRoundStrategy ?? this.finalRoundStrategy,
       pausePointsAwarded: pausePointsAwarded ?? this.pausePointsAwarded,
+      laneAssignmentStrategy: laneAssignmentStrategy ?? this.laneAssignmentStrategy,
     );
   }
 
@@ -62,7 +83,8 @@ class TournamentSettings {
   bool get isCustomized {
     return pointsPerMatch != 24 ||
         finalRoundStrategy != PairingStrategy.balanced ||
-        pausePointsAwarded != 12;
+        pausePointsAwarded != 12 ||
+        laneAssignmentStrategy != LaneAssignmentStrategy.sequential;
   }
 
   /// Get a short summary of settings for display
@@ -70,7 +92,8 @@ class TournamentSettings {
     final points = '$pointsPerMatch point';
     final strategy = _strategyName(finalRoundStrategy);
     final pausePoints = 'Pause: $pausePointsAwarded pt';
-    return '$points • $strategy • $pausePoints';
+    final laneStrategy = _laneStrategyName(laneAssignmentStrategy);
+    return '$points • $strategy • $pausePoints • $laneStrategy';
   }
 
   String _strategyName(PairingStrategy strategy) {
@@ -81,6 +104,15 @@ class TournamentSettings {
         return 'Top Alliance';
       case PairingStrategy.maxCompetition:
         return 'Max Competition';
+    }
+  }
+
+  String _laneStrategyName(LaneAssignmentStrategy strategy) {
+    switch (strategy) {
+      case LaneAssignmentStrategy.sequential:
+        return 'Sekventiel';
+      case LaneAssignmentStrategy.random:
+        return 'Tilfældig';
     }
   }
 
@@ -106,6 +138,9 @@ class TournamentSettings {
         json['finalRoundStrategy'] as String?,
       ),
       pausePointsAwarded: json['pausePointsAwarded'] as int? ?? 12,
+      laneAssignmentStrategy: _laneStrategyFromString(
+        json['laneAssignmentStrategy'] as String?,
+      ),
     );
   }
 
@@ -115,6 +150,7 @@ class TournamentSettings {
       'pointsPerMatch': pointsPerMatch,
       'finalRoundStrategy': _strategyToString(finalRoundStrategy),
       'pausePointsAwarded': pausePointsAwarded,
+      'laneAssignmentStrategy': _laneStrategyToString(laneAssignmentStrategy),
     };
   }
 
@@ -141,6 +177,25 @@ class TournamentSettings {
     }
   }
 
+  static LaneAssignmentStrategy _laneStrategyFromString(String? value) {
+    switch (value) {
+      case 'random':
+        return LaneAssignmentStrategy.random;
+      case 'sequential':
+      default:
+        return LaneAssignmentStrategy.sequential;
+    }
+  }
+
+  static String _laneStrategyToString(LaneAssignmentStrategy strategy) {
+    switch (strategy) {
+      case LaneAssignmentStrategy.sequential:
+        return 'sequential';
+      case LaneAssignmentStrategy.random:
+        return 'random';
+    }
+  }
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -148,7 +203,8 @@ class TournamentSettings {
         other.minRoundsBeforeFinal == minRoundsBeforeFinal &&
         other.pointsPerMatch == pointsPerMatch &&
         other.finalRoundStrategy == finalRoundStrategy &&
-        other.pausePointsAwarded == pausePointsAwarded;
+        other.pausePointsAwarded == pausePointsAwarded &&
+        other.laneAssignmentStrategy == laneAssignmentStrategy;
   }
 
   @override
@@ -158,6 +214,7 @@ class TournamentSettings {
       pointsPerMatch,
       finalRoundStrategy,
       pausePointsAwarded,
+      laneAssignmentStrategy,
     );
   }
 }

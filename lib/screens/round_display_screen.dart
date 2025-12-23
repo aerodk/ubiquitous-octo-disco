@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:star_cano/models/player.dart';
 import 'package:star_cano/models/round.dart';
 import '../models/tournament.dart';
+import '../models/court.dart';
+import '../models/match.dart';
 import '../services/persistence_service.dart';
 import '../services/standings_service.dart';
 import '../widgets/match_card.dart';
 import '../services/tournament_service.dart';
+import '../utils/constants.dart';
 import 'setup_screen.dart';
 import 'leaderboard_screen.dart';
 import 'tournament_completion_screen.dart';
@@ -171,6 +174,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       _tournament.courts,
       standings,
       nextRoundNumber,
+      laneStrategy: _tournament.settings.laneAssignmentStrategy,
     );
     
     final updatedTournament = Tournament(
@@ -234,6 +238,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       standings,
       nextRoundNumber,
       strategy: _tournament.settings.finalRoundStrategy,
+      laneStrategy: _tournament.settings.laneAssignmentStrategy,
     );
     
     final updatedTournament = Tournament(
@@ -312,6 +317,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       overridePlayer: player,
       forceToActive: forceToActive,
       standings: standings,
+      laneStrategy: _tournament.settings.laneAssignmentStrategy,
     );
 
     if (newRound == null) {
@@ -363,6 +369,219 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('${player.name} er nu ${forceToActive ? "på pause" : "sat til at spille"}'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
+  /// Add a new court to the tournament
+  /// Regenerates the current round with the new court
+  Future<void> _addCourt() async {
+    // Don't allow court changes if any scores have been entered
+    if (_currentRound.matches.any((m) => m.team1Score != null || m.team2Score != null)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Kan ikke ændre baner når der er indtastet score'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Check if we're at max courts
+    if (_tournament.courts.length >= Constants.maxCourts) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Kan ikke tilføje flere end ${Constants.maxCourts} baner'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Tilføj bane'),
+        content: const Text(
+          'Er du sikker på at du vil tilføje en ny bane? '
+          'Dette vil omarrangere den nuværende runde.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annuller'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Tilføj'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // Create new court
+    final newCourtIndex = _tournament.courts.length;
+    final newCourt = Court(
+      id: 'court_${DateTime.now().millisecondsSinceEpoch}',
+      name: Constants.getDefaultCourtName(newCourtIndex),
+    );
+
+    // Add court to tournament
+    final updatedCourts = [..._tournament.courts, newCourt];
+
+    // Regenerate current round with new court count
+    final standings = _standingsService.calculateStandings(_tournament);
+    final Round newRound;
+    
+    if (_currentRound.isFinalRound) {
+      // Regenerate final round with new court
+      newRound = _tournamentService.generateFinalRound(
+        updatedCourts,
+        standings,
+        _currentRound.roundNumber,
+        strategy: _tournament.settings.finalRoundStrategy,
+        laneStrategy: _tournament.settings.laneAssignmentStrategy,
+      );
+    } else {
+      // Regenerate regular round with new court
+      newRound = _tournamentService.generateNextRound(
+        _tournament.players,
+        updatedCourts,
+        standings,
+        _currentRound.roundNumber,
+        laneStrategy: _tournament.settings.laneAssignmentStrategy,
+      );
+    }
+
+    // Update tournament
+    final updatedRounds = [..._tournament.rounds];
+    updatedRounds[updatedRounds.length - 1] = newRound;
+
+    final updatedTournament = _tournament.copyWith(
+      courts: updatedCourts,
+      rounds: updatedRounds,
+    );
+
+    // Save and refresh
+    await _persistenceService.saveTournament(updatedTournament);
+    
+    setState(() {
+      _tournament = updatedTournament;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${newCourt.name} tilføjet'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
+  /// Remove a court from the tournament
+  /// Regenerates the current round with fewer courts
+  Future<void> _removeCourt() async {
+    // Don't allow court changes if any scores have been entered
+    if (_currentRound.matches.any((m) => m.team1Score != null || m.team2Score != null)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Kan ikke ændre baner når der er indtastet score'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Check if we're at min courts
+    if (_tournament.courts.length <= Constants.minCourts) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Skal have mindst 1 bane'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Fjern bane'),
+        content: Text(
+          'Er du sikker på at du vil fjerne ${_tournament.courts.last.name}? '
+          'Dette vil omarrangere den nuværende runde og kan sætte flere spillere på pause.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annuller'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Fjern'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // Remove last court
+    final removedCourt = _tournament.courts.last;
+    final updatedCourts = _tournament.courts.sublist(0, _tournament.courts.length - 1);
+
+    // Regenerate current round with fewer courts
+    final standings = _standingsService.calculateStandings(_tournament);
+    final Round newRound;
+    
+    if (_currentRound.isFinalRound) {
+      // Regenerate final round with fewer courts
+      newRound = _tournamentService.generateFinalRound(
+        updatedCourts,
+        standings,
+        _currentRound.roundNumber,
+        strategy: _tournament.settings.finalRoundStrategy,
+        laneStrategy: _tournament.settings.laneAssignmentStrategy,
+      );
+    } else {
+      // Regenerate regular round with fewer courts
+      newRound = _tournamentService.generateNextRound(
+        _tournament.players,
+        updatedCourts,
+        standings,
+        _currentRound.roundNumber,
+        laneStrategy: _tournament.settings.laneAssignmentStrategy,
+      );
+    }
+
+    // Update tournament
+    final updatedRounds = [..._tournament.rounds];
+    updatedRounds[updatedRounds.length - 1] = newRound;
+
+    final updatedTournament = _tournament.copyWith(
+      courts: updatedCourts,
+      rounds: updatedRounds,
+    );
+
+    // Save and refresh
+    await _persistenceService.saveTournament(updatedTournament);
+    
+    setState(() {
+      _tournament = updatedTournament;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${removedCourt.name} fjernet'),
           backgroundColor: Colors.green,
         ),
       );
@@ -527,6 +746,70 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                           ),
                         ),
                       ],
+
+                      // Court management section
+                      const SizedBox(height: 16),
+                      Card(
+                        color: Colors.blue[50],
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.sports_tennis, color: Colors.blue),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Bane håndtering',
+                                    style: TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    '${_tournament.courts.length} baner',
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  Expanded(
+                                    child: ElevatedButton.icon(
+                                      onPressed: _tournament.courts.length < Constants.maxCourts &&
+                                              !_currentRound.matches.any((m) => m.team1Score != null || m.team2Score != null)
+                                          ? _addCourt
+                                          : null,
+                                      icon: const Icon(Icons.add),
+                                      label: const Text('Tilføj bane'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.green[100],
+                                        foregroundColor: Colors.green[900],
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: ElevatedButton.icon(
+                                      onPressed: _tournament.courts.length > Constants.minCourts &&
+                                              !_currentRound.matches.any((m) => m.team1Score != null || m.team2Score != null)
+                                          ? _removeCourt
+                                          : null,
+                                      icon: const Icon(Icons.remove),
+                                      label: const Text('Fjern bane'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.red[100],
+                                        foregroundColor: Colors.red[900],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ],
                   );
                 },

@@ -6,19 +6,71 @@ import '../models/player_standing.dart';
 import '../models/tournament_settings.dart';
 
 class TournamentService {
-  Round generateFirstRound(List<Player> players, List<Court> courts) {
+  /// Assigns courts to matches based on the lane assignment strategy
+  /// Sequential: Best players on first lanes (default)
+  /// Random: Randomize lane assignments
+  List<Match> _assignCourtsToMatches(
+    List<Match> matches,
+    List<Court> courts,
+    LaneAssignmentStrategy strategy,
+  ) {
+    if (matches.isEmpty || courts.isEmpty) return matches;
+
+    final assignedMatches = <Match>[];
+    
+    switch (strategy) {
+      case LaneAssignmentStrategy.sequential:
+        // Sequential: assign courts in order (first match → first court, etc.)
+        for (int i = 0; i < matches.length; i++) {
+          final courtIndex = i % courts.length;
+          assignedMatches.add(Match(
+            id: matches[i].id,
+            court: courts[courtIndex],
+            team1: matches[i].team1,
+            team2: matches[i].team2,
+            team1Score: matches[i].team1Score,
+            team2Score: matches[i].team2Score,
+          ));
+        }
+        break;
+        
+      case LaneAssignmentStrategy.random:
+        // Random: shuffle courts and assign randomly
+        final shuffledCourts = List<Court>.from(courts)..shuffle();
+        for (int i = 0; i < matches.length; i++) {
+          final courtIndex = i % shuffledCourts.length;
+          assignedMatches.add(Match(
+            id: matches[i].id,
+            court: shuffledCourts[courtIndex],
+            team1: matches[i].team1,
+            team2: matches[i].team2,
+            team1Score: matches[i].team1Score,
+            team2Score: matches[i].team2Score,
+          ));
+        }
+        break;
+    }
+    
+    return assignedMatches;
+  }
+
+  Round generateFirstRound(
+    List<Player> players,
+    List<Court> courts, {
+    LaneAssignmentStrategy laneStrategy = LaneAssignmentStrategy.sequential,
+  }) {
     // Shuffle players randomly
     final shuffledPlayers = List<Player>.from(players)..shuffle();
 
-    final matches = <Match>[];
+    final tempMatches = <Match>[];
     final playersOnBreak = <Player>[];
 
     int playerIndex = 0;
-    for (int i = 0;
-        i < courts.length && playerIndex + 3 < shuffledPlayers.length;
-        i++) {
+    // Create temporary matches without court assignments
+    while (playerIndex + 3 < shuffledPlayers.length && 
+           tempMatches.length < courts.length) {
       final match = Match(
-        court: courts[i],
+        court: courts[0], // Temporary court assignment
         team1: Team(
           player1: shuffledPlayers[playerIndex],
           player2: shuffledPlayers[playerIndex + 1],
@@ -28,7 +80,7 @@ class TournamentService {
           player2: shuffledPlayers[playerIndex + 3],
         ),
       );
-      matches.add(match);
+      tempMatches.add(match);
       playerIndex += 4;
     }
 
@@ -37,6 +89,9 @@ class TournamentService {
       playersOnBreak.add(shuffledPlayers[playerIndex]);
       playerIndex++;
     }
+
+    // Apply lane assignment strategy
+    final matches = _assignCourtsToMatches(tempMatches, courts, laneStrategy);
 
     return Round(
       roundNumber: 1,
@@ -52,8 +107,9 @@ class TournamentService {
     List<Player> players,
     List<Court> courts,
     List<PlayerStanding> standings,
-    int roundNumber,
-  ) {
+    int roundNumber, {
+    LaneAssignmentStrategy laneStrategy = LaneAssignmentStrategy.sequential,
+  }) {
     // Shuffle players randomly for match creation
     final shuffledPlayers = List<Player>.from(players)..shuffle();
 
@@ -76,14 +132,13 @@ class TournamentService {
         .where((p) => !playersOnBreak.any((bp) => bp.id == p.id))
         .toList();
 
-    // Generate matches
-    final matches = <Match>[];
+    // Generate temporary matches without court assignments
+    final tempMatches = <Match>[];
     int playerIndex = 0;
-    for (int i = 0;
-        i < courts.length && playerIndex + 3 < activePlayers.length;
-        i++) {
+    while (playerIndex + 3 < activePlayers.length && 
+           tempMatches.length < courts.length) {
       final match = Match(
-        court: courts[i],
+        court: courts[0], // Temporary court assignment
         team1: Team(
           player1: activePlayers[playerIndex],
           player2: activePlayers[playerIndex + 1],
@@ -93,9 +148,12 @@ class TournamentService {
           player2: activePlayers[playerIndex + 3],
         ),
       );
-      matches.add(match);
+      tempMatches.add(match);
       playerIndex += 4;
     }
+
+    // Apply lane assignment strategy
+    final matches = _assignCourtsToMatches(tempMatches, courts, laneStrategy);
 
     return Round(
       roundNumber: roundNumber,
@@ -159,6 +217,7 @@ class TournamentService {
     List<PlayerStanding> standings,
     int roundNumber, {
     PairingStrategy strategy = PairingStrategy.balanced,
+    LaneAssignmentStrategy laneStrategy = LaneAssignmentStrategy.sequential,
   }) {
     // Sort standings by rank (should already be sorted)
     final rankedStandings = List<PlayerStanding>.from(standings)
@@ -180,27 +239,24 @@ class TournamentService {
         .map((s) => s.player)
         .toList();
 
-    // Generate matches using selected pairing strategy
-    final matches = <Match>[];
-    final availableCourts = List<Court>.from(courts);
+    // Generate temporary matches using selected pairing strategy
+    final tempMatches = <Match>[];
 
     for (int i = 0; i < activePlayers.length; i += 4) {
       if (i + 3 < activePlayers.length) {
-        final courtIndex = i ~/ 4;
-        final court = courtIndex < availableCourts.length
-            ? availableCourts[courtIndex]
-            : availableCourts.last;
-
-        // Create match based on pairing strategy
+        // Create match based on pairing strategy with temporary court
         final match = _createMatchWithStrategy(
           activePlayers,
           i,
-          court,
+          courts[0], // Temporary court
           strategy,
         );
-        matches.add(match);
+        tempMatches.add(match);
       }
     }
+
+    // Apply lane assignment strategy
+    final matches = _assignCourtsToMatches(tempMatches, courts, laneStrategy);
 
     return Round(
       roundNumber: roundNumber,
@@ -335,6 +391,7 @@ class TournamentService {
     required Player overridePlayer,
     required bool forceToActive,
     List<PlayerStanding>? standings,
+    LaneAssignmentStrategy laneStrategy = LaneAssignmentStrategy.sequential,
   }) {
     // Validate the override request
     if (forceToActive) {
@@ -464,14 +521,13 @@ class TournamentService {
       }
     }
     
-    // Generate new matches from active players
-    final matches = <Match>[];
+    // Generate new temporary matches from active players
+    final tempMatches = <Match>[];
     int playerIndex = 0;
-    for (int i = 0;
-        i < courts.length && playerIndex + 3 < newActivePlayers.length;
-        i++) {
+    while (playerIndex + 3 < newActivePlayers.length && 
+           tempMatches.length < courts.length) {
       final match = Match(
-        court: courts[i],
+        court: courts[0], // Temporary court
         team1: Team(
           player1: newActivePlayers[playerIndex],
           player2: newActivePlayers[playerIndex + 1],
@@ -481,9 +537,12 @@ class TournamentService {
           player2: newActivePlayers[playerIndex + 3],
         ),
       );
-      matches.add(match);
+      tempMatches.add(match);
       playerIndex += 4;
     }
+    
+    // Apply lane assignment strategy
+    final matches = _assignCourtsToMatches(tempMatches, courts, laneStrategy);
     
     // Create new round with updated assignments
     return Round(
