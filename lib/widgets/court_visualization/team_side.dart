@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/match.dart';
+import '../../models/player.dart';
 import '../../utils/colors.dart';
 import 'player_marker.dart';
 import 'score_display.dart';
@@ -10,12 +11,14 @@ class TeamSide extends StatelessWidget {
   final Team team;
   final String label;
   final int? score;
+  final Function(Player)? onPlayerLongPress;
 
   const TeamSide({
     super.key,
     required this.team,
     required this.label,
     this.score,
+    this.onPlayerLongPress,
   });
 
   @override
@@ -35,10 +38,20 @@ class TeamSide extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         // Player 1
-        PlayerMarker(player: team.player1),
+        PlayerMarker(
+          player: team.player1,
+          onLongPress: onPlayerLongPress != null
+              ? () => onPlayerLongPress!(team.player1)
+              : null,
+        ),
         const SizedBox(height: 12),
         // Player 2
-        PlayerMarker(player: team.player2),
+        PlayerMarker(
+          player: team.player2,
+          onLongPress: onPlayerLongPress != null
+              ? () => onPlayerLongPress!(team.player2)
+              : null,
+        ),
         const SizedBox(height: 20),
         // Score display
         ScoreDisplay(score: score),

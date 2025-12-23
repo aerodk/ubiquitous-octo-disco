@@ -102,6 +102,7 @@ class _MatchCardState extends State<MatchCard> {
                   AppColors.courtBackgroundDark,
                 ],
               ),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(13)),
             ),
             child: IntrinsicHeight(
               child: Row(
@@ -114,6 +115,9 @@ class _MatchCardState extends State<MatchCard> {
                       team: widget.match.team1,
                       label: 'PAR 1',
                       score: widget.match.team1Score,
+                      onPlayerLongPress: widget.onPlayerForceToPause != null
+                          ? _showPlayerOptionsMenu
+                          : null,
                     ),
                   ),
                   
@@ -130,52 +134,54 @@ class _MatchCardState extends State<MatchCard> {
                       team: widget.match.team2,
                       label: 'PAR 2',
                       score: widget.match.team2Score,
+                      onPlayerLongPress: widget.onPlayerForceToPause != null
+                          ? _showPlayerOptionsMenu
+                          : null,
                     ),
                   ),
                 ],
               ),
             ),
           ),
-          
-          // Optional: Player override section (only shown when onPlayerForceToPause is provided)
-          if (widget.onPlayerForceToPause != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(13)),
-              ),
-              child: Column(
-                children: [
-                  const Text(
-                    'Tving spillere til pause:',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 4),
-                  Wrap(
-                    spacing: 4,
-                    alignment: WrapAlignment.center,
-                    children: [
-                      _buildPlayerOverrideChip(widget.match.team1.player1),
-                      _buildPlayerOverrideChip(widget.match.team1.player2),
-                      _buildPlayerOverrideChip(widget.match.team2.player1),
-                      _buildPlayerOverrideChip(widget.match.team2.player2),
-                    ],
-                  ),
-                ],
-              ),
-            ),
         ],
       ),
     );
   }
 
-  Widget _buildPlayerOverrideChip(Player player) {
-    return ActionChip(
-      label: Text(player.name),
-      avatar: const Icon(Icons.pause, size: 16),
-      onPressed: () => widget.onPlayerForceToPause!(player),
-      visualDensity: VisualDensity.compact,
+  void _showPlayerOptionsMenu(Player player) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.person, color: AppColors.playerIcon),
+            const SizedBox(width: 8),
+            Expanded(child: Text(player.name)),
+          ],
+        ),
+        content: const Text(
+          'Tving spilleren til at holde pause denne runde?',
+          style: TextStyle(fontSize: 16),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuller'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+              widget.onPlayerForceToPause!(player);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.benchBorder,
+              foregroundColor: AppColors.textLight,
+            ),
+            icon: const Icon(Icons.pause_circle, size: 20),
+            label: const Text('Tving til pause'),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -223,7 +229,15 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('Indtast Score - ${widget.match.court.name}'),
+      title: Row(
+        children: [
+          const Icon(Icons.sports_tennis, color: AppColors.courtHeader),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text('Indtast Score - ${widget.match.court.name}'),
+          ),
+        ],
+      ),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -231,7 +245,11 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
           children: [
             // Team 1
             Card(
-              color: Colors.blue[50],
+              color: AppColors.courtBackgroundLight,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: const BorderSide(color: AppColors.courtBorder, width: 2),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(
@@ -239,20 +257,42 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
                   children: [
                     const Text(
                       'Par 1',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.teamLabel,
+                        fontSize: 14,
+                      ),
                     ),
-                    Text(
-                      '${widget.match.team1.player1.name} & ${widget.match.team1.player2.name}',
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.person, size: 16, color: AppColors.playerIcon),
+                        const SizedBox(width: 4),
+                        Text(widget.match.team1.player1.name),
+                        const Text(' & '),
+                        const Icon(Icons.person, size: 16, color: AppColors.playerIcon),
+                        const SizedBox(width: 4),
+                        Text(widget.match.team1.player2.name),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    if (_team1Score != null)
-                      Text(
-                        'Score: $_team1Score',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                    if (_team1Score != null) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.scoreEntered,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Score: $_team1Score',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textLight,
+                          ),
                         ),
                       ),
+                    ],
                   ],
                 ),
               ),
@@ -269,9 +309,10 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
                   child: ElevatedButton(
                     onPressed: () => _selectScore(true, index),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isSelected ? Colors.blue : Colors.grey[300],
-                      foregroundColor: isSelected ? Colors.white : Colors.black87,
+                      backgroundColor: isSelected ? AppColors.courtHeader : AppColors.scoreEmpty,
+                      foregroundColor: isSelected ? AppColors.textLight : AppColors.textDark,
                       padding: EdgeInsets.zero,
+                      elevation: isSelected ? 4 : 1,
                     ),
                     child: Text('$index'),
                   ),
@@ -283,7 +324,11 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
             const SizedBox(height: 16),
             // Team 2
             Card(
-              color: Colors.red[50],
+              color: AppColors.courtBackgroundLight,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: const BorderSide(color: AppColors.courtBorder, width: 2),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(
@@ -291,24 +336,65 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
                   children: [
                     const Text(
                       'Par 2',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.teamLabel,
+                        fontSize: 14,
+                      ),
                     ),
-                    Text(
-                      '${widget.match.team2.player1.name} & ${widget.match.team2.player2.name}',
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.person, size: 16, color: AppColors.playerIcon),
+                        const SizedBox(width: 4),
+                        Text(widget.match.team2.player1.name),
+                        const Text(' & '),
+                        const Icon(Icons.person, size: 16, color: AppColors.playerIcon),
+                        const SizedBox(width: 4),
+                        Text(widget.match.team2.player2.name),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    if (_team2Score != null)
-                      Text(
-                        'Score: $_team2Score',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                    if (_team2Score != null) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.scoreEntered,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Score: $_team2Score',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textLight,
+                          ),
                         ),
                       ),
+                    ],
                   ],
                 ),
               ),
             ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Annuller'),
+        )
+      ],
+    );
+  }
+
+  void popClose() {
+    Navigator.pop(context, {
+                    'team1Score': _team1Score,
+                    'team2Score': _team2Score,
+                  });
+  }
+}
           ],
         ),
       ),

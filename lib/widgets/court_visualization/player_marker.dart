@@ -6,15 +6,17 @@ import '../../utils/colors.dart';
 /// F-021: Player Marker Component
 class PlayerMarker extends StatelessWidget {
   final Player player;
+  final VoidCallback? onLongPress;
 
   const PlayerMarker({
     super.key,
     required this.player,
+    this.onLongPress,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final Widget marker = Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
@@ -53,5 +55,15 @@ class PlayerMarker extends StatelessWidget {
         ],
       ),
     );
+
+    if (onLongPress != null) {
+      return InkWell(
+        onLongPress: onLongPress,
+        borderRadius: BorderRadius.circular(20),
+        child: marker,
+      );
+    }
+
+    return marker;
   }
 }
