@@ -179,7 +179,7 @@ Examples:
 - Override operation is O(n) where n = number of players
 - Minimal memory overhead (regenerates matches, doesn't store history)
 - UI updates are instant (no network calls)
-- Suitable for up to 24 players (project spec maximum)
+- Suitable for up to 72 players (project spec maximum)
 
 ## Future Enhancements
 

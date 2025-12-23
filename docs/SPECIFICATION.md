@@ -98,7 +98,7 @@ Antal af baner bliver skal automatisk justeres under registrering af navne, så 
 - NumberPicker eller Stepper til antal baner
 - Editérbar liste over baner
 - Standard: "Bane 1", "Bane 2", etc.
-- Minimum 1 bane, maksimum 8 baner
+- Minimum 1 bane, maksimum 18 baner
 
 
 **Flutter Implementation:**
