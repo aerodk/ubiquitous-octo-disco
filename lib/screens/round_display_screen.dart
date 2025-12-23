@@ -501,8 +501,8 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     // Check if we're at min courts
     if (_tournament.courts.length <= Constants.minCourts) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Skal have mindst ${Constants.minCourts} bane'),
+        const SnackBar(
+          content: Text('Skal have mindst 1 bane'),
           backgroundColor: Colors.orange,
         ),
       );

@@ -59,11 +59,6 @@ class TournamentService {
     List<Court> courts, {
     LaneAssignmentStrategy laneStrategy = LaneAssignmentStrategy.sequential,
   }) {
-  Round generateFirstRound(
-    List<Player> players,
-    List<Court> courts, {
-    LaneAssignmentStrategy laneStrategy = LaneAssignmentStrategy.sequential,
-  }) {
     // Shuffle players randomly
     final shuffledPlayers = List<Player>.from(players)..shuffle();
 
