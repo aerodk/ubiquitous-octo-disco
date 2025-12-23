@@ -3,7 +3,6 @@ import 'package:star_cano/models/player.dart';
 import 'package:star_cano/models/round.dart';
 import '../models/tournament.dart';
 import '../models/court.dart';
-import '../models/match.dart';
 import '../services/persistence_service.dart';
 import '../services/standings_service.dart';
 import '../widgets/match_card.dart';
@@ -30,6 +29,9 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
 
   // Navigation delay for tournament completion
   static const _completionNavigationDelay = Duration(milliseconds: 500);
+  
+  // Track players who were newly moved to pause after court adjustment
+  Set<String> _newlyPausedPlayerIds = {};
 
   @override
   void initState() {
@@ -363,6 +365,8 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     
     setState(() {
       _tournament = updatedTournament;
+      // Clear newly paused tracking after manual override
+      _newlyPausedPlayerIds.clear();
     });
 
     if (mounted) {
@@ -400,6 +404,22 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       return;
     }
 
+    // Check if there are enough players on pause to fill an additional court
+    // A court needs 4 players, so we need at least 4 players on pause
+    if (_currentRound.playersOnBreak.length < 4) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Kan ikke tilføje bane: Kun ${_currentRound.playersOnBreak.length} spillere på pause. '
+            'Der skal være mindst 4 spillere på pause for at tilføje en bane.',
+          ),
+          backgroundColor: Colors.orange,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
     // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
@@ -423,6 +443,11 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     );
 
     if (confirmed != true) return;
+
+    // Clear newly paused players tracking when adding a court (reduces pause)
+    setState(() {
+      _newlyPausedPlayerIds.clear();
+    });
 
     // Create new court
     final newCourtIndex = _tournament.courts.length;
@@ -534,6 +559,9 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
 
     if (confirmed != true) return;
 
+    // Track players currently on pause before removing the court
+    final previouslyPausedIds = _currentRound.playersOnBreak.map((p) => p.id).toSet();
+
     // Remove last court
     final removedCourt = _tournament.courts.last;
     final updatedCourts = _tournament.courts.sublist(0, _tournament.courts.length - 1);
@@ -571,11 +599,18 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       rounds: updatedRounds,
     );
 
+    // Identify newly paused players (those on pause now but not before)
+    final newlyPausedIds = newRound.playersOnBreak
+        .map((p) => p.id)
+        .where((id) => !previouslyPausedIds.contains(id))
+        .toSet();
+
     // Save and refresh
     await _persistenceService.saveTournament(updatedTournament);
     
     setState(() {
       _tournament = updatedTournament;
+      _newlyPausedPlayerIds = newlyPausedIds;
     });
 
     if (mounted) {
@@ -679,9 +714,11 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                     crossAxisCount = 1; // 1 column on small screens
                   }
 
-                  return ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
+                  return SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
                       // Display matches in a responsive grid
                       if (_currentRound.matches.isNotEmpty)
                         GridView.builder(
@@ -691,8 +728,8 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                             crossAxisCount: crossAxisCount,
                             crossAxisSpacing: 16,
                             mainAxisSpacing: 16,
-                            // Ensure enough vertical space for match content in tight test layouts
-                            mainAxisExtent: 260,
+                            // Ensure enough vertical space for match content with scores
+                            mainAxisExtent: 300,
                           ),
                           itemCount: _currentRound.matches.length,
                           itemBuilder: (context, index) {
@@ -733,12 +770,35 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                                 const SizedBox(height: 8),
                                 Wrap(
                                   spacing: 8,
+                                  runSpacing: 8,
                                   children: _currentRound.playersOnBreak
-                                      .map((player) => ActionChip(
-                                            label: Text(player.name),
-                                            avatar: const Icon(Icons.play_arrow, size: 18),
-                                            onPressed: () => _overridePlayerPauseStatus(player, true),
-                                          ))
+                                      .map((player) {
+                                        final isNewlyPaused = _newlyPausedPlayerIds.contains(player.id);
+                                        return ActionChip(
+                                          label: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                player.name,
+                                                style: TextStyle(
+                                                  fontWeight: isNewlyPaused ? FontWeight.bold : FontWeight.normal,
+                                                ),
+                                              ),
+                                              if (isNewlyPaused) ...[
+                                                const SizedBox(width: 4),
+                                                const Icon(
+                                                  Icons.new_releases,
+                                                  size: 16,
+                                                  color: Colors.deepOrange,
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                          avatar: const Icon(Icons.play_arrow, size: 18),
+                                          backgroundColor: isNewlyPaused ? Colors.orange[200] : null,
+                                          onPressed: () => _overridePlayerPauseStatus(player, true),
+                                        );
+                                      })
                                       .toList(),
                                 ),
                               ],
@@ -776,31 +836,46 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                 children: [
                                   Expanded(
-                                    child: ElevatedButton.icon(
+                                    child: ElevatedButton(
                                       onPressed: _tournament.courts.length < Constants.maxCourts &&
-                                              !_currentRound.matches.any((m) => m.team1Score != null || m.team2Score != null)
+                                              !_currentRound.matches.any((m) => m.team1Score != null || m.team2Score != null) &&
+                                              _currentRound.playersOnBreak.length >= 4
                                           ? _addCourt
                                           : null,
-                                      icon: const Icon(Icons.add),
-                                      label: const Text('Tilføj bane'),
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.green[100],
                                         foregroundColor: Colors.green[900],
+                                      ),
+                                      child: const Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.add),
+                                          SizedBox(width: 6),
+                                          Text('Tilføj bane'),
+                                        ],
                                       ),
                                     ),
                                   ),
                                   const SizedBox(width: 8),
                                   Expanded(
-                                    child: ElevatedButton.icon(
+                                    child: ElevatedButton(
                                       onPressed: _tournament.courts.length > Constants.minCourts &&
                                               !_currentRound.matches.any((m) => m.team1Score != null || m.team2Score != null)
                                           ? _removeCourt
                                           : null,
-                                      icon: const Icon(Icons.remove),
-                                      label: const Text('Fjern bane'),
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.red[100],
                                         foregroundColor: Colors.red[900],
+                                      ),
+                                      child: const Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.remove),
+                                          SizedBox(width: 6),
+                                          Text('Fjern bane'),
+                                        ],
                                       ),
                                     ),
                                   ),
@@ -811,7 +886,9 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                         ),
                       ),
                     ],
-                  );
+                  ),
+                ),
+              );
                 },
               ),
             ),
