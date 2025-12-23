@@ -57,9 +57,8 @@ class PlayerMarker extends StatelessWidget {
     );
 
     if (onLongPress != null) {
-      return InkWell(
+      return GestureDetector(
         onLongPress: onLongPress,
-        borderRadius: BorderRadius.circular(20),
         child: marker,
       );
     }

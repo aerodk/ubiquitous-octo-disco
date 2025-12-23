@@ -120,6 +120,7 @@ class _MatchCardState extends State<MatchCard> {
                       onPlayerLongPress: widget.onPlayerForceToPause != null
                           ? _showPlayerOptionsMenu
                           : null,
+                      onScoreTap: _showScoreInput,
                     ),
                   ),
                   
@@ -139,6 +140,7 @@ class _MatchCardState extends State<MatchCard> {
                       onPlayerLongPress: widget.onPlayerForceToPause != null
                           ? _showPlayerOptionsMenu
                           : null,
+                      onScoreTap: _showScoreInput,
                     ),
                   ),
                 ],

@@ -39,13 +39,13 @@ void main() {
         ),
       );
 
-      await tester.longPress(find.byType(InkWell));
+      await tester.longPress(find.byType(GestureDetector));
       await tester.pumpAndSettle();
 
       expect(longPressed, isTrue);
     });
 
-    testWidgets('should not have InkWell when onLongPress is null',
+    testWidgets('should not have GestureDetector when onLongPress is null',
         (WidgetTester tester) async {
       final player = Player(id: '1', name: 'Test Player');
 
@@ -57,7 +57,7 @@ void main() {
         ),
       );
 
-      expect(find.byType(InkWell), findsNothing);
+      expect(find.byType(GestureDetector), findsNothing);
     });
   });
 }

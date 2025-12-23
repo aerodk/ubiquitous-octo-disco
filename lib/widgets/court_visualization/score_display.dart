@@ -5,17 +5,19 @@ import '../../utils/colors.dart';
 /// F-023: Score Display Component
 class ScoreDisplay extends StatelessWidget {
   final int? score;
+  final VoidCallback? onTap;
 
   const ScoreDisplay({
     super.key,
     this.score,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final hasScore = score != null;
 
-    return Container(
+    final Widget scoreWidget = Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
         color: hasScore ? AppColors.scoreEntered : AppColors.scoreEmpty,
@@ -48,5 +50,14 @@ class ScoreDisplay extends StatelessWidget {
               ),
             ),
     );
+
+    if (onTap != null) {
+      return GestureDetector(
+        onTap: onTap,
+        child: scoreWidget,
+      );
+    }
+
+    return scoreWidget;
   }
 }

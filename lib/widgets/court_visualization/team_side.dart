@@ -12,6 +12,7 @@ class TeamSide extends StatelessWidget {
   final String label;
   final int? score;
   final Function(Player)? onPlayerLongPress;
+  final VoidCallback? onScoreTap;
 
   const TeamSide({
     super.key,
@@ -19,6 +20,7 @@ class TeamSide extends StatelessWidget {
     required this.label,
     this.score,
     this.onPlayerLongPress,
+    this.onScoreTap,
   });
 
   @override
@@ -55,7 +57,10 @@ class TeamSide extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         // Score display
-        ScoreDisplay(score: score),
+        ScoreDisplay(
+          score: score,
+          onTap: onScoreTap,
+        ),
       ],
     );
   }
