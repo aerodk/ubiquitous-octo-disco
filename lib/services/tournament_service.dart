@@ -324,4 +324,173 @@ class TournamentService {
     // 3. Fewest pauses (ascending)
     return a.pauseCount.compareTo(b.pauseCount);
   }
+
+  /// Regenerates the current round with a player override
+  /// Allows forcing a player to active (from break) or to break (from active)
+  /// Returns null if the override would violate constraints
+  Round? regenerateRoundWithOverride({
+    required Round currentRound,
+    required List<Player> allPlayers,
+    required List<Court> courts,
+    required Player overridePlayer,
+    required bool forceToActive,
+    List<PlayerStanding>? standings,
+  }) {
+    // Validate the override request
+    if (forceToActive) {
+      // Player must currently be on break
+      if (!currentRound.playersOnBreak.any((p) => p.id == overridePlayer.id)) {
+        return null; // Player is not on break
+      }
+    } else {
+      // Player must currently be active (in a match)
+      if (currentRound.playersOnBreak.any((p) => p.id == overridePlayer.id)) {
+        return null; // Player is already on break
+      }
+      
+      // Can force to break if:
+      // 1. No one on break yet (transitioning from 0→1), OR
+      // 2. Someone on break (swap is OK as long as total doesn't increase beyond max)
+      //
+      // The key insight: if someone is on break, we swap, so the total doesn't change.
+      // If no one is on break, we allow going from 0→1 as a special case.
+      //
+      // Simply: allow swaps if someone is on break, allow first transition from 0→1 anyway
+      if (currentRound.playersOnBreak.isNotEmpty) {
+        // Someone on break already - swapping is OK (maintains count)
+        // No additional validation needed
+      }
+      // If no one on break, allow the transition from 0→1
+    }
+    
+    // Create new lists for the override
+    List<Player> newPlayersOnBreak;
+    List<Player> newActivePlayers;
+    
+    if (forceToActive) {
+      // Remove player from break, add to active
+      newPlayersOnBreak = currentRound.playersOnBreak
+          .where((p) => p.id != overridePlayer.id)
+          .toList();
+      
+      // Get all currently active players
+      final currentlyActive = allPlayers
+          .where((p) => !currentRound.playersOnBreak.any((bp) => bp.id == p.id))
+          .toList();
+      
+      // Add the override player to active
+      currentlyActive.add(overridePlayer);
+      
+      // If we now have too many active players, move someone else to break
+      final playersNeeded = (currentlyActive.length ~/ 4) * 4;
+      final overflowCount = currentlyActive.length - playersNeeded;
+      
+      if (overflowCount > 0) {
+        // Select someone to go on break using fairness logic if standings available
+        if (standings != null) {
+          // Get standings for only the active players (excluding override player)
+          final candidatesStandings = standings
+              .where((s) => currentlyActive.any((p) => p.id == s.player.id) && 
+                           s.player.id != overridePlayer.id)
+              .toList();
+          
+          // Use fairness logic to select who should take the break
+          final toBreak = _selectBreakPlayersWithFairness(
+            candidatesStandings.map((s) => s.player).toList(),
+            candidatesStandings,
+            overflowCount,
+          );
+          
+          newPlayersOnBreak.addAll(toBreak);
+        } else {
+          // Fallback to random selection if no standings provided
+          final candidatesForBreak = currentlyActive
+              .where((p) => p.id != overridePlayer.id)
+              .toList()..shuffle();
+          
+          newPlayersOnBreak.addAll(candidatesForBreak.take(overflowCount));
+        }
+        
+        newActivePlayers = currentlyActive
+            .where((p) => !newPlayersOnBreak.any((bp) => bp.id == p.id))
+            .toList()..shuffle();
+      } else {
+        newActivePlayers = currentlyActive..shuffle();
+      }
+    } else {
+      // Force player to break - swap with someone on break if possible to maintain structure
+      newPlayersOnBreak = [...currentRound.playersOnBreak];
+      
+      // If there are players on break, swap the forced player with one of them
+      if (newPlayersOnBreak.isNotEmpty) {
+        // Select someone to swap with using fairness logic if available
+        Player playerToReturn;
+        
+        if (standings != null) {
+          // Get standings for players on break
+          final breakStandings = standings
+              .where((s) => newPlayersOnBreak.any((p) => p.id == s.player.id))
+              .toList();
+          
+          if (breakStandings.isNotEmpty) {
+            // Sort to find who has been on break the most (fairness)
+            breakStandings.sort(_compareForPauseFairness);
+            playerToReturn = breakStandings.last.player; // Last in list has most pauses
+          } else {
+            // Fallback to random
+            newPlayersOnBreak.shuffle();
+            playerToReturn = newPlayersOnBreak.first;
+          }
+        } else {
+          // Random selection
+          newPlayersOnBreak.shuffle();
+          playerToReturn = newPlayersOnBreak.first;
+        }
+        
+        // Perform the swap
+        newPlayersOnBreak.remove(playerToReturn);
+        newPlayersOnBreak.add(overridePlayer);
+        
+        // Active players include everyone except new break list
+        newActivePlayers = allPlayers
+            .where((p) => !newPlayersOnBreak.any((bp) => bp.id == p.id))
+            .toList()..shuffle();
+      } else {
+        // No one currently on break, so just add the override player to break
+        newPlayersOnBreak.add(overridePlayer);
+        newActivePlayers = allPlayers
+            .where((p) => !newPlayersOnBreak.any((bp) => bp.id == p.id))
+            .toList()..shuffle();
+      }
+    }
+    
+    // Generate new matches from active players
+    final matches = <Match>[];
+    int playerIndex = 0;
+    for (int i = 0;
+        i < courts.length && playerIndex + 3 < newActivePlayers.length;
+        i++) {
+      final match = Match(
+        court: courts[i],
+        team1: Team(
+          player1: newActivePlayers[playerIndex],
+          player2: newActivePlayers[playerIndex + 1],
+        ),
+        team2: Team(
+          player1: newActivePlayers[playerIndex + 2],
+          player2: newActivePlayers[playerIndex + 3],
+        ),
+      );
+      matches.add(match);
+      playerIndex += 4;
+    }
+    
+    // Create new round with updated assignments
+    return Round(
+      roundNumber: currentRound.roundNumber,
+      matches: matches,
+      playersOnBreak: newPlayersOnBreak,
+      isFinalRound: currentRound.isFinalRound,
+    );
+  }
 }

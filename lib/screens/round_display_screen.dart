@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:star_cano/models/player.dart';
 import 'package:star_cano/models/round.dart';
 import '../models/tournament.dart';
 import '../services/persistence_service.dart';
@@ -255,6 +256,119 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     }
   }
 
+  /// Override a player's pause status
+  /// If forceToActive is true, player is currently on pause and should be forced to active
+  /// If forceToActive is false, player is currently active and should be forced to pause
+  Future<void> _overridePlayerPauseStatus(Player player, bool forceToActive) async {
+    // Don't allow overrides if any scores have been entered
+    if (_currentRound.matches.any((m) => m.team1Score != null || m.team2Score != null)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Kan ikke ændre spillere når der er indtastet score'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Show confirmation dialog
+    final String actionText = forceToActive ? 'spille' : 'pause';
+    final String explanationText = forceToActive
+        ? 'Dette vil tvinge ${player.name} til at spille og omarrangere de andre spillere.'
+        : 'Dette vil tvinge ${player.name} til at holde pause og omarrangere de andre spillere.';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Tving ${player.name} til $actionText?'),
+        content: Text(explanationText),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annuller'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: forceToActive ? Colors.orange : Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Tving til $actionText'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    // Calculate current standings for fairness-based player selection
+    final standings = _standingsService.calculateStandings(_tournament);
+
+    // Attempt to regenerate the round with the override
+    final newRound = _tournamentService.regenerateRoundWithOverride(
+      currentRound: _currentRound,
+      allPlayers: _tournament.players,
+      courts: _tournament.courts,
+      overridePlayer: player,
+      forceToActive: forceToActive,
+      standings: standings,
+    );
+
+    if (newRound == null) {
+      // Override failed - show error
+      final String errorMessage;
+      if (!forceToActive && _currentRound.playersOnBreak.length >= 
+          (_tournament.players.length - _tournament.courts.length * 4)) {
+        errorMessage = 'Kan ikke sætte flere spillere på pause. '
+            'Med ${_tournament.courts.length} baner og ${_tournament.players.length} spillere, '
+            'kan maksimalt ${_tournament.players.length - _tournament.courts.length * 4} spillere være på pause.';
+      } else {
+        errorMessage = 'Kunne ikke ændre spillerstatus. Prøv igen.';
+      }
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+      return;
+    }
+
+    // Update tournament with new round
+    final updatedRounds = [..._tournament.rounds];
+    updatedRounds[updatedRounds.length - 1] = newRound;
+
+    final updatedTournament = Tournament(
+      id: _tournament.id,
+      name: _tournament.name,
+      players: _tournament.players,
+      courts: _tournament.courts,
+      rounds: updatedRounds,
+      createdAt: _tournament.createdAt,
+      settings: _tournament.settings,
+    );
+
+    // Save and refresh
+    await _persistenceService.saveTournament(updatedTournament);
+    
+    setState(() {
+      _tournament = updatedTournament;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${player.name} er nu ${forceToActive ? "på pause" : "sat til at spille"}'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final round = widget.tournament.currentRound;
@@ -372,6 +486,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                                 setState(() {});
                                 _checkForTournamentCompletion();
                               },
+                              onPlayerForceToPause: (player) => _overridePlayerPauseStatus(player, false),
                             );
                           },
                         ),
@@ -400,7 +515,11 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                                 Wrap(
                                   spacing: 8,
                                   children: _currentRound.playersOnBreak
-                                      .map((player) => Chip(label: Text(player.name)))
+                                      .map((player) => ActionChip(
+                                            label: Text(player.name),
+                                            avatar: const Icon(Icons.play_arrow, size: 18),
+                                            onPressed: () => _overridePlayerPauseStatus(player, true),
+                                          ))
                                       .toList(),
                                 ),
                               ],

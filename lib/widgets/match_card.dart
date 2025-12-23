@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import '../models/match.dart';
+import '../models/player.dart';
 
 class MatchCard extends StatefulWidget {
   final Match match;
   final VoidCallback? onScoreChanged;
   final int maxPoints;
+  final Function(Player)? onPlayerForceToPause;
 
   const MatchCard({
     super.key,
     required this.match,
     this.onScoreChanged,
     this.maxPoints = 24,
+    this.onPlayerForceToPause,
   });
 
   @override
@@ -51,39 +54,42 @@ class _MatchCardState extends State<MatchCard> {
         onTap: _showScoreInput,
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.sports_tennis, color: Colors.green),
-                  const SizedBox(width: 8),
-                  Text(
-                    widget.match.court.name,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.sports_tennis, color: Colors.green),
+                    const SizedBox(width: 8),
+                    Text(
+                      widget.match.court.name,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  const Spacer(),
-                  if (hasScores)
-                    const Icon(Icons.check_circle, color: Colors.green)
-                  else
-                    const Icon(Icons.edit, color: Colors.grey),
-                ],
-              ),
-              const Divider(height: 24),
-              _buildTeam('Par 1', widget.match.team1, widget.match.team1Score),
-              const SizedBox(height: 12),
-              const Center(
-                child: Text(
-                  'VS',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                    const Spacer(),
+                    if (hasScores)
+                      const Icon(Icons.check_circle, color: Colors.green)
+                    else
+                      const Icon(Icons.edit, color: Colors.grey),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 12),
-              _buildTeam('Par 2', widget.match.team2, widget.match.team2Score),
-            ],
+                const Divider(height: 24),
+                _buildTeam('Par 1', widget.match.team1, widget.match.team1Score),
+                const SizedBox(height: 12),
+                const Center(
+                  child: Text(
+                    'VS',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _buildTeam('Par 2', widget.match.team2, widget.match.team2Score),
+              ],
+            ),
           ),
         ),
       ),
@@ -91,6 +97,8 @@ class _MatchCardState extends State<MatchCard> {
   }
 
   Widget _buildTeam(String label, Team team, int? score) {
+    final canOverride = widget.onPlayerForceToPause != null;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -122,10 +130,30 @@ class _MatchCardState extends State<MatchCard> {
           ],
         ),
         const SizedBox(height: 4),
-        Text(
-          '${team.player1.name} & ${team.player2.name}',
-          style: const TextStyle(fontSize: 16),
-        ),
+        if (canOverride)
+          Wrap(
+            spacing: 4,
+            children: [
+              ActionChip(
+                label: Text(team.player1.name),
+                avatar: const Icon(Icons.pause, size: 16),
+                onPressed: () => widget.onPlayerForceToPause!(team.player1),
+                visualDensity: VisualDensity.compact,
+              ),
+              const Text(' & ', style: TextStyle(fontSize: 16)),
+              ActionChip(
+                label: Text(team.player2.name),
+                avatar: const Icon(Icons.pause, size: 16),
+                onPressed: () => widget.onPlayerForceToPause!(team.player2),
+                visualDensity: VisualDensity.compact,
+              ),
+            ],
+          )
+        else
+          Text(
+            '${team.player1.name} & ${team.player2.name}',
+            style: const TextStyle(fontSize: 16),
+          ),
       ],
     );
   }
