@@ -129,6 +129,9 @@ class LeaderboardScreen extends StatelessWidget {
                     ),
                   ),
                 ),
+                // Position change indicator (shown from round 3 onwards)
+                if (standing.rankChange != null)
+                  _buildPositionChangeIndicator(standing.rankChange!, isTop3),
               ],
             ),
             const SizedBox(height: 16),
@@ -270,5 +273,46 @@ class LeaderboardScreen extends StatelessWidget {
       default:
         return Colors.grey;
     }
+  }
+  
+  /// Build position change indicator widget
+  /// Shows green +N for improvement, red -N for decline, black ±0 for no change
+  Widget _buildPositionChangeIndicator(int change, bool isTop3) {
+    final Color indicatorColor;
+    final String prefix;
+    
+    if (change > 0) {
+      // Positive change = rank improvement (moved up)
+      indicatorColor = Colors.green;
+      prefix = '+';
+    } else if (change < 0) {
+      // Negative change = rank decline (moved down)
+      indicatorColor = Colors.red;
+      prefix = '';
+    } else {
+      // No change
+      indicatorColor = Colors.black87;
+      prefix = '±';
+    }
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: isTop3 ? Colors.white.withOpacity(0.2) : indicatorColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: indicatorColor,
+          width: 1.5,
+        ),
+      ),
+      child: Text(
+        '$prefix$change',
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: isTop3 ? Colors.white : indicatorColor,
+        ),
+      ),
+    );
   }
 }

@@ -13,6 +13,7 @@ class PlayerStanding {
   final Map<String, int> headToHeadPoints; // playerId -> points scored against them
   final int rank;
   final int pauseCount; // Number of times player has been on break
+  final int? previousRank; // Rank from previous round (null if no previous round)
 
   PlayerStanding({
     required this.player,
@@ -25,6 +26,7 @@ class PlayerStanding {
     required this.headToHeadPoints,
     this.rank = 0,
     this.pauseCount = 0,
+    this.previousRank,
   });
 
   factory PlayerStanding.initial(Player player) {
@@ -39,6 +41,7 @@ class PlayerStanding {
       headToHeadPoints: {},
       rank: 0,
       pauseCount: 0,
+      previousRank: null,
     );
   }
 
@@ -54,6 +57,7 @@ class PlayerStanding {
       headToHeadPoints: Map<String, int>.from(json['headToHeadPoints'] ?? {}),
       rank: json['rank'] ?? 0,
       pauseCount: json['pauseCount'] ?? 0,
+      previousRank: json['previousRank'],
     );
   }
 
@@ -69,11 +73,12 @@ class PlayerStanding {
       'headToHeadPoints': headToHeadPoints,
       'rank': rank,
       'pauseCount': pauseCount,
+      'previousRank': previousRank,
     };
   }
 
-  /// Create a copy with updated rank
-  PlayerStanding copyWithRank(int newRank) {
+  /// Create a copy with updated rank and optionally previousRank
+  PlayerStanding copyWithRank(int newRank, {int? previousRank}) {
     return PlayerStanding(
       player: player,
       totalPoints: totalPoints,
@@ -85,6 +90,18 @@ class PlayerStanding {
       headToHeadPoints: headToHeadPoints,
       rank: newRank,
       pauseCount: pauseCount,
+      previousRank: previousRank ?? this.previousRank,
     );
+  }
+  
+  /// Get the rank change from previous round
+  /// Returns null if there's no previous rank to compare to
+  /// Returns positive number for rank improvement (lower number = better)
+  /// Returns negative number for rank decline
+  /// Returns 0 for no change
+  int? get rankChange {
+    if (previousRank == null) return null;
+    // Lower rank is better, so previousRank 4 -> rank 2 = +2 improvement
+    return previousRank! - rank;
   }
 }
