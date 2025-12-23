@@ -32,7 +32,7 @@ void main() {
 
     // Verify that the setup screen is loaded
     expect(find.text('Opsætning af turnering'), findsOneWidget);
-    expect(find.text('Spillere (0/24)'), findsOneWidget);
+    expect(find.text('Spillere (0/72)'), findsOneWidget);
     expect(find.text('Baner'), findsOneWidget);
     expect(find.text('Generer Første Runde'), findsOneWidget);
   });
@@ -50,7 +50,7 @@ void main() {
 
     // Verify the player was added
     expect(find.text('Test Player'), findsOneWidget);
-    expect(find.text('Spillere (1/24)'), findsOneWidget);
+    expect(find.text('Spillere (1/72)'), findsOneWidget);
   });
 
   testWidgets('TextField gets focus after adding a player', (WidgetTester tester) async {

@@ -57,7 +57,7 @@ Brugeren skal kunne indtaste navne på alle deltagere i turneringen.
 - FloatingActionButton til at tilføje spiller
 - ListView.builder til at vise spillere
 - Swipe-to-delete eller IconButton til at fjerne spillere
-- Minimum 4 spillere, maksimum 24 spillere
+- Minimum 4 spillere, maksimum 72 spillere
 - Validering: Ingen tomme navne, ingen duplikater
 - SnackBar feedback ved fejl
 
