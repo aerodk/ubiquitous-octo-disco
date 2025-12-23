@@ -3,7 +3,6 @@ import 'package:star_cano/models/player.dart';
 import 'package:star_cano/models/round.dart';
 import '../models/tournament.dart';
 import '../models/court.dart';
-import '../models/match.dart';
 import '../services/persistence_service.dart';
 import '../services/standings_service.dart';
 import '../widgets/match_card.dart';
