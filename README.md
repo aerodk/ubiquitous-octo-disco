@@ -14,14 +14,14 @@ This implementation includes the core features needed to set up and start a Pade
 
 #### 1. Player Registration (F-001)
 - Add players with validation for empty names and duplicates
-- Minimum 4 players, maximum 24 players
+- Minimum 4 players, maximum 72 players
 - Display player list with numbering
 - Remove players functionality
 - Real-time player count display
 
 #### 2. Court Registration (F-002)
 - Adjustable court count with increment/decrement buttons
-- Minimum 1 court, maximum 8 courts
+- Minimum 1 court, maximum 18 courts
 - Automatic naming (Bane 1, Bane 2, etc.)
 
 #### 3. First Round Generation (F-003)
@@ -128,11 +128,11 @@ flutter test
 - Name cannot be empty
 - No duplicate names (case-insensitive)
 - Minimum 4 players required to generate round
-- Maximum 24 players allowed
+- Maximum 72 players allowed
 
 #### Courts
 - Minimum 1 court
-- Maximum 8 courts
+- Maximum 18 courts
 - Automatically named sequentially
 
 ### Future Enhancements (Version 2.0)

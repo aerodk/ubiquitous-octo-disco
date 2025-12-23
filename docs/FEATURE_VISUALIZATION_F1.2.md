@@ -6,7 +6,7 @@
 ┌─────────────────────────────────────────────────────────────────┐
 │                    SETUP SCREEN                                  │
 │                                                                  │
-│  Spillere (0/24)                                                │
+│  Spillere (0/72)                                                │
 │  ┌──────────────────────────────────────┬────────┐             │
 │  │ Spiller navn                     [+] │ Tilføj │             │
 │  └──────────────────────────────────────┴────────┘             │
@@ -28,7 +28,7 @@
 ```
 STEP 1: User has 7 players, 1 court
 ┌─────────────────────────────────────────────┐
-│  Spillere (7/24)                            │
+│  Spillere (7/72)                            │
 │  • Player 1                                 │
 │  • Player 2                                 │
 │  • Player 3                                 │
@@ -45,7 +45,7 @@ STEP 1: User has 7 players, 1 court
 
 STEP 2: Auto-adjustment triggered
 ┌─────────────────────────────────────────────┐
-│  Spillere (8/24)                            │
+│  Spillere (8/72)                            │
 │  • Player 1 ... Player 8                    │
 │                                             │
 │  Baner                                      │
@@ -64,7 +64,7 @@ STEP 2: Auto-adjustment triggered
 ```
 BEFORE: 12 players → 3 courts
 ┌─────────────────────────────────────────────┐
-│  Spillere (12/24)                           │
+│  Spillere (12/72)                           │
 │  • Player 1 ... Player 12                   │
 │                                             │
 │  Baner                                      │
@@ -75,7 +75,7 @@ BEFORE: 12 players → 3 courts
 
 AFTER: 11 players → 2 courts (ANIMATED)
 ┌─────────────────────────────────────────────┐
-│  Spillere (11/24)                           │
+│  Spillere (11/72)                           │
 │  • Player 1 ... Player 11                   │
 │                                             │
 │  Baner                                      │
@@ -90,7 +90,7 @@ AFTER: 11 players → 2 courts (ANIMATED)
 ```
 USER ACTION: Manual adjustment
 ┌─────────────────────────────────────────────┐
-│  Spillere (7/24)                            │
+│  Spillere (7/72)                            │
 │  • 7 players                                │
 │                                             │
 │  Baner                                      │
@@ -101,7 +101,7 @@ USER ACTION: Manual adjustment
 
 RESULT: No animation (manual change)
 ┌─────────────────────────────────────────────┐
-│  Spillere (7/24)                            │
+│  Spillere (7/72)                            │
 │  • 7 players                                │
 │                                             │
 │  Baner                                      │
@@ -112,7 +112,7 @@ RESULT: No animation (manual change)
 
 AUTO-ADJUST: Adjusts to correct count
 ┌─────────────────────────────────────────────┐
-│  Spillere (8/24)                            │
+│  Spillere (8/72)                            │
 │  • 8 players                                │
 │                                             │
 │  Baner                                      │
@@ -139,7 +139,17 @@ Player Count → Suggested Courts
    20-23     →       5       
    24-27     →       6       
    28-31     →       7       
-   32+       →       8       (maximum)
+   32-35     →       8       
+   36-39     →       9       
+   40-43     →      10       
+   44-47     →      11       
+   48-51     →      12       
+   52-55     →      13       
+   56-59     →      14       
+   60-63     →      15       
+   64-67     →      16       
+   68-71     →      17       
+    72+      →      18       (maximum)
 
 
 ## Animation Timeline

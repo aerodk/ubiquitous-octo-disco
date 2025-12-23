@@ -114,7 +114,7 @@
 ## Test Case 6: Edge Case - Maximum Courts
 
 ### Steps:
-1. Check Constants.maxCourts value (likely 8)
+1. Check Constants.maxCourts value (18)
 2. Create tournament with enough players for max courts
 3. Add courts until maximum is reached
 4. Try to add one more court

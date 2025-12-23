@@ -66,10 +66,33 @@ void main() {
       expect(calculateSuggestedCourtCount(27), 6);
     });
 
-    test('should not exceed maxCourts (8)', () {
+    test('should return 7 courts for 28-31 players (7 full courts)', () {
+      expect(calculateSuggestedCourtCount(28), 7);
+      expect(calculateSuggestedCourtCount(29), 7);
+      expect(calculateSuggestedCourtCount(30), 7);
+      expect(calculateSuggestedCourtCount(31), 7);
+    });
+
+    test('should return 8 courts for 32-35 players (8 full courts)', () {
+      expect(calculateSuggestedCourtCount(32), 8);
+      expect(calculateSuggestedCourtCount(33), 8);
+      expect(calculateSuggestedCourtCount(34), 8);
+      expect(calculateSuggestedCourtCount(35), 8);
+    });
+
+    test('should return courts for higher player counts', () {
+      expect(calculateSuggestedCourtCount(40), 10);
+      expect(calculateSuggestedCourtCount(48), 12);
+      expect(calculateSuggestedCourtCount(56), 14);
+      expect(calculateSuggestedCourtCount(64), 16);
+      expect(calculateSuggestedCourtCount(68), 17);
+      expect(calculateSuggestedCourtCount(72), 18); // Max players
+    });
+
+    test('should not exceed maxCourts (18)', () {
       // Even if we had more players (hypothetically), shouldn't exceed max
-      expect(calculateSuggestedCourtCount(32), Constants.maxCourts);
-      expect(calculateSuggestedCourtCount(40), Constants.maxCourts);
+      expect(calculateSuggestedCourtCount(72), Constants.maxCourts);
+      expect(calculateSuggestedCourtCount(80), Constants.maxCourts);
       expect(calculateSuggestedCourtCount(100), Constants.maxCourts);
     });
 
@@ -94,6 +117,12 @@ void main() {
       // Boundary between 7 and 8 courts - at 32 players
       expect(calculateSuggestedCourtCount(31), 7);
       expect(calculateSuggestedCourtCount(32), 8);
+
+      // Boundary between 17 and 18 courts - at 72 players
+      expect(calculateSuggestedCourtCount(67), 16);
+      expect(calculateSuggestedCourtCount(68), 17);
+      expect(calculateSuggestedCourtCount(71), 17);
+      expect(calculateSuggestedCourtCount(72), 18);
     });
   });
 }

@@ -114,7 +114,7 @@ bool _autoAdjustCourtCount() {
 ### Unit Tests (93 lines)
 ✅ Tests all player count scenarios
 ✅ Boundary conditions (7→8, 11→12, etc.)
-✅ Min/max constraints (1-8 courts)
+✅ Min/max constraints (1-18 courts)
 ✅ Edge cases (0, negative, large numbers)
 
 ### Widget Tests (104 lines)
