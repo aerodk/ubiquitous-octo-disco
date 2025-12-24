@@ -4,7 +4,6 @@ import 'package:star_cano/models/court.dart';
 import 'package:star_cano/models/match.dart';
 import 'package:star_cano/models/round.dart';
 import 'package:star_cano/models/tournament.dart';
-import 'package:star_cano/models/team.dart';
 import 'package:star_cano/services/standings_service.dart';
 
 void main() {
@@ -43,7 +42,7 @@ void main() {
             id: 'm1',
             team1: Team(player1: players[0], player2: players[1]),
             team2: Team(player1: players[2], player2: players[3]),
-            courtId: courts[0].id,
+            court: courts[0],
             team1Score: 20,
             team2Score: 10,
           ),
@@ -51,7 +50,7 @@ void main() {
             id: 'm2',
             team1: Team(player1: players[4], player2: players[5]),
             team2: Team(player1: players[6], player2: players[7]),
-            courtId: courts[1].id,
+            court: courts[1],
             team1Score: 15,
             team2Score: 12,
           ),
@@ -84,7 +83,7 @@ void main() {
             id: 'm1',
             team1: Team(player1: players[0], player2: players[1]),
             team2: Team(player1: players[2], player2: players[3]),
-            courtId: courts[0].id,
+            court: courts[0],
             team1Score: 20,
             team2Score: 10,
           ),
@@ -92,7 +91,7 @@ void main() {
             id: 'm2',
             team1: Team(player1: players[4], player2: players[5]),
             team2: Team(player1: players[6], player2: players[7]),
-            courtId: courts[1].id,
+            court: courts[1],
             team1Score: 15,
             team2Score: 12,
           ),
@@ -108,7 +107,7 @@ void main() {
             id: 'm3',
             team1: Team(player1: players[0], player2: players[2]),
             team2: Team(player1: players[1], player2: players[3]),
-            courtId: courts[0].id,
+            court: courts[0],
             team1Score: 18,
             team2Score: 22,
           ),
@@ -116,7 +115,7 @@ void main() {
             id: 'm4',
             team1: Team(player1: players[4], player2: players[6]),
             team2: Team(player1: players[5], player2: players[7]),
-            courtId: courts[1].id,
+            court: courts[1],
             team1Score: 20,
             team2Score: 15,
           ),
@@ -132,7 +131,7 @@ void main() {
             id: 'm5',
             team1: Team(player1: players[0], player2: players[4]),
             team2: Team(player1: players[1], player2: players[5]),
-            courtId: courts[0].id,
+            court: courts[0],
             team1Score: 24,
             team2Score: 20,
           ),
@@ -140,7 +139,7 @@ void main() {
             id: 'm6',
             team1: Team(player1: players[2], player2: players[6]),
             team2: Team(player1: players[3], player2: players[7]),
-            courtId: courts[1].id,
+            court: courts[1],
             team1Score: 22,
             team2Score: 18,
           ),
@@ -173,7 +172,7 @@ void main() {
             id: 'm1',
             team1: Team(player1: players[0], player2: players[1]),
             team2: Team(player1: players[2], player2: players[3]),
-            courtId: courts[0].id,
+            court: courts[0],
             team1Score: 24, // P1 and P2 score high
             team2Score: 0,  // P3 and P4 score low
           ),
@@ -181,7 +180,7 @@ void main() {
             id: 'm2',
             team1: Team(player1: players[4], player2: players[5]),
             team2: Team(player1: players[6], player2: players[7]),
-            courtId: courts[1].id,
+            court: courts[1],
             team1Score: 12,
             team2Score: 12,
           ),
@@ -196,7 +195,7 @@ void main() {
             id: 'm3',
             team1: Team(player1: players[0], player2: players[2]),
             team2: Team(player1: players[1], player2: players[3]),
-            courtId: courts[0].id,
+            court: courts[0],
             team1Score: 24,
             team2Score: 0,
           ),
@@ -204,7 +203,7 @@ void main() {
             id: 'm4',
             team1: Team(player1: players[4], player2: players[6]),
             team2: Team(player1: players[5], player2: players[7]),
-            courtId: courts[1].id,
+            court: courts[1],
             team1Score: 12,
             team2Score: 12,
           ),
@@ -220,7 +219,7 @@ void main() {
             id: 'm5',
             team1: Team(player1: players[2], player2: players[3]),
             team2: Team(player1: players[0], player2: players[1]),
-            courtId: courts[0].id,
+            court: courts[0],
             team1Score: 24, // P3 and P4 now score high
             team2Score: 0,  // P1 and P2 score low
           ),
@@ -228,7 +227,7 @@ void main() {
             id: 'm6',
             team1: Team(player1: players[4], player2: players[5]),
             team2: Team(player1: players[6], player2: players[7]),
-            courtId: courts[1].id,
+            court: courts[1],
             team1Score: 12,
             team2Score: 12,
           ),
