@@ -4,6 +4,7 @@ import 'package:star_cano/models/court.dart';
 import 'package:star_cano/models/match.dart';
 import 'package:star_cano/models/round.dart';
 import 'package:star_cano/models/tournament.dart';
+import 'package:star_cano/models/player_standing.dart';
 import 'package:star_cano/services/standings_service.dart';
 
 void main() {
