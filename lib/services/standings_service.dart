@@ -16,6 +16,7 @@ class StandingsService {
     // Calculate current standings
     final standings = _calculateStandingsForRounds(
       tournament.rounds,
+      allPlayers: tournament.players,
       pausePointsAwarded: tournament.settings.pausePointsAwarded,
     );
     
@@ -26,6 +27,7 @@ class StandingsService {
       final previousRounds = tournament.rounds.sublist(0, tournament.rounds.length - 1);
       final previousStandings = _calculateStandingsForRounds(
         previousRounds,
+        allPlayers: tournament.players,
         pausePointsAwarded: tournament.settings.pausePointsAwarded,
       );
       
@@ -50,15 +52,24 @@ class StandingsService {
   /// Internal method to calculate standings for a specific set of rounds
   List<PlayerStanding> _calculateStandingsForRounds(
     List<Round> rounds, {
+    required List<Player> allPlayers,
     required int pausePointsAwarded,
   }) {
-    // Get all players from first round (all rounds have same player set)
-    if (rounds.isEmpty) return [];
+    // If no rounds yet, return initial standings for all players
+    if (rounds.isEmpty) {
+      final standings = <PlayerStanding>[];
+      for (final player in allPlayers) {
+        standings.add(PlayerStanding.initial(player));
+      }
+      _rankPlayers(standings);
+      return standings;
+    }
     
-    final allPlayers = <Player>[];
+    // Get all players from first round (all rounds have same player set)
+    final playersInRound = <Player>[];
     if (rounds.first.matches.isNotEmpty) {
       for (final match in rounds.first.matches) {
-        allPlayers.addAll([
+        playersInRound.addAll([
           match.team1.player1,
           match.team1.player2,
           match.team2.player1,
@@ -67,11 +78,11 @@ class StandingsService {
       }
     }
     // Always add players on break, even if there are no matches
-    allPlayers.addAll(rounds.first.playersOnBreak);
+    playersInRound.addAll(rounds.first.playersOnBreak);
     
     // Initialize standings for all players
     final standings = <String, PlayerStanding>{};
-    for (final player in allPlayers) {
+    for (final player in playersInRound) {
       standings[player.id] = PlayerStanding.initial(player);
     }
 
