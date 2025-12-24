@@ -118,6 +118,9 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   void _goToPreviousRound() {
     if (!_canGoBack) return;
     
+    // Save the full tournament state before going back (to preserve future rounds)
+    _persistenceService.saveFullTournamentHistory(_tournament);
+    
     // If on first round, just pop back to setup screen
     if (_tournament.rounds.length <= 1) {
       Navigator.pop(context);
@@ -143,7 +146,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     );
   }
 
-  void _generateNextRound() {
+  void _generateNextRound() async {
     // Check if all scores have been entered in current round
     if (!_currentRound.isCompleted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -155,20 +158,38 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       return;
     }
     
-    // Generate next round with pause fairness
     final nextRoundNumber = _tournament.rounds.length + 1;
     
-    // Calculate current standings to track pause history
-    final standings = _standingsService.calculateStandings(_tournament);
+    // Try to load previously saved tournament history
+    final savedHistory = await _persistenceService.loadFullTournamentHistory();
     
-    // Generate next round with pause fairness logic
-    final nextRound = _tournamentService.generateNextRound(
-      _tournament.players,
-      _tournament.courts,
-      standings,
-      nextRoundNumber,
-      laneStrategy: _tournament.settings.laneAssignmentStrategy,
-    );
+    Round? nextRound;
+    
+    // Check if we can restore the next round from history
+    if (savedHistory != null && 
+        savedHistory.rounds.length >= nextRoundNumber &&
+        _roundsAreIdentical(savedHistory, _tournament)) {
+      // We can restore the next round from history
+      nextRound = savedHistory.rounds[nextRoundNumber - 1];
+    }
+    
+    // If we couldn't restore from history, generate a new round
+    if (nextRound == null) {
+      // Calculate current standings to track pause history
+      final standings = _standingsService.calculateStandings(_tournament);
+      
+      // Generate next round with pause fairness logic
+      nextRound = _tournamentService.generateNextRound(
+        _tournament.players,
+        _tournament.courts,
+        standings,
+        nextRoundNumber,
+        laneStrategy: _tournament.settings.laneAssignmentStrategy,
+      );
+      
+      // Clear history since we generated a new round
+      await _persistenceService.clearFullTournamentHistory();
+    }
     
     final updatedTournament = Tournament(
       id: _tournament.id,
@@ -186,6 +207,33 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
         builder: (context) => RoundDisplayScreen(tournament: updatedTournament),
       ),
     );
+  }
+  
+  /// Check if the rounds in two tournaments are identical (same scores)
+  /// Used to determine if we can safely restore a round from history
+  bool _roundsAreIdentical(Tournament history, Tournament current) {
+    if (history.rounds.length < current.rounds.length) return false;
+    
+    // Check that all existing rounds have identical scores
+    for (int i = 0; i < current.rounds.length; i++) {
+      final historyRound = history.rounds[i];
+      final currentRound = current.rounds[i];
+      
+      if (historyRound.matches.length != currentRound.matches.length) return false;
+      
+      for (int j = 0; j < currentRound.matches.length; j++) {
+        final historyMatch = historyRound.matches[j];
+        final currentMatch = currentRound.matches[j];
+        
+        // Check if scores are different
+        if (historyMatch.team1Score != currentMatch.team1Score ||
+            historyMatch.team2Score != currentMatch.team2Score) {
+          return false;
+        }
+      }
+    }
+    
+    return true;
   }
 
   Future<void> _generateFinalRound() async {
@@ -223,16 +271,35 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
 
     if (confirmed != true || !mounted) return;
 
-    // Generate final round
-    final standings = _standingsService.calculateStandings(_tournament);
     final nextRoundNumber = _tournament.rounds.length + 1;
-    final finalRound = _tournamentService.generateFinalRound(
-      _tournament.courts,
-      standings,
-      nextRoundNumber,
-      strategy: _tournament.settings.finalRoundStrategy,
-      laneStrategy: _tournament.settings.laneAssignmentStrategy,
-    );
+    
+    // Try to load previously saved tournament history
+    final savedHistory = await _persistenceService.loadFullTournamentHistory();
+    
+    Round? finalRound;
+    
+    // Check if we can restore the final round from history
+    if (savedHistory != null && 
+        savedHistory.rounds.length >= nextRoundNumber &&
+        _roundsAreIdentical(savedHistory, _tournament)) {
+      // We can restore the final round from history
+      finalRound = savedHistory.rounds[nextRoundNumber - 1];
+    }
+    
+    // If we couldn't restore from history, generate a new final round
+    if (finalRound == null) {
+      final standings = _standingsService.calculateStandings(_tournament);
+      finalRound = _tournamentService.generateFinalRound(
+        _tournament.courts,
+        standings,
+        nextRoundNumber,
+        strategy: _tournament.settings.finalRoundStrategy,
+        laneStrategy: _tournament.settings.laneAssignmentStrategy,
+      );
+      
+      // Clear history since we generated a new round
+      await _persistenceService.clearFullTournamentHistory();
+    }
     
     final updatedTournament = Tournament(
       id: _tournament.id,
