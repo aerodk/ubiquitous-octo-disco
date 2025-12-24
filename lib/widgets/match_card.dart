@@ -26,12 +26,13 @@ class MatchCard extends StatefulWidget {
 }
 
 class _MatchCardState extends State<MatchCard> {
-  void _showScoreInput() {
+  void _showScoreInput({bool isTeam1 = true}) {
     showDialog(
       context: context,
       builder: (context) => ScoreInputDialog(
         match: widget.match,
         maxPoints: widget.maxPoints,
+        selectedTeamIsTeam1: isTeam1,
       ),
     ).then((result) {
       if (result != null && result is Map && mounted) {
@@ -84,7 +85,7 @@ class _MatchCardState extends State<MatchCard> {
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.edit, color: AppColors.textLight),
-                  onPressed: _showScoreInput,
+                  onPressed: () => _showScoreInput(),
                   tooltip: 'Indtast score',
                 ),
               ],
@@ -120,7 +121,7 @@ class _MatchCardState extends State<MatchCard> {
                       onPlayerLongPress: widget.onPlayerForceToPause != null
                           ? _showPlayerOptionsMenu
                           : null,
-                      onScoreTap: _showScoreInput,
+                      onScoreTap: () => _showScoreInput(isTeam1: true),
                     ),
                   ),
                   
@@ -140,7 +141,7 @@ class _MatchCardState extends State<MatchCard> {
                       onPlayerLongPress: widget.onPlayerForceToPause != null
                           ? _showPlayerOptionsMenu
                           : null,
-                      onScoreTap: _showScoreInput,
+                      onScoreTap: () => _showScoreInput(isTeam1: false),
                     ),
                   ),
                 ],
@@ -195,11 +196,13 @@ class _MatchCardState extends State<MatchCard> {
 class ScoreInputDialog extends StatefulWidget {
   final Match match;
   final int maxPoints;
+  final bool selectedTeamIsTeam1;
 
   const ScoreInputDialog({
     super.key,
     required this.match,
     this.maxPoints = 24,
+    this.selectedTeamIsTeam1 = true,
   });
 
   @override
@@ -217,9 +220,9 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
     _team2Score = widget.match.team2Score;
   }
 
-  void _selectScore(bool isTeam1, int score) {
+  void _selectScore(int score) {
     setState(() {
-      if (isTeam1) {
+      if (widget.selectedTeamIsTeam1) {
         _team1Score = score;
         // Auto-calculate team 2 score (total points - team1)
         _team2Score = widget.maxPoints - score;
@@ -234,6 +237,14 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final selectedTeam = widget.selectedTeamIsTeam1 ? widget.match.team1 : widget.match.team2;
+    final selectedTeamLabel = widget.selectedTeamIsTeam1 ? 'Par 1' : 'Par 2';
+    final selectedScore = widget.selectedTeamIsTeam1 ? _team1Score : _team2Score;
+    
+    final otherTeam = widget.selectedTeamIsTeam1 ? widget.match.team2 : widget.match.team1;
+    final otherTeamLabel = widget.selectedTeamIsTeam1 ? 'Par 2' : 'Par 1';
+    final otherScore = widget.selectedTeamIsTeam1 ? _team2Score : _team1Score;
+
     return AlertDialog(
       title: Row(
         children: [
@@ -249,7 +260,7 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Team 1
+            // Selected Team (Active input)
             Card(
               color: AppColors.courtBackgroundLight,
               shape: RoundedRectangleBorder(
@@ -261,27 +272,42 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Par 1',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.teamLabel,
-                        fontSize: 14,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          selectedTeamLabel,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.teamLabel,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.touch_app, size: 16, color: AppColors.courtHeader),
+                        const SizedBox(width: 4),
+                        const Text(
+                          'Vælg score',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.courtHeader,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
                         const Icon(Icons.person, size: 16, color: AppColors.playerIcon),
                         const SizedBox(width: 4),
-                        Text(widget.match.team1.player1.name),
+                        Text(selectedTeam.player1.name),
                         const Text(' & '),
                         const Icon(Icons.person, size: 16, color: AppColors.playerIcon),
                         const SizedBox(width: 4),
-                        Text(widget.match.team1.player2.name),
+                        Text(selectedTeam.player2.name),
                       ],
                     ),
-                    if (_team1Score != null) ...[
+                    if (selectedScore != null) ...[
                       const SizedBox(height: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -290,7 +316,7 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          'Score: $_team1Score',
+                          'Score: $selectedScore',
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -308,12 +334,12 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
               spacing: 8,
               runSpacing: 8,
               children: List.generate(widget.maxPoints + 1, (index) {
-                final isSelected = _team1Score == index;
+                final isSelected = selectedScore == index;
                 return SizedBox(
                   width: 50,
                   height: 40,
                   child: ElevatedButton(
-                    onPressed: () => _selectScore(true, index),
+                    onPressed: () => _selectScore(index),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: isSelected ? AppColors.courtHeader : AppColors.scoreEmpty,
                       foregroundColor: isSelected ? AppColors.textLight : AppColors.textDark,
@@ -328,52 +354,67 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
             const SizedBox(height: 16),
             const Divider(),
             const SizedBox(height: 16),
-            // Team 2
+            // Other Team (Auto-calculated, read-only)
             Card(
-              color: AppColors.courtBackgroundLight,
+              color: AppColors.scoreEmpty.withOpacity(0.5),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                side: const BorderSide(color: AppColors.courtBorder, width: 2),
+                side: BorderSide(color: AppColors.courtBorder.withOpacity(0.3), width: 2),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Par 2',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.teamLabel,
-                        fontSize: 14,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          otherTeamLabel,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.teamLabel.withOpacity(0.7),
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.calculate, size: 16, color: AppColors.teamLabel),
+                        const SizedBox(width: 4),
+                        const Text(
+                          'Automatisk',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.teamLabel,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
                         const Icon(Icons.person, size: 16, color: AppColors.playerIcon),
                         const SizedBox(width: 4),
-                        Text(widget.match.team2.player1.name),
+                        Text(otherTeam.player1.name),
                         const Text(' & '),
                         const Icon(Icons.person, size: 16, color: AppColors.playerIcon),
                         const SizedBox(width: 4),
-                        Text(widget.match.team2.player2.name),
+                        Text(otherTeam.player2.name),
                       ],
                     ),
-                    if (_team2Score != null) ...[
+                    if (otherScore != null) ...[
                       const SizedBox(height: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: AppColors.scoreEntered,
+                          color: AppColors.teamLabel.withOpacity(0.3),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          'Score: $_team2Score',
+                          'Score: $otherScore',
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.textLight,
+                            color: AppColors.textDark,
                           ),
                         ),
                       ),

@@ -160,5 +160,84 @@ void main() {
       expect(find.byIcon(Icons.edit), findsOneWidget);
       expect(find.byIcon(Icons.sports_tennis), findsOneWidget);
     });
+
+    testWidgets('should open score dialog for team 1 when team 1 score is tapped',
+        (WidgetTester tester) async {
+      final match = Match(
+        court: Court(id: '1', name: 'Bane 1'),
+        team1: Team(
+          player1: Player(id: '1', name: 'Player A'),
+          player2: Player(id: '2', name: 'Player B'),
+        ),
+        team2: Team(
+          player1: Player(id: '3', name: 'Player C'),
+          player2: Player(id: '4', name: 'Player D'),
+        ),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: MatchCard(match: match),
+          ),
+        ),
+      );
+
+      // Find the team 1 score display and tap it
+      final team1ScoreDisplays = find.byType(GestureDetector);
+      expect(team1ScoreDisplays, findsAtLeast(1));
+      
+      // Tap the first score display (should be team 1)
+      await tester.tap(team1ScoreDisplays.first);
+      await tester.pumpAndSettle();
+
+      // Verify dialog opened with team 1 active
+      expect(find.text('Indtast Score - Bane 1'), findsOneWidget);
+      expect(find.text('Vælg score'), findsOneWidget);
+    });
+
+    testWidgets('should calculate other team score automatically when score is selected',
+        (WidgetTester tester) async {
+      final match = Match(
+        court: Court(id: '1', name: 'Bane 1'),
+        team1: Team(
+          player1: Player(id: '1', name: 'Player A'),
+          player2: Player(id: '2', name: 'Player B'),
+        ),
+        team2: Team(
+          player1: Player(id: '3', name: 'Player C'),
+          player2: Player(id: '4', name: 'Player D'),
+        ),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: MatchCard(match: match, maxPoints: 24),
+          ),
+        ),
+      );
+
+      // Tap the team 1 score display
+      final team1ScoreDisplays = find.byType(GestureDetector);
+      await tester.tap(team1ScoreDisplays.first);
+      await tester.pumpAndSettle();
+
+      // Verify dialog is open
+      expect(find.text('Indtast Score - Bane 1'), findsOneWidget);
+      
+      // Find and tap score button '18' (should set team1=18, team2=6)
+      final scoreButtons = find.widgetWithText(ElevatedButton, '18');
+      expect(scoreButtons, findsOneWidget);
+      await tester.tap(scoreButtons);
+      await tester.pumpAndSettle();
+
+      // Dialog should close automatically after selection
+      expect(find.text('Indtast Score - Bane 1'), findsNothing);
+      
+      // Verify scores were set correctly
+      expect(match.team1Score, equals(18));
+      expect(match.team2Score, equals(6));
+    });
   });
 }
