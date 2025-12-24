@@ -181,9 +181,11 @@ void main() {
 
       final standings = standingsService.calculateStandings(tournament);
       
-      // After round 4, all players should have previousRank
+      // After round 4, all players should have previousRank and rankOneRoundBack
+      // to show the position change that occurred in the previous round (round 3)
       for (final standing in standings) {
         expect(standing.previousRank, isNotNull);
+        expect(standing.rankOneRoundBack, isNotNull);
         expect(standing.rankChange, isNotNull);
       }
     });

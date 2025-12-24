@@ -107,6 +107,7 @@ class PlayerStanding {
   /// Returns 0 for no change
   /// When rankOneRoundBack is available, compares previousRank to rankOneRoundBack
   /// to show the change that occurred in the previous round.
+  /// (N = current round number; compares ranks from round N-2 to round N-1)
   int? get rankChange {
     if (previousRank == null) return null;
     // If we have rankOneRoundBack, compare previousRank to rankOneRoundBack

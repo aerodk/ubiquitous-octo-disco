@@ -25,6 +25,7 @@ class StandingsService {
     // If we have 4+ rounds, calculate standings to show position change
     // from the previous round. Position change compares standings from round N-2
     // to standings from round N-1, showing the impact of round N-1.
+    // (N = current round number = number of the most recent round)
     Map<String, int>? previousRanks;
     Map<String, int>? oneRoundBackRanks;
     if (currentRoundNumber >= 4 && tournament.completedRounds >= 3) {
