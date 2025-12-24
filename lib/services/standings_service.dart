@@ -65,8 +65,9 @@ class StandingsService {
           match.team2.player2,
         ]);
       }
-      allPlayers.addAll(rounds.first.playersOnBreak);
     }
+    // Always add players on break, even if there are no matches
+    allPlayers.addAll(rounds.first.playersOnBreak);
     
     // Initialize standings for all players
     final standings = <String, PlayerStanding>{};
