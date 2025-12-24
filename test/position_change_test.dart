@@ -270,56 +270,32 @@ void main() {
 
     test('rankChange shows positive for rank improvement (lower rank number)', () {
       // Player moving from rank 4 to rank 2 should have rankChange = +2
-      final testStanding = Player(id: 'test', name: 'Test Player');
-      final standing = standingsService.calculateStandings(
-        Tournament(
-          name: 'Test',
-          players: [testStanding],
-          courts: courts,
-          rounds: [],
-        ),
-      ).first;
+      final testPlayer = Player(id: 'test', name: 'Test Player');
       
-      // Simulate rank change from 4 to 2
-      final updatedStanding = standing.copyWithRank(2, previousRank: 4);
+      // Create initial standing and simulate rank change from 4 to 2
+      final standing = PlayerStanding.initial(testPlayer).copyWithRank(2, previousRank: 4);
       
-      expect(updatedStanding.rankChange, equals(2)); // 4 - 2 = 2 (improvement)
+      expect(standing.rankChange, equals(2)); // 4 - 2 = 2 (improvement)
     });
 
     test('rankChange shows negative for rank decline (higher rank number)', () {
       // Player moving from rank 2 to rank 4 should have rankChange = -2
-      final testStanding = Player(id: 'test', name: 'Test Player');
-      final standing = standingsService.calculateStandings(
-        Tournament(
-          name: 'Test',
-          players: [testStanding],
-          courts: courts,
-          rounds: [],
-        ),
-      ).first;
+      final testPlayer = Player(id: 'test', name: 'Test Player');
       
-      // Simulate rank change from 2 to 4
-      final updatedStanding = standing.copyWithRank(4, previousRank: 2);
+      // Create initial standing and simulate rank change from 2 to 4
+      final standing = PlayerStanding.initial(testPlayer).copyWithRank(4, previousRank: 2);
       
-      expect(updatedStanding.rankChange, equals(-2)); // 2 - 4 = -2 (decline)
+      expect(standing.rankChange, equals(-2)); // 2 - 4 = -2 (decline)
     });
 
     test('rankChange shows 0 for no rank change', () {
       // Player staying at rank 3 should have rankChange = 0
-      final testStanding = Player(id: 'test', name: 'Test Player');
-      final standing = standingsService.calculateStandings(
-        Tournament(
-          name: 'Test',
-          players: [testStanding],
-          courts: courts,
-          rounds: [],
-        ),
-      ).first;
+      final testPlayer = Player(id: 'test', name: 'Test Player');
       
-      // Simulate no rank change
-      final updatedStanding = standing.copyWithRank(3, previousRank: 3);
+      // Create initial standing and simulate no rank change
+      final standing = PlayerStanding.initial(testPlayer).copyWithRank(3, previousRank: 3);
       
-      expect(updatedStanding.rankChange, equals(0)); // 3 - 3 = 0 (no change)
+      expect(standing.rankChange, equals(0)); // 3 - 3 = 0 (no change)
     });
   });
 }
