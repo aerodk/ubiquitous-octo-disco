@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/player.dart';
+import '../../models/player_standing.dart';
 import '../../utils/colors.dart';
 import 'bench_player_chip.dart';
 
@@ -7,11 +8,13 @@ import 'bench_player_chip.dart';
 /// F-024: Bench (Pause) Section Redesign
 class BenchSection extends StatelessWidget {
   final List<Player> playersOnBreak;
+  final List<PlayerStanding> standings;
   final Function(Player)? onPlayerTap;
 
   const BenchSection({
     super.key,
     required this.playersOnBreak,
+    required this.standings,
     this.onPlayerTap,
   });
 
@@ -66,12 +69,21 @@ class BenchSection extends StatelessWidget {
               spacing: 12,
               runSpacing: 12,
               children: playersOnBreak
-                  .map((player) => BenchPlayerChip(
-                        player: player,
-                        onTap: onPlayerTap != null
-                            ? () => onPlayerTap!(player)
-                            : null,
-                      ))
+                  .map((player) {
+                    // Find the standing for this player
+                    final standing = standings.firstWhere(
+                      (s) => s.player.id == player.id,
+                      orElse: () => PlayerStanding.initial(player),
+                    );
+                    
+                    return BenchPlayerChip(
+                      player: player,
+                      rankChange: standing.rankChange,
+                      onTap: onPlayerTap != null
+                          ? () => onPlayerTap!(player)
+                          : null,
+                    );
+                  })
                   .toList(),
             ),
           ],

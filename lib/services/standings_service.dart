@@ -1,21 +1,93 @@
 import '../models/match.dart';
 import '../models/tournament.dart';
 import '../models/player_standing.dart';
+import '../models/player.dart';
+import '../models/round.dart';
 
 /// Service for calculating tournament standings and rankings.
 /// Implements the hierarchical ranking algorithm from SPECIFICATION_V3.md (F-008).
 class StandingsService {
   /// Calculate standings for all players in the tournament.
   /// Returns a list of PlayerStanding objects sorted by rank.
+  /// For rounds after the 3rd, includes previousRank for position change tracking.
   List<PlayerStanding> calculateStandings(Tournament tournament) {
+    final currentRoundNumber = tournament.rounds.isEmpty ? 0 : tournament.rounds.last.roundNumber;
+    
+    // Calculate current standings
+    final standings = _calculateStandingsForRounds(
+      tournament.rounds,
+      allPlayers: tournament.players,
+      pausePointsAwarded: tournament.settings.pausePointsAwarded,
+    );
+    
+    // If we have 3+ completed rounds, calculate previous standings for comparison
+    Map<String, int>? previousRanks;
+    if (currentRoundNumber >= 3 && tournament.completedRounds >= 2) {
+      // Calculate standings up to (but not including) the current round
+      final previousRounds = tournament.rounds.sublist(0, tournament.rounds.length - 1);
+      final previousStandings = _calculateStandingsForRounds(
+        previousRounds,
+        allPlayers: tournament.players,
+        pausePointsAwarded: tournament.settings.pausePointsAwarded,
+      );
+      
+      // Create map of player ID to previous rank
+      previousRanks = {
+        for (var standing in previousStandings)
+          standing.player.id: standing.rank
+      };
+    }
+    
+    // Apply previous ranks if available
+    if (previousRanks != null) {
+      for (int i = 0; i < standings.length; i++) {
+        final prevRank = previousRanks[standings[i].player.id];
+        standings[i] = standings[i].copyWithRank(standings[i].rank, previousRank: prevRank);
+      }
+    }
+    
+    return standings;
+  }
+  
+  /// Internal method to calculate standings for a specific set of rounds
+  List<PlayerStanding> _calculateStandingsForRounds(
+    List<Round> rounds, {
+    required List<Player> allPlayers,
+    required int pausePointsAwarded,
+  }) {
+    // If no rounds yet, return initial standings for all players
+    if (rounds.isEmpty) {
+      final standings = <PlayerStanding>[];
+      for (final player in allPlayers) {
+        standings.add(PlayerStanding.initial(player));
+      }
+      _rankPlayers(standings);
+      return standings;
+    }
+    
+    // Get all players from first round (all rounds have same player set)
+    final playersInRound = <Player>[];
+    if (rounds.first.matches.isNotEmpty) {
+      for (final match in rounds.first.matches) {
+        playersInRound.addAll([
+          match.team1.player1,
+          match.team1.player2,
+          match.team2.player1,
+          match.team2.player2,
+        ]);
+      }
+    }
+    // Always add players on break, even if there are no matches
+    playersInRound.addAll(rounds.first.playersOnBreak);
+    
     // Initialize standings for all players
     final standings = <String, PlayerStanding>{};
-    for (final player in tournament.players) {
+    for (final player in playersInRound) {
       standings[player.id] = PlayerStanding.initial(player);
     }
 
     // Calculate statistics from all completed matches and breaks
-    for (final round in tournament.rounds) {
+    for (final round in rounds) {
       // Process completed matches
       for (final match in round.matches.where((m) => m.isCompleted)) {
         _processMatch(match, standings);
@@ -24,10 +96,13 @@ class StandingsService {
       // Award points to players on break based on tournament settings (only for completed rounds)
       if (round.isCompleted) {
         for (final player in round.playersOnBreak) {
-          standings[player.id] = _awardBreakPoints(
-            standings[player.id]!,
-            tournament.settings.pausePointsAwarded,
-          );
+          // Only award if player is in standings (safety check)
+          if (standings.containsKey(player.id)) {
+            standings[player.id] = _awardBreakPoints(
+              standings[player.id]!,
+              pausePointsAwarded,
+            );
+          }
         }
       }
     }

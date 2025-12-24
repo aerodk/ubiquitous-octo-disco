@@ -6,11 +6,13 @@ import '../../utils/colors.dart';
 /// F-024: Bench Player Chip Component
 class BenchPlayerChip extends StatelessWidget {
   final Player player;
+  final int? rankChange;
   final VoidCallback? onTap;
 
   const BenchPlayerChip({
     super.key,
     required this.player,
+    this.rankChange,
     this.onTap,
   });
 
@@ -55,7 +57,53 @@ class BenchPlayerChip extends StatelessWidget {
                 color: AppColors.textDark,
               ),
             ),
+            // Position change indicator (shown from round 3 onwards)
+            if (rankChange != null) ...[
+              const SizedBox(width: 8),
+              _buildPositionChangeIndicator(rankChange!),
+            ],
           ],
+        ),
+      ),
+    );
+  }
+  
+  /// Build position change indicator widget
+  /// Shows green +N for improvement, red -N for decline, black ±0 for no change
+  Widget _buildPositionChangeIndicator(int change) {
+    final Color indicatorColor;
+    final String prefix;
+    
+    if (change > 0) {
+      // Positive change = rank improvement (moved up)
+      indicatorColor = Colors.green;
+      prefix = '+';
+    } else if (change < 0) {
+      // Negative change = rank decline (moved down)
+      indicatorColor = Colors.red;
+      prefix = '';
+    } else {
+      // No change
+      indicatorColor = Colors.black87;
+      prefix = '±';
+    }
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: indicatorColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: indicatorColor,
+          width: 1,
+        ),
+      ),
+      child: Text(
+        '$prefix$change',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: indicatorColor,
         ),
       ),
     );

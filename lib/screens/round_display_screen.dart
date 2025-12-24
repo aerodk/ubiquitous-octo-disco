@@ -809,6 +809,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                         const SizedBox(height: 16),
                         BenchSection(
                           playersOnBreak: _currentRound.playersOnBreak,
+                          standings: _standingsService.calculateStandings(_tournament),
                           onPlayerTap: (player) => _overridePlayerPauseStatus(player, true),
                         ),
                       ],

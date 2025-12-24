@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:star_cano/models/player.dart';
+import 'package:star_cano/models/player_standing.dart';
 import 'package:star_cano/widgets/court_visualization/bench_section.dart';
 
 void main() {
@@ -10,7 +11,10 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: BenchSection(playersOnBreak: []),
+            body: BenchSection(
+              playersOnBreak: [],
+              standings: [],
+            ),
           ),
         ),
       );
@@ -24,11 +28,18 @@ void main() {
       final players = [
         Player(id: '1', name: 'Player A'),
       ];
+      
+      final standings = [
+        PlayerStanding.initial(players[0]),
+      ];
 
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: BenchSection(playersOnBreak: players),
+            body: BenchSection(
+              playersOnBreak: players,
+              standings: standings,
+            ),
           ),
         ),
       );
@@ -44,11 +55,16 @@ void main() {
         Player(id: '2', name: 'Player B'),
         Player(id: '3', name: 'Player C'),
       ];
+      
+      final standings = players.map((p) => PlayerStanding.initial(p)).toList();
 
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: BenchSection(playersOnBreak: players),
+            body: BenchSection(
+              playersOnBreak: players,
+              standings: standings,
+            ),
           ),
         ),
       );
@@ -63,6 +79,11 @@ void main() {
       final players = [
         Player(id: '1', name: 'Player A'),
       ];
+      
+      final standings = [
+        PlayerStanding.initial(players[0]),
+      ];
+      
       Player? tappedPlayer;
 
       await tester.pumpWidget(
@@ -70,6 +91,7 @@ void main() {
           home: Scaffold(
             body: BenchSection(
               playersOnBreak: players,
+              standings: standings,
               onPlayerTap: (player) {
                 tappedPlayer = player;
               },
