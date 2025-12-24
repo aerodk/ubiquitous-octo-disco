@@ -231,7 +231,7 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
         // Auto-calculate team 1 score (total points - team2)
         _team1Score = widget.maxPoints - score;
       }
-      popClose();
+      _closeWithScores();
     });
   }
 
@@ -435,7 +435,7 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
     );
   }
 
-  void popClose() {
+  void _closeWithScores() {
     Navigator.pop(context, {
                     'team1Score': _team1Score,
                     'team2Score': _team2Score,
