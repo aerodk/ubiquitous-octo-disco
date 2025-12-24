@@ -1,30 +1,37 @@
 # Position Change Visual Feature - Implementation Summary
 
 ## Overview
-Successfully implemented position change visual indicators that display how many positions a player has moved up or down after Round 3.
+Successfully implemented position change visual indicators that display how many positions a player has moved up or down. **Updated to show changes with one-round delay**: Changes from round N are displayed when viewing round N+1, starting from Round 4 onwards.
 
 ## Issue Requirements ✅
 - [x] Show position changes on standings page (Leaderboard)
 - [x] Show position changes on lane view (Bench section)
-- [x] Start showing from Round 3 onwards
+- [x] Start showing from Round 4 onwards (requires 3 completed rounds)
 - [x] Green +N for positions gained (moving up)
 - [x] Red -N for positions lost (moving down)
 - [x] Black ±0 for no position change
+- [x] One-round delay: changes from round N shown in round N+1
 
 ## Implementation Details
 
 ### Changes Made
 
 #### 1. Data Model (`lib/models/player_standing.dart`)
-- Added `previousRank` field (nullable int)
-- Added `rankChange` getter that calculates: `previousRank - currentRank`
-- Updated JSON serialization methods
-- Updated `copyWithRank()` to accept optional previousRank parameter
+- Added `previousRank` field (nullable int) - stores rank from 2 rounds back
+- Added `rankOneRoundBack` field (nullable int) - stores rank from 1 round back
+- Updated `rankChange` getter to calculate: `previousRank - rankOneRoundBack` (when rankOneRoundBack is set)
+- Falls back to: `previousRank - currentRank` (when rankOneRoundBack is null, for legacy behavior)
+- Updated JSON serialization methods to include rankOneRoundBack
+- Updated `copyWithRank()` to accept optional rankOneRoundBack parameter
 
 #### 2. Service Layer (`lib/services/standings_service.dart`)
-- Enhanced `calculateStandings()` to track previous round rankings
-- Added `_calculateStandingsForRounds()` internal method for reusability
-- Compares standings from current round vs previous round (from Round 3 onwards)
+- Enhanced `calculateStandings()` to track previous two rounds' rankings
+- Calculates three sets of standings:
+  - Current standings (after all rounds)
+  - Standings from 1 round back (for rankOneRoundBack)
+  - Standings from 2 rounds back (for previousRank)
+- Compares standings from round N-2 vs round N-1 (from Round 4 onwards)
+- Requires `currentRoundNumber >= 4` and `completedRounds >= 3`
 - Properly uses tournament settings for pause points
 
 #### 3. UI - Leaderboard (`lib/screens/leaderboard_screen.dart`)
@@ -54,33 +61,42 @@ Successfully implemented position change visual indicators that display how many
 
 #### Unit Tests (`test/position_change_test.dart`)
 Comprehensive test coverage including:
-- ✅ No previousRank before Round 3
-- ✅ PreviousRank set from Round 3 onwards
-- ✅ RankChange calculation accuracy
+- ✅ No previousRank before Round 4 (updated from Round 3)
+- ✅ PreviousRank set from Round 4 onwards (updated from Round 3)
+- ✅ RankChange calculation accuracy (comparing N-2 to N-1)
 - ✅ Positive changes (improvements)
 - ✅ Negative changes (declines)
 - ✅ Zero changes (no movement)
+- ✅ New test for rankOneRoundBack behavior
 
-All tests verify the core logic works correctly.
+All tests verify the core logic works correctly with one-round delay.
 
 ### Documentation
 
-Created comprehensive documentation:
-1. **POSITION_CHANGE_VISUAL.md** - Feature specification and technical details
-2. **MANUAL_TESTING_POSITION_CHANGE.md** - Complete testing guide with scenarios
-3. **POSITION_CHANGE_VISUAL_MOCKUP.md** - Text-based visual mockups
+Created and updated comprehensive documentation:
+1. **POSITION_CHANGE_VISUAL.md** - Updated feature specification and technical details
+2. **IMPLEMENTATION_SUMMARY_POSITION_CHANGE.md** - Updated implementation summary
+3. **MANUAL_TESTING_POSITION_CHANGE.md** - Testing guide (may need update for new behavior)
+4. **POSITION_CHANGE_VISUAL_MOCKUP.md** - Text-based visual mockups (may need update)
 
 ## Design Decisions
 
-### Why Start from Round 3?
-- Rounds 1-2 establish initial rankings
-- Round 3 is first meaningful comparison point
-- Prevents confusing "changes" in early rounds
+### Why Start from Round 4?
+- Requires at least 3 completed rounds to calculate two previous ranks
+- Round 4 is first meaningful comparison point with delayed display
+- Rounds 1-3 establish initial rankings and first tracked change
 
-### Why Compare Only Previous Round?
-- Most relevant for immediate feedback
-- Simpler to understand than cumulative tracking
-- Matches user expectations (recent progress)
+### Why Show Changes with One-Round Delay?
+- Allows players to see the impact of their performance in the previous round
+- The change from round N is displayed when viewing round N+1
+- Provides clearer feedback on how recent performance affected rankings
+- Matches the issue requirement: "scores from round 4 should be visible when viewing standings on round 5"
+
+### Why Compare Two Rounds Back?
+- Shows the change that occurred in the previous round (N-2 to N-1)
+- Current standings (after round N) are displayed for overall position
+- Position change marker shows how you moved in the previous round
+- Provides historical context while maintaining current information
 
 ### Visual Design Choices
 - **Colors**: Green (good), Red (bad), Black (neutral) - universal understanding
