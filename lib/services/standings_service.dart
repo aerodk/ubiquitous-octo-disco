@@ -9,7 +9,9 @@ import '../models/round.dart';
 class StandingsService {
   /// Calculate standings for all players in the tournament.
   /// Returns a list of PlayerStanding objects sorted by rank.
-  /// For rounds after the 3rd, includes previousRank for position change tracking.
+  /// For rounds after the 4th, includes previousRank and rankOneRoundBack for position change tracking.
+  /// Position change shows the change that occurred in the previous round,
+  /// comparing standings from 2 rounds back to 1 round back.
   List<PlayerStanding> calculateStandings(Tournament tournament) {
     final currentRoundNumber = tournament.rounds.isEmpty ? 0 : tournament.rounds.last.roundNumber;
     
@@ -20,29 +22,53 @@ class StandingsService {
       pausePointsAwarded: tournament.settings.pausePointsAwarded,
     );
     
-    // If we have 3+ completed rounds, calculate previous standings for comparison
+    // If we have 4+ rounds, calculate standings to show position change
+    // from the previous round. Position change compares standings from round N-2
+    // to standings from round N-1, showing the impact of round N-1.
     Map<String, int>? previousRanks;
-    if (currentRoundNumber >= 3 && tournament.completedRounds >= 2) {
-      // Calculate standings up to (but not including) the current round
-      final previousRounds = tournament.rounds.sublist(0, tournament.rounds.length - 1);
+    Map<String, int>? oneRoundBackRanks;
+    if (currentRoundNumber >= 4 && tournament.completedRounds >= 3) {
+      // Calculate standings up to (but not including) the last 2 rounds
+      // This gives us the standings after round N-2
+      final roundsBeforePrevious = tournament.rounds.sublist(0, tournament.rounds.length - 2);
       final previousStandings = _calculateStandingsForRounds(
-        previousRounds,
+        roundsBeforePrevious,
         allPlayers: tournament.players,
         pausePointsAwarded: tournament.settings.pausePointsAwarded,
       );
       
-      // Create map of player ID to previous rank
+      // Create map of player ID to rank after round N-2
       previousRanks = {
         for (var standing in previousStandings)
+          standing.player.id: standing.rank
+      };
+      
+      // Calculate standings up to (but not including) the last round
+      // This gives us the standings after round N-1
+      final roundsOneBack = tournament.rounds.sublist(0, tournament.rounds.length - 1);
+      final oneRoundBackStandings = _calculateStandingsForRounds(
+        roundsOneBack,
+        allPlayers: tournament.players,
+        pausePointsAwarded: tournament.settings.pausePointsAwarded,
+      );
+      
+      // Create map of player ID to rank after round N-1
+      oneRoundBackRanks = {
+        for (var standing in oneRoundBackStandings)
           standing.player.id: standing.rank
       };
     }
     
     // Apply previous ranks if available
-    if (previousRanks != null) {
+    if (previousRanks != null && oneRoundBackRanks != null) {
       for (int i = 0; i < standings.length; i++) {
         final prevRank = previousRanks[standings[i].player.id];
-        standings[i] = standings[i].copyWithRank(standings[i].rank, previousRank: prevRank);
+        final oneBackRank = oneRoundBackRanks[standings[i].player.id];
+        standings[i] = standings[i].copyWithRank(
+          standings[i].rank,
+          previousRank: prevRank,
+          rankOneRoundBack: oneBackRank,
+        );
       }
     }
     
