@@ -125,6 +125,12 @@ void main() {
           home: LeaderboardScreen(tournament: tournament),
         ),
       );
+      await tester.pumpAndSettle();
+
+      // Toggle to detailed view to check statistics
+      final toggleButton = find.byIcon(Icons.view_list);
+      await tester.tap(toggleButton);
+      await tester.pumpAndSettle();
 
       // Player B should be first with 38 points (20 + 18)
       // Find the first card which should be Player B
@@ -192,6 +198,12 @@ void main() {
           home: LeaderboardScreen(tournament: tournament),
         ),
       );
+      await tester.pumpAndSettle();
+
+      // Toggle to detailed view to check for trophy icons
+      final toggleButton = find.byIcon(Icons.view_list);
+      await tester.tap(toggleButton);
+      await tester.pumpAndSettle();
 
       // Check for trophy icons (should be at least 3 for top 3)
       final trophyIcons = find.byIcon(Icons.emoji_events);
@@ -233,6 +245,11 @@ void main() {
           home: LeaderboardScreen(tournament: tournament),
         ),
       );
+      await tester.pumpAndSettle();
+
+      // Toggle to detailed view to check rank display format
+      final toggleButton = find.byIcon(Icons.view_list);
+      await tester.tap(toggleButton);
       await tester.pumpAndSettle();
 
       // Verify ranks are assigned correctly 
@@ -297,6 +314,12 @@ void main() {
           home: LeaderboardScreen(tournament: tournament),
         ),
       );
+      await tester.pumpAndSettle();
+
+      // Toggle to detailed view to check rank format
+      final toggleButton = find.byIcon(Icons.view_list);
+      await tester.tap(toggleButton);
+      await tester.pumpAndSettle();
 
       // Both A and B should have rank #1 (shared)
       final rank1Badges = find.text('#1');
@@ -361,23 +384,23 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Initially in detailed view, should show detailed stats
-      expect(find.text('Total Points'), findsAtLeastNWidgets(1));
-      expect(find.text('Matches Played'), findsAtLeastNWidgets(1));
-
-      // Find and tap the toggle button
-      final toggleButton = find.byIcon(Icons.view_compact);
-      expect(toggleButton, findsOneWidget);
-      await tester.tap(toggleButton);
-      await tester.pumpAndSettle();
-
-      // Now in compact view, detailed labels should not be present
+      // Initially in compact view, detailed labels should not be present
       expect(find.text('Total Points'), findsNothing);
       expect(find.text('Matches Played'), findsNothing);
       
       // Should show compact format with W/L notation
       expect(find.textContaining('W/'), findsWidgets);
       expect(find.textContaining('pt'), findsWidgets);
+
+      // Find and tap the toggle button (now showing view_list icon for detailed view)
+      final toggleButton = find.byIcon(Icons.view_list);
+      expect(toggleButton, findsOneWidget);
+      await tester.tap(toggleButton);
+      await tester.pumpAndSettle();
+
+      // Now in detailed view, should show detailed stats
+      expect(find.text('Total Points'), findsAtLeastNWidgets(1));
+      expect(find.text('Matches Played'), findsAtLeastNWidgets(1));
     });
 
     testWidgets('should show game history dialog on long press',
