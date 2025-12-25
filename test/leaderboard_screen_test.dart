@@ -323,5 +323,115 @@ void main() {
       expect(find.text('Leaderboard'), findsOneWidget);
       expect(find.byType(AppBar), findsOneWidget);
     });
+
+    testWidgets('should toggle between detailed and compact view',
+        (WidgetTester tester) async {
+      final playerA = Player(id: 'A', name: 'Player A');
+      final playerB = Player(id: 'B', name: 'Player B');
+      final playerC = Player(id: 'C', name: 'Player C');
+      final playerD = Player(id: 'D', name: 'Player D');
+
+      final court = Court(id: '1', name: 'Bane 1');
+
+      final match = Match(
+        court: court,
+        team1: Team(player1: playerA, player2: playerB),
+        team2: Team(player1: playerC, player2: playerD),
+        team1Score: 20,
+        team2Score: 10,
+      );
+
+      final round = Round(
+        roundNumber: 1,
+        matches: [match],
+        playersOnBreak: [],
+      );
+
+      final tournament = Tournament(
+        name: 'Test Tournament',
+        players: [playerA, playerB, playerC, playerD],
+        courts: [court],
+        rounds: [round],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: LeaderboardScreen(tournament: tournament),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Initially in detailed view, should show detailed stats
+      expect(find.text('Total Points'), findsAtLeastNWidgets(1));
+      expect(find.text('Matches Played'), findsAtLeastNWidgets(1));
+
+      // Find and tap the toggle button
+      final toggleButton = find.byIcon(Icons.view_compact);
+      expect(toggleButton, findsOneWidget);
+      await tester.tap(toggleButton);
+      await tester.pumpAndSettle();
+
+      // Now in compact view, detailed labels should not be present
+      expect(find.text('Total Points'), findsNothing);
+      expect(find.text('Matches Played'), findsNothing);
+      
+      // Should show compact format with W/L notation
+      expect(find.textContaining('W/'), findsWidgets);
+      expect(find.textContaining('pt'), findsWidgets);
+    });
+
+    testWidgets('should show game history dialog on long press',
+        (WidgetTester tester) async {
+      final playerA = Player(id: 'A', name: 'Player A');
+      final playerB = Player(id: 'B', name: 'Player B');
+      final playerC = Player(id: 'C', name: 'Player C');
+      final playerD = Player(id: 'D', name: 'Player D');
+
+      final court = Court(id: '1', name: 'Bane 1');
+
+      final match = Match(
+        court: court,
+        team1: Team(player1: playerA, player2: playerB),
+        team2: Team(player1: playerC, player2: playerD),
+        team1Score: 20,
+        team2Score: 10,
+      );
+
+      final round = Round(
+        roundNumber: 1,
+        matches: [match],
+        playersOnBreak: [],
+      );
+
+      final tournament = Tournament(
+        name: 'Test Tournament',
+        players: [playerA, playerB, playerC, playerD],
+        courts: [court],
+        rounds: [round],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: LeaderboardScreen(tournament: tournament),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Find Player A's card and long press
+      final playerACard = find.ancestor(
+        of: find.text('Player A'),
+        matching: find.byType(GestureDetector),
+      ).first;
+      
+      await tester.longPress(playerACard);
+      await tester.pumpAndSettle();
+
+      // Dialog should appear with game history
+      expect(find.text('Player A - Game History'), findsOneWidget);
+      expect(find.text('Round 1'), findsOneWidget);
+      expect(find.textContaining('Played with:'), findsOneWidget);
+      expect(find.textContaining('Against:'), findsOneWidget);
+      expect(find.textContaining('Score:'), findsOneWidget);
+    });
   });
 }
