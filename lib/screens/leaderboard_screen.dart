@@ -293,6 +293,13 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                                         : Colors.grey[700],
                               ),
                             ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Result: ${game['result']}',
+                              style: const TextStyle(
+                                fontSize: 13,
+                              ),
+                            ),
                           ],
                         ),
                       ),
