@@ -86,7 +86,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
               itemBuilder: (context, index) {
                 final standing = standings[index];
                 return _isCompactView
-                    ? _buildCompactStandingCard(context, standing, index)
+                    ? _buildCompactStandingCard(context, standing)
                     : _buildStandingCard(context, standing, index);
               },
             ),
@@ -174,7 +174,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   /// Build a compact standings card
   /// Format: "Rank. Name - W/L - Points"
   Widget _buildCompactStandingCard(
-      BuildContext context, PlayerStanding standing, int index) {
+      BuildContext context, PlayerStanding standing) {
     final bool isTop3 = standing.rank <= 3 && standing.matchesPlayed > 0;
     final Color? cardColor = _getCardColor(standing.rank, standing.matchesPlayed);
 
