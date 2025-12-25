@@ -4,6 +4,7 @@ import '../models/player.dart';
 import '../utils/colors.dart';
 import 'court_visualization/team_side.dart';
 import 'court_visualization/net_divider.dart';
+import 'matchup_reasoning_dialog.dart';
 
 /// Match card with court visualization layout
 /// F-018, F-019: Court Visualization with Side-by-Side Layout & Match Card Redesign
@@ -50,106 +51,121 @@ class _MatchCardState extends State<MatchCard> {
     });
   }
 
+  void _showMatchupReasoning() {
+    showDialog(
+      context: context,
+      builder: (context) => MatchupReasoningDialog(match: widget.match),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: 6,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: AppColors.courtBorder, width: 3),
-      ),
-      child: IntrinsicHeight(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-          // Header Section - Court Name & Actions
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: AppColors.courtHeader,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(13)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.sports_tennis, color: AppColors.textLight, size: 24),
-                const SizedBox(width: 8),
-                Text(
-                  widget.match.court.name,
-                  style: const TextStyle(
-                    color: AppColors.textLight,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.edit, color: AppColors.textLight),
-                  onPressed: () => _showScoreInput(),
-                  tooltip: 'Indtast score',
-                ),
-              ],
-            ),
-          ),
-          
-          // Court Body Layout - Three-Column Layout
-          Flexible(
-            child: Container(
-              padding: const EdgeInsets.all(20),
+    return GestureDetector(
+      onLongPress: _showMatchupReasoning,
+      child: Card(
+        margin: EdgeInsets.zero,
+        elevation: 6,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppColors.courtBorder, width: 3),
+        ),
+        child: IntrinsicHeight(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+            // Header Section - Court Name & Actions
+            Container(
+              padding: const EdgeInsets.all(16),
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppColors.courtBackgroundLight,
-                    AppColors.courtBackgroundDark,
-                  ],
-                ),
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(13)),
+                color: AppColors.courtHeader,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(13)),
               ),
-              child: IntrinsicHeight(
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Par 1 (Left side) - 40%
-                  Expanded(
-                    flex: 4,
-                    child: TeamSide(
-                      team: widget.match.team1,
-                      label: 'PAR 1',
-                      score: widget.match.team1Score,
-                      onPlayerLongPress: widget.onPlayerForceToPause != null
-                          ? _showPlayerOptionsMenu
-                          : null,
-                      onScoreTap: () => _showScoreInput(isTeam1: true),
+                  const Icon(Icons.sports_tennis, color: AppColors.textLight, size: 24),
+                  const SizedBox(width: 8),
+                  Text(
+                    widget.match.court.name,
+                    style: const TextStyle(
+                      color: AppColors.textLight,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  
-                  // Net (Center) - 20%
-                  const Expanded(
-                    flex: 2,
-                    child: NetDivider(),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.edit, color: AppColors.textLight),
+                    onPressed: () => _showScoreInput(),
+                    tooltip: 'Indtast score',
                   ),
-                  
-                  // Par 2 (Right side) - 40%
-                  Expanded(
-                    flex: 4,
-                    child: TeamSide(
-                      team: widget.match.team2,
-                      label: 'PAR 2',
-                      score: widget.match.team2Score,
-                      onPlayerLongPress: widget.onPlayerForceToPause != null
-                          ? _showPlayerOptionsMenu
-                          : null,
-                      onScoreTap: () => _showScoreInput(isTeam1: false),
-                    ),
+                  IconButton(
+                    icon: const Icon(Icons.info_outline, color: AppColors.textLight),
+                    onPressed: _showMatchupReasoning,
+                    tooltip: 'Vis kamp begrundelse',
                   ),
                 ],
               ),
             ),
+            
+            // Court Body Layout - Three-Column Layout
+            Flexible(
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      AppColors.courtBackgroundLight,
+                      AppColors.courtBackgroundDark,
+                    ],
+                  ),
+                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(13)),
+                ),
+                child: IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Par 1 (Left side) - 40%
+                    Expanded(
+                      flex: 4,
+                      child: TeamSide(
+                        team: widget.match.team1,
+                        label: 'PAR 1',
+                        score: widget.match.team1Score,
+                        onPlayerLongPress: widget.onPlayerForceToPause != null
+                            ? _showPlayerOptionsMenu
+                            : null,
+                        onScoreTap: () => _showScoreInput(isTeam1: true),
+                      ),
+                    ),
+                    
+                    // Net (Center) - 20%
+                    const Expanded(
+                      flex: 2,
+                      child: NetDivider(),
+                    ),
+                    
+                    // Par 2 (Right side) - 40%
+                    Expanded(
+                      flex: 4,
+                      child: TeamSide(
+                        team: widget.match.team2,
+                        label: 'PAR 2',
+                        score: widget.match.team2Score,
+                        onPlayerLongPress: widget.onPlayerForceToPause != null
+                            ? _showPlayerOptionsMenu
+                            : null,
+                        onScoreTap: () => _showScoreInput(isTeam1: false),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
-        ),
-          ],
+            ],
+          ),
         ),
       ),
     );
