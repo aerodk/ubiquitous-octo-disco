@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../models/tournament.dart';
+import '../models/player.dart';
 import '../models/player_standing.dart';
 import '../services/standings_service.dart';
 import '../services/persistence_service.dart';
@@ -29,6 +30,9 @@ class _TournamentCompletionScreenState
   final Map<int, AnimationController> _medalAnimations = {};
   final Map<int, AnimationController> _celebrationAnimations = {};
   bool _showAllPositions = false;
+  
+  // Toggle for compact/detailed view
+  bool _isCompactView = true;
 
   @override
   void initState() {
@@ -142,6 +146,16 @@ class _TournamentCompletionScreenState
         backgroundColor: Colors.amber[700], 
         automaticallyImplyLeading: false,
         actions: [
+          // Toggle compact/detailed view
+          IconButton(
+            icon: Icon(_isCompactView ? Icons.view_list : Icons.view_compact),
+            tooltip: _isCompactView ? 'Detailed View' : 'Compact View',
+            onPressed: () {
+              setState(() {
+                _isCompactView = !_isCompactView;
+              });
+            },
+          ),
           // Export button
           IconButton(
             icon: const Icon(Icons.file_download),
@@ -249,7 +263,10 @@ class _TournamentCompletionScreenState
                           ),
                         ),
                         const Divider(),
-                        ..._standings.map((s) => _buildLeaderboardTile(s)),
+                        ..._standings.asMap().entries.map((entry) => 
+                          _isCompactView 
+                            ? _buildLeaderboardTile(entry.value) 
+                            : _buildDetailedLeaderboardCard(entry.value, entry.key)),
                       ],
                     ),
                   ),
@@ -613,6 +630,7 @@ class _TournamentCompletionScreenState
     
     return InkWell(
       onTap: isRevealed ? null : () => _revealLeaderboardPosition(s.rank),
+      onLongPress: isRevealed ? () => _showGameHistoryDialog(context, s) : null,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         decoration: BoxDecoration(
@@ -663,6 +681,398 @@ class _TournamentCompletionScreenState
     setState(() {
       _revealedPositions.add(rank);
     });
+  }
+  
+  /// Build detailed leaderboard card with full statistics (like LeaderboardScreen)
+  Widget _buildDetailedLeaderboardCard(PlayerStanding standing, int index) {
+    // All positions are hidden until revealed (including top 3)
+    final isRevealed = _showAllPositions || _revealedPositions.contains(standing.rank);
+    
+    // Determine if this is a top 3 position for special styling
+    final bool isTop3 = standing.rank <= 3;
+    final Color? cardColor = _getCardColor(standing.rank);
+    final IconData? medalIcon = _getMedalIcon(standing.rank);
+    
+    return GestureDetector(
+      onTap: isRevealed ? null : () => _revealLeaderboardPosition(standing.rank),
+      onLongPress: isRevealed ? () => _showGameHistoryDialog(context, standing) : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        decoration: BoxDecoration(
+          color: isRevealed ? null : Colors.grey[200],
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          elevation: isTop3 ? 4 : 2,
+          color: isRevealed ? cardColor : Colors.grey[200],
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: isRevealed 
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header: Rank, Medal, and Player Name
+                    Row(
+                      children: [
+                        // Rank badge
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: isTop3
+                                ? Colors.white.withOpacity(0.3)
+                                : Colors.grey[300],
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '#${standing.rank}',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: isTop3 ? Colors.white : Colors.black87,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // Medal icon for top 3
+                        if (medalIcon != null) ...[
+                          Icon(
+                            medalIcon,
+                            size: 32,
+                            color: _getMedalColor(standing.rank),
+                          ),
+                          const SizedBox(width: 12),
+                        ],
+                        // Player name
+                        Expanded(
+                          child: Text(
+                            standing.player.name,
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: isTop3 ? Colors.white : Colors.black87,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    // Statistics Grid
+                    _buildStatisticsGrid(context, standing, isTop3),
+                  ],
+                )
+              : ListTile(
+                  dense: true,
+                  leading: const CircleAvatar(
+                    backgroundColor: Colors.grey,
+                    child: Text(
+                      '?',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  title: Text(
+                    '???',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Tryk for at afsløre',
+                    style: TextStyle(
+                      color: Colors.grey[500],
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                  trailing: Text(
+                    '?',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ),
+          ),
+        ),
+      ),
+    );
+  }
+  
+  /// Build statistics grid for detailed view
+  Widget _buildStatisticsGrid(
+      BuildContext context, PlayerStanding standing, bool isTop3) {
+    final textColor = isTop3 ? Colors.white : Colors.black87;
+    final subtitleColor = isTop3 ? Colors.white70 : Colors.grey[600];
+
+    return Column(
+      children: [
+        // Primary stats row
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildStatItem(
+              'Total Points',
+              standing.totalPoints.toString(),
+              textColor,
+              subtitleColor,
+            ),
+            _buildStatItem(
+              'Wins',
+              standing.wins.toString(),
+              textColor,
+              subtitleColor,
+            ),
+            _buildStatItem(
+              'Losses',
+              standing.losses.toString(),
+              textColor,
+              subtitleColor,
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        // Secondary stats row
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildStatItem(
+              'Matches Played',
+              standing.matchesPlayed.toString(),
+              textColor,
+              subtitleColor,
+            ),
+            _buildStatItem(
+              'Biggest Win',
+              standing.biggestWinMargin == 0
+                  ? '-'
+                  : '+${standing.biggestWinMargin}',
+              textColor,
+              subtitleColor,
+            ),
+            _buildStatItem(
+              'Smallest Loss',
+              standing.smallestLossMargin == 999
+                  ? '-'
+                  : '-${standing.smallestLossMargin}',
+              textColor,
+              subtitleColor,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatItem(
+      String label, String value, Color? textColor, Color? subtitleColor) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: textColor,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: subtitleColor,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+  
+  /// Show game history dialog for a player
+  void _showGameHistoryDialog(BuildContext context, PlayerStanding standing) {
+    final gameHistory = _getGameHistoryForPlayer(standing.player);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${standing.player.name} - Game History'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: gameHistory.isEmpty
+              ? const Text('No games played yet.')
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: gameHistory.length,
+                  itemBuilder: (context, index) {
+                    final game = gameHistory[index];
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Round ${game['round']}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Played with: ${game['partner']}',
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                            Text(
+                              'Against: ${game['opponents']}',
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Score: ${game['score']}',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: game['result'] == 'Won'
+                                    ? Colors.green[700]
+                                    : game['result'] == 'Lost'
+                                        ? Colors.red[700]
+                                        : Colors.grey[700],
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Result: ${game['result']}',
+                              style: const TextStyle(
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Get game history for a specific player
+  List<Map<String, dynamic>> _getGameHistoryForPlayer(Player player) {
+    final List<Map<String, dynamic>> history = [];
+
+    for (final round in widget.tournament.rounds) {
+      for (final match in round.matches.where((m) => m.isCompleted)) {
+        // isCompleted ensures both scores are non-null
+        final team1Score = match.team1Score;
+        final team2Score = match.team2Score;
+        
+        // Additional safety check (should never be null due to isCompleted check)
+        if (team1Score == null || team2Score == null) continue;
+        
+        // Check if player is in this match
+        final isInTeam1 = match.team1.player1.id == player.id ||
+            match.team1.player2.id == player.id;
+        final isInTeam2 = match.team2.player1.id == player.id ||
+            match.team2.player2.id == player.id;
+
+        if (isInTeam1 || isInTeam2) {
+          // Determine partner and opponents
+          String partner;
+          String opponents;
+          int playerScore;
+          int opponentScore;
+          String result;
+
+          if (isInTeam1) {
+            partner = match.team1.player1.id == player.id
+                ? match.team1.player2.name
+                : match.team1.player1.name;
+            opponents =
+                '${match.team2.player1.name} & ${match.team2.player2.name}';
+            playerScore = team1Score;
+            opponentScore = team2Score;
+          } else {
+            partner = match.team2.player1.id == player.id
+                ? match.team2.player2.name
+                : match.team2.player1.name;
+            opponents =
+                '${match.team1.player1.name} & ${match.team1.player2.name}';
+            playerScore = team2Score;
+            opponentScore = team1Score;
+          }
+
+          if (playerScore > opponentScore) {
+            result = 'Won';
+          } else if (playerScore < opponentScore) {
+            result = 'Lost';
+          } else {
+            result = 'Draw';
+          }
+
+          history.add({
+            'round': round.roundNumber,
+            'partner': partner,
+            'opponents': opponents,
+            'score': '$playerScore - $opponentScore',
+            'result': result,
+          });
+        }
+      }
+    }
+
+    return history;
+  }
+  
+  Color? _getCardColor(int rank) {
+    switch (rank) {
+      case 1:
+        return Colors.amber[700]; // Gold
+      case 2:
+        return Colors.grey[400]; // Silver
+      case 3:
+        return Colors.brown[400]; // Bronze
+      default:
+        return null; // Default card color
+    }
+  }
+
+  IconData? _getMedalIcon(int rank) {
+    switch (rank) {
+      case 1:
+      case 2:
+      case 3:
+        return Icons.emoji_events; // Trophy icon
+      default:
+        return null;
+    }
+  }
+
+  Color _getMedalColor(int rank) {
+    switch (rank) {
+      case 1:
+        return Colors.amber[200]!; // Gold
+      case 2:
+        return Colors.grey[100]!; // Silver
+      case 3:
+        return Colors.brown[200]!; // Bronze
+      default:
+        return Colors.grey;
+    }
   }
 }
 
