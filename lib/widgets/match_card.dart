@@ -4,6 +4,7 @@ import '../models/player.dart';
 import '../utils/colors.dart';
 import 'court_visualization/team_side.dart';
 import 'court_visualization/net_divider.dart';
+import 'matchup_reasoning_dialog.dart';
 
 /// Match card with court visualization layout
 /// F-018, F-019: Court Visualization with Side-by-Side Layout & Match Card Redesign
@@ -50,6 +51,13 @@ class _MatchCardState extends State<MatchCard> {
     });
   }
 
+  void _showMatchupReasoning() {
+    showDialog(
+      context: context,
+      builder: (context) => MatchupReasoningDialog(match: widget.match),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -88,74 +96,79 @@ class _MatchCardState extends State<MatchCard> {
                   onPressed: () => _showScoreInput(),
                   tooltip: 'Indtast score',
                 ),
+                IconButton(
+                  icon: const Icon(Icons.info_outline, color: AppColors.textLight),
+                  onPressed: _showMatchupReasoning,
+                  tooltip: 'Vis kamp begrundelse',
+                ),
               ],
             ),
           ),
-          
-          // Court Body Layout - Three-Column Layout
-          Flexible(
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppColors.courtBackgroundLight,
-                    AppColors.courtBackgroundDark,
+            
+            // Court Body Layout - Three-Column Layout
+            Flexible(
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      AppColors.courtBackgroundLight,
+                      AppColors.courtBackgroundDark,
+                    ],
+                  ),
+                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(13)),
+                ),
+                child: IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Par 1 (Left side) - 40%
+                    Expanded(
+                      flex: 4,
+                      child: TeamSide(
+                        team: widget.match.team1,
+                        label: 'PAR 1',
+                        score: widget.match.team1Score,
+                        onPlayerLongPress: widget.onPlayerForceToPause != null
+                            ? _showPlayerOptionsMenu
+                            : null,
+                        onScoreTap: () => _showScoreInput(isTeam1: true),
+                      ),
+                    ),
+                    
+                    // Net (Center) - 20%
+                    const Expanded(
+                      flex: 2,
+                      child: NetDivider(),
+                    ),
+                    
+                    // Par 2 (Right side) - 40%
+                    Expanded(
+                      flex: 4,
+                      child: TeamSide(
+                        team: widget.match.team2,
+                        label: 'PAR 2',
+                        score: widget.match.team2Score,
+                        onPlayerLongPress: widget.onPlayerForceToPause != null
+                            ? _showPlayerOptionsMenu
+                            : null,
+                        onScoreTap: () => _showScoreInput(isTeam1: false),
+                      ),
+                    ),
                   ],
                 ),
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(13)),
-              ),
-              child: IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Par 1 (Left side) - 40%
-                  Expanded(
-                    flex: 4,
-                    child: TeamSide(
-                      team: widget.match.team1,
-                      label: 'PAR 1',
-                      score: widget.match.team1Score,
-                      onPlayerLongPress: widget.onPlayerForceToPause != null
-                          ? _showPlayerOptionsMenu
-                          : null,
-                      onScoreTap: () => _showScoreInput(isTeam1: true),
-                    ),
-                  ),
-                  
-                  // Net (Center) - 20%
-                  const Expanded(
-                    flex: 2,
-                    child: NetDivider(),
-                  ),
-                  
-                  // Par 2 (Right side) - 40%
-                  Expanded(
-                    flex: 4,
-                    child: TeamSide(
-                      team: widget.match.team2,
-                      label: 'PAR 2',
-                      score: widget.match.team2Score,
-                      onPlayerLongPress: widget.onPlayerForceToPause != null
-                          ? _showPlayerOptionsMenu
-                          : null,
-                      onScoreTap: () => _showScoreInput(isTeam1: false),
-                    ),
-                  ),
-                ],
               ),
             ),
           ),
+            ],
+          ),
         ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showPlayerOptionsMenu(Player player) {
+      );
+    }
+  
+    void _showPlayerOptionsMenu(Player player) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

@@ -9,20 +9,34 @@ class TournamentService {
   /// Assigns courts to matches based on the lane assignment strategy
   /// Sequential: Best players on first lanes (default)
   /// Random: Randomize lane assignments
+  /// Also adds reasoning for lane assignment
   List<Match> _assignCourtsToMatches(
     List<Match> matches,
     List<Court> courts,
-    LaneAssignmentStrategy strategy,
-  ) {
+    LaneAssignmentStrategy strategy, {
+    String roundType = 'regular',
+    String pairingDescription = '',
+    Map<String, Map<String, dynamic>>? playerMetadataByMatchId,
+  }) {
     if (matches.isEmpty || courts.isEmpty) return matches;
 
     final assignedMatches = <Match>[];
+    
+    final laneAssignmentDescription = strategy == LaneAssignmentStrategy.sequential
+        ? 'Baner tildeles sekventielt: De bedste spillere på de første baner.'
+        : 'Baner tildeles tilfældigt for at sikre variation.';
     
     switch (strategy) {
       case LaneAssignmentStrategy.sequential:
         // Sequential: assign courts in order (first match → first court, etc.)
         for (int i = 0; i < matches.length; i++) {
           final courtIndex = i % courts.length;
+          final reasoning = MatchupReasoning(
+            roundType: roundType,
+            pairingMethod: pairingDescription,
+            laneAssignment: '$laneAssignmentDescription\nDenne kamp er placeret på ${courts[courtIndex].name} (kamp #${i + 1}).',
+            playerMetadata: playerMetadataByMatchId?[matches[i].id],
+          );
           assignedMatches.add(Match(
             id: matches[i].id,
             court: courts[courtIndex],
@@ -30,6 +44,7 @@ class TournamentService {
             team2: matches[i].team2,
             team1Score: matches[i].team1Score,
             team2Score: matches[i].team2Score,
+            reasoning: reasoning,
           ));
         }
         break;
@@ -39,6 +54,12 @@ class TournamentService {
         final shuffledCourts = List<Court>.from(courts)..shuffle();
         for (int i = 0; i < matches.length; i++) {
           final courtIndex = i % shuffledCourts.length;
+          final reasoning = MatchupReasoning(
+            roundType: roundType,
+            pairingMethod: pairingDescription,
+            laneAssignment: '$laneAssignmentDescription\nDenne kamp er placeret på ${shuffledCourts[courtIndex].name}.',
+            playerMetadata: playerMetadataByMatchId?[matches[i].id],
+          );
           assignedMatches.add(Match(
             id: matches[i].id,
             court: shuffledCourts[courtIndex],
@@ -46,6 +67,7 @@ class TournamentService {
             team2: matches[i].team2,
             team1Score: matches[i].team1Score,
             team2Score: matches[i].team2Score,
+            reasoning: reasoning,
           ));
         }
         break;
@@ -90,8 +112,17 @@ class TournamentService {
       playerIndex++;
     }
 
-    // Apply lane assignment strategy
-    final matches = _assignCourtsToMatches(tempMatches, courts, laneStrategy);
+    const pairingDescription = 'Første runde: Spillere blandes tilfældigt og grupperes i hold af 4. '
+        'Dette sikrer retfærdig og uforudsigelig start på turneringen.';
+
+    // Apply lane assignment strategy with reasoning
+    final matches = _assignCourtsToMatches(
+      tempMatches,
+      courts,
+      laneStrategy,
+      roundType: 'first',
+      pairingDescription: pairingDescription,
+    );
 
     return Round(
       roundNumber: 1,
@@ -159,8 +190,17 @@ class TournamentService {
       playerIndex += 4;
     }
 
-    // Apply lane assignment strategy
-    final matches = _assignCourtsToMatches(tempMatches, courts, laneStrategy);
+    // Apply lane assignment strategy with reasoning
+    const pairingDescription = 'Normal runde: Spillere blandes tilfældigt efter at have valgt dem der skal holde pause. '
+        'Pause-valg baseres på retfærdighed: Færrest pauser → Flest kampe spillet.';
+    
+    final matches = _assignCourtsToMatches(
+      tempMatches,
+      courts,
+      laneStrategy,
+      roundType: 'regular',
+      pairingDescription: pairingDescription,
+    );
 
     return Round(
       roundNumber: roundNumber,
@@ -239,14 +279,19 @@ class TournamentService {
       playersOnBreak.addAll(_selectBreakPlayers(rankedStandings, overflowCount));
     }
 
-    // Get active players (those not on break)
-    final activePlayers = rankedStandings
+    // Get active players (those not on break) with their standings
+    final activeStandings = rankedStandings
         .where((s) => !playersOnBreak.any((p) => p.id == s.player.id))
-        .map((s) => s.player)
         .toList();
+    
+    final activePlayers = activeStandings.map((s) => s.player).toList();
+
+    // Create a map from player ID to ranking for metadata
+    final playerRankMap = {for (var s in activeStandings) s.player.id: s.rank};
 
     // Generate temporary matches using selected pairing strategy
     final tempMatches = <Match>[];
+    final playerMetadataByMatchId = <String, Map<String, dynamic>>{};
 
     for (int i = 0; i < activePlayers.length; i += 4) {
       if (i + 3 < activePlayers.length) {
@@ -258,11 +303,34 @@ class TournamentService {
           strategy,
         );
         tempMatches.add(match);
+        
+        // Create metadata for this match showing player rankings
+        final p1 = match.team1.player1;
+        final p2 = match.team1.player2;
+        final p3 = match.team2.player1;
+        final p4 = match.team2.player2;
+        
+        playerMetadataByMatchId[match.id] = {
+          p1.name: 'Rang ${playerRankMap[p1.id]}',
+          p2.name: 'Rang ${playerRankMap[p2.id]}',
+          p3.name: 'Rang ${playerRankMap[p3.id]}',
+          p4.name: 'Rang ${playerRankMap[p4.id]}',
+        };
       }
     }
 
-    // Apply lane assignment strategy
-    final matches = _assignCourtsToMatches(tempMatches, courts, laneStrategy);
+    // Get pairing strategy description
+    final pairingDescription = _getFinalRoundPairingDescription(strategy);
+
+    // Apply lane assignment strategy with reasoning
+    final matches = _assignCourtsToMatches(
+      tempMatches,
+      courts,
+      laneStrategy,
+      roundType: 'final',
+      pairingDescription: pairingDescription,
+      playerMetadataByMatchId: playerMetadataByMatchId,
+    );
 
     return Round(
       roundNumber: roundNumber,
@@ -270,6 +338,24 @@ class TournamentService {
       playersOnBreak: playersOnBreak,
       isFinalRound: true,
     );
+  }
+
+  /// Get description for final round pairing strategy
+  String _getFinalRoundPairingDescription(PairingStrategy strategy) {
+    switch (strategy) {
+      case PairingStrategy.balanced:
+        return 'Sidste runde: Balanceret strategi.\n'
+            'Spillere parres baseret på rangering: Rang 1+3 vs Rang 2+4.\n'
+            'Dette sikrer en afbalanceret og spændende sidste runde.';
+      case PairingStrategy.topAlliance:
+        return 'Sidste runde: Top Alliance strategi.\n'
+            'Spillere parres baseret på rangering: Rang 1+2 vs Rang 3+4.\n'
+            'De bedste spillere spiller sammen.';
+      case PairingStrategy.maxCompetition:
+        return 'Sidste runde: Maksimal konkurrence strategi.\n'
+            'Spillere parres baseret på rangering: Rang 1+4 vs Rang 2+3.\n'
+            'Dette giver maksimal konkurrence mellem holdene.';
+    }
   }
 
   /// Creates a match using the specified pairing strategy
@@ -547,8 +633,19 @@ class TournamentService {
       playerIndex += 4;
     }
     
-    // Apply lane assignment strategy
-    final matches = _assignCourtsToMatches(tempMatches, courts, laneStrategy);
+    // Apply lane assignment strategy with reasoning
+    final roundType = currentRound.isFinalRound ? 'final' : 'regular';
+    final pairingDescription = currentRound.isFinalRound
+        ? 'Sidste runde med manuel ændring: En spiller blev tvunget til at ${forceToActive ? "holde pause" : "spille"}.'
+        : 'Normal runde med manuel ændring: En spiller blev tvunget til at ${forceToActive ? "holde pause" : "spille"}.';
+    
+    final matches = _assignCourtsToMatches(
+      tempMatches,
+      courts,
+      laneStrategy,
+      roundType: roundType,
+      pairingDescription: pairingDescription,
+    );
     
     // Create new round with updated assignments
     return Round(
