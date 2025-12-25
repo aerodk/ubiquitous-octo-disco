@@ -154,4 +154,68 @@
   - [ ] Visual regression testing
   - [ ] Responsive layout testing
 
+## Version 8.0 - Cloud Storage & Firebase Integration (SPECIFICATION_v8.md)
+- [ ] Firebase Setup & Configuration (F-025)
+  - [ ] Create Firebase project
+  - [ ] Register web app (and optionally mobile apps)
+  - [ ] Enable Firestore database
+  - [ ] Configure security rules for anonymous access
+  - [ ] Add Firebase dependencies to pubspec.yaml
+  - [ ] Create firebase_options.dart with configuration
+  - [ ] Initialize Firebase in main.dart
+  - [ ] Test Firebase connection
+- [ ] Firebase Service Layer (F-028)
+  - [ ] Create FirebaseService class
+  - [ ] Implement 8-digit tournament code generation
+  - [ ] Implement 6-digit passcode generation
+  - [ ] Implement passcode hashing (SHA-256)
+  - [ ] Implement saveTournament method
+  - [ ] Implement loadTournament method
+  - [ ] Implement updateTournament method
+  - [ ] Implement tournamentExists check
+  - [ ] Add error handling and retry logic
+  - [ ] Unit tests for FirebaseService
+- [ ] Save Tournament Feature (F-026)
+  - [ ] Create SaveTournamentDialog widget
+  - [ ] Tournament name input field
+  - [ ] Code generation and display
+  - [ ] Passcode display with warning
+  - [ ] Copy to clipboard functionality
+  - [ ] Integrate save button in Settings screen
+  - [ ] Integrate save button in Tournament Completion screen
+  - [ ] Update existing tournament flow
+  - [ ] Success/error feedback UI
+  - [ ] Loading states and spinners
+- [ ] Load Tournament Feature (F-027)
+  - [ ] Create LoadTournamentDialog widget
+  - [ ] 8-digit code input field (numeric only)
+  - [ ] 6-digit passcode input field (numeric only)
+  - [ ] Validation and error messages
+  - [ ] Integrate load option in Setup screen
+  - [ ] Tournament restoration logic
+  - [ ] Navigation after load
+  - [ ] Handle tournament not found errors
+  - [ ] Handle incorrect passcode errors
+- [ ] UI Integration (F-029)
+  - [ ] Add "Cloud Lagring" section to Settings screen
+  - [ ] Show current tournament code if saved
+  - [ ] Add "Hent Turnering" option to Setup screen
+  - [ ] Visual indicators for cloud-saved tournaments
+  - [ ] Offline mode indicators
+  - [ ] Consistent styling with V7 design
+- [ ] Testing & Validation
+  - [ ] Unit tests for code generation
+  - [ ] Unit tests for passcode hashing
+  - [ ] Integration tests for save/load flow
+  - [ ] Test cross-device tournament access
+  - [ ] Test offline behavior
+  - [ ] Test error scenarios (network, wrong passcode, etc.)
+  - [ ] Manual testing of complete flow
+  - [ ] Flutter analyze verification
+- [ ] Documentation
+  - [x] Update SPECIFICATION_v8.md with detailed requirements
+  - [x] Create FIREBASE_SETUP.md with setup instructions
+  - [ ] Update README.md with V8 features
+  - [ ] Add code comments and documentation
+
 
