@@ -60,52 +60,50 @@ class _MatchCardState extends State<MatchCard> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onLongPress: _showMatchupReasoning,
-      child: Card(
-        margin: EdgeInsets.zero,
-        elevation: 6,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: AppColors.courtBorder, width: 3),
-        ),
-        child: IntrinsicHeight(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-            // Header Section - Court Name & Actions
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
-                color: AppColors.courtHeader,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(13)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.sports_tennis, color: AppColors.textLight, size: 24),
-                  const SizedBox(width: 8),
-                  Text(
-                    widget.match.court.name,
-                    style: const TextStyle(
-                      color: AppColors.textLight,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.edit, color: AppColors.textLight),
-                    onPressed: () => _showScoreInput(),
-                    tooltip: 'Indtast score',
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.info_outline, color: AppColors.textLight),
-                    onPressed: _showMatchupReasoning,
-                    tooltip: 'Vis kamp begrundelse',
-                  ),
-                ],
-              ),
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: 6,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppColors.courtBorder, width: 3),
+      ),
+      child: IntrinsicHeight(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+          // Header Section - Court Name & Actions
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: const BoxDecoration(
+              color: AppColors.courtHeader,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(13)),
             ),
+            child: Row(
+              children: [
+                const Icon(Icons.sports_tennis, color: AppColors.textLight, size: 24),
+                const SizedBox(width: 8),
+                Text(
+                  widget.match.court.name,
+                  style: const TextStyle(
+                    color: AppColors.textLight,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.edit, color: AppColors.textLight),
+                  onPressed: () => _showScoreInput(),
+                  tooltip: 'Indtast score',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.info_outline, color: AppColors.textLight),
+                  onPressed: _showMatchupReasoning,
+                  tooltip: 'Vis kamp begrundelse',
+                ),
+              ],
+            ),
+          ),
             
             // Court Body Layout - Three-Column Layout
             Flexible(
@@ -167,11 +165,10 @@ class _MatchCardState extends State<MatchCard> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  void _showPlayerOptionsMenu(Player player) {
+      );
+    }
+  
+    void _showPlayerOptionsMenu(Player player) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

@@ -109,6 +109,65 @@ void main() {
       expect(fromJson.team1Score, 10);
       expect(fromJson.team2Score, 15);
     });
+
+    test('should include reasoning when provided', () {
+      final court = Court(id: '1', name: 'Bane 1');
+      final player1 = Player(id: '1', name: 'Player 1');
+      final player2 = Player(id: '2', name: 'Player 2');
+      final player3 = Player(id: '3', name: 'Player 3');
+      final player4 = Player(id: '4', name: 'Player 4');
+
+      final reasoning = MatchupReasoning(
+        roundType: 'first',
+        pairingMethod: 'Random pairing',
+        laneAssignment: 'Sequential assignment',
+        playerMetadata: {'Player 1': 'Rank 1', 'Player 2': 'Rank 2'},
+      );
+
+      final match = Match(
+        id: 'match1',
+        court: court,
+        team1: Team(player1: player1, player2: player2),
+        team2: Team(player1: player3, player2: player4),
+        reasoning: reasoning,
+      );
+      
+      expect(match.reasoning, isNotNull);
+      expect(match.reasoning!.roundType, 'first');
+      expect(match.reasoning!.pairingMethod, 'Random pairing');
+      expect(match.reasoning!.laneAssignment, 'Sequential assignment');
+    });
+
+    test('should serialize reasoning to and from JSON', () {
+      final court = Court(id: '1', name: 'Bane 1');
+      final player1 = Player(id: '1', name: 'Player 1');
+      final player2 = Player(id: '2', name: 'Player 2');
+      final player3 = Player(id: '3', name: 'Player 3');
+      final player4 = Player(id: '4', name: 'Player 4');
+
+      final reasoning = MatchupReasoning(
+        roundType: 'final',
+        pairingMethod: 'Rank-based',
+        laneAssignment: 'Random',
+        playerMetadata: {'Player 1': 'Rank 1'},
+      );
+
+      final match = Match(
+        id: 'match1',
+        court: court,
+        team1: Team(player1: player1, player2: player2),
+        team2: Team(player1: player3, player2: player4),
+        reasoning: reasoning,
+      );
+      
+      final json = match.toJson();
+      final fromJson = Match.fromJson(json);
+      
+      expect(fromJson.reasoning, isNotNull);
+      expect(fromJson.reasoning!.roundType, 'final');
+      expect(fromJson.reasoning!.pairingMethod, 'Rank-based');
+      expect(fromJson.reasoning!.playerMetadata!['Player 1'], 'Rank 1');
+    });
   });
 
   group('Round Model', () {
