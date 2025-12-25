@@ -1,19 +1,31 @@
-# Current Matchup Algorithm - Detailed Analysis
+# Tournament Matchup Algorithms - Americano vs Mexicano
 
-This document provides a comprehensive, step-by-step explanation of how the current matchup algorithm finds partners and opponents in the Padel Tournament application.
+This document provides a comprehensive explanation of the two matchup algorithms available in the Padel Tournament application.
+
+## Terminology Update
+
+Based on user feedback, the matchup algorithms are now defined as follows:
+
+- **Americano:** Random shuffling for partner/opponent selection (current implementation)
+- **Mexicano:** Rank-based pairing with partner/opponent history tracking (from Specification F-006)
 
 ## Executive Summary
 
-**Current Approach:** The algorithm uses **random shuffling** for player assignment in all round types (first, regular, and final rounds). It does NOT implement the sophisticated Americano algorithm described in the specification (F-006) which would:
-- Pair players with similar points
-- Rotate partners to avoid repetition
-- Match teams with similar rankings against each other
-- Track opponent history to ensure variety
+### Current Implementation: Americano (Random Shuffling)
 
-**What Actually Happens:**
+The algorithm uses **random shuffling** for player assignment in all round types:
 1. **First Round:** Players are randomly shuffled and grouped into matches of 4
 2. **Regular Rounds:** Players are randomly shuffled again (after selecting who sits out)
-3. **Final Round:** Uses rank-based pairing strategies, but only for the final round
+3. **Final Round:** Uses rank-based pairing strategies
+
+### Planned Implementation: Mexicano (Strategic Pairing)
+
+The Mexicano algorithm (from Specification F-006) implements sophisticated partner/opponent selection:
+- Sort players by total points after each round
+- Pair players with similar rankings
+- Track and rotate partners to avoid repetition
+- Track and vary opponents to ensure variety
+- Match teams with similar combined point totals
 
 ## Example Walkthrough: 14 Players, 3 Courts
 
@@ -25,9 +37,17 @@ This document provides a comprehensive, step-by-step explanation of how the curr
 
 ---
 
-## Round 1: First Round Generation
+## PART 1: AMERICANO ALGORITHM (Current Implementation)
+
+The Americano algorithm is the current default setting, using random shuffling for simple, unpredictable matchups.
+
+---
+
+## Round 1: First Round Generation (Both Algorithms)
 
 ### Algorithm: `generateFirstRound()`
+
+**Note:** Both Americano and Mexicano use the same first round algorithm - random shuffling ensures a fair start.
 
 **Location:** `lib/services/tournament_service.dart` lines 79-132
 
@@ -83,9 +103,9 @@ Based on `LaneAssignmentStrategy` setting:
 
 ---
 
-## Round 2: Regular Round Generation
+## Round 2+: Regular Round Generation - AMERICANO
 
-### Algorithm: `generateNextRound()`
+### Algorithm: `generateNextRound()` with Americano Mode
 
 **Location:** `lib/services/tournament_service.dart` lines 145-210
 
@@ -148,7 +168,7 @@ Sequential or random assignment to Bane 1, 2, 3
 | Bane 2 | Player 13 & Player 5 | Player 10 & Player 12 | Player 3 |
 | Bane 3 | Player 8 & Player 4 | Player 1 & Player 9 | |
 
-### Key Characteristics:
+### Key Characteristics of Americano:
 - ✅ **Fair break distribution** - uses pause count and games played
 - ✅ **Avoids consecutive breaks** for the same player
 - ❌ **Random partner assignment** - no consideration of previous partners
@@ -157,15 +177,15 @@ Sequential or random assignment to Bane 1, 2, 3
 
 ---
 
-## Round 3 and Beyond: Same as Round 2
+## Round 3 and Beyond - AMERICANO: Same as Round 2
 
-Regular rounds continue using the same algorithm as Round 2:
+Regular rounds continue using the same Americano algorithm:
 1. Fair break selection based on pause history
 2. Random shuffle of active players
 3. Group into matches sequentially
 4. Assign courts
 
-**What's Missing (from Americano Specification F-006):**
+**What's Missing in Americano (compared to Mexicano Specification F-006):**
 - ❌ Sorting players by total points
 - ❌ Pairing players with similar rankings
 - ❌ Tracking partner history to ensure rotation
@@ -174,7 +194,165 @@ Regular rounds continue using the same algorithm as Round 2:
 
 ---
 
-## Final Round: Rank-Based Pairing
+## PART 2: MEXICANO ALGORITHM (Planned Implementation)
+
+The Mexicano algorithm implements sophisticated partner/opponent selection based on Specification F-006.
+
+---
+
+## Round 2+: Regular Round Generation - MEXICANO
+
+### Algorithm: `generateNextRound()` with Mexicano Mode
+
+**Location:** To be implemented in `lib/services/tournament_service.dart`
+
+### Step-by-Step Process:
+
+#### Step 1: Calculate Player Statistics
+```
+For each player, calculate from all previous rounds:
+- Total points scored
+- Games played
+- Partner history: Map<Player, int> (times played together)
+- Opponent history: Map<Player, int> (times faced)
+- Pause rounds: List<int> (which rounds sat out)
+
+Example after Round 1:
+Player 5:  totalPoints=18, gamesPlayed=1, partners={Player 12: 1}, opponents={Player 3: 1, Player 7: 1}
+Player 12: totalPoints=18, gamesPlayed=1, partners={Player 5: 1}, opponents={Player 3: 1, Player 7: 1}
+Player 3:  totalPoints=6,  gamesPlayed=1, partners={Player 7: 1}, opponents={Player 5: 1, Player 12: 1}
+Player 7:  totalPoints=6,  gamesPlayed=1, partners={Player 3: 1}, opponents={Player 5: 1, Player 12: 1}
+...
+```
+
+#### Step 2: Sort Players by Total Points (Descending)
+```
+Sorted ranking after Round 1 (example):
+1. Player 5  (18 points)
+2. Player 12 (18 points)
+3. Player 9  (18 points)
+4. Player 1  (16 points)
+5. Player 14 (16 points)
+6. Player 2  (14 points)
+7. Player 8  (12 points)
+8. Player 11 (12 points)
+9. Player 4  (10 points)
+10. Player 6 (10 points)
+11. Player 13 (8 points)
+12. Player 10 (8 points)
+13. Player 3 (6 points)
+14. Player 7 (6 points)
+```
+
+#### Step 3: Select Break Players (Same Fairness Logic)
+```
+Priority for sitting out:
+1. Fewest pauses (ascending)
+2. Most games played (descending)
+3. Random among equals
+
+For 2 overflow in Round 2:
+→ Player 13 and Player 10 sat out in Round 1 (pauseCount=1)
+→ All others have pauseCount=0
+→ Select 2 from those with pauseCount=0
+→ Among equals, random selection
+→ Example: Player 7 (rank 14) and Player 3 (rank 13)
+```
+
+#### Step 4: Generate Optimal Pairs (History-Aware)
+```
+Active players (12 total): Ranks 1-6, 8-12 (excluding ranks 13-14)
+[Player 5, Player 12, Player 9, Player 1, Player 14, Player 2,
+ Player 8, Player 11, Player 4, Player 6, Player 13, Player 10]
+
+Pair Generation Algorithm:
+For each player (in ranking order):
+  If player not yet paired:
+    Find best partner from remaining players:
+      Priority 1: Fewest times played together (partner history)
+      Priority 2: Closest in ranking (minimize rank difference)
+    
+    Create pair and mark both players as used
+
+Example pairs (Round 2):
+Pair 1: Player 5 (R1) + Player 9 (R3)   [partnerCount=0, rankDiff=2]
+Pair 2: Player 12 (R2) + Player 1 (R4)  [partnerCount=0, rankDiff=2]
+Pair 3: Player 14 (R5) + Player 2 (R6)  [partnerCount=0, rankDiff=1]
+Pair 4: Player 8 (R7) + Player 11 (R8)  [partnerCount=0, rankDiff=1]
+Pair 5: Player 4 (R9) + Player 6 (R10)  [partnerCount=0, rankDiff=1]
+Pair 6: Player 13 (R11) + Player 10 (R12) [partnerCount=0, rankDiff=1]
+```
+
+#### Step 5: Match Pairs to Games (Opponent-Aware)
+```
+Match Generation Algorithm:
+For each pair (in order):
+  If pair not yet matched:
+    Find best opponent pair from remaining pairs:
+      Priority 1: Fewest total opponent encounters (all 4 players)
+      Priority 2: Closest in pair ranking (sequential)
+    
+    Create match and mark both pairs as used
+
+Example matches (Round 2):
+Match 1: Pair 1 vs Pair 2
+  Team 1: Player 5 (R1) & Player 9 (R3)
+  Team 2: Player 12 (R2) & Player 1 (R4)
+  [opponentCount=0 for all pairings, pairs are sequential]
+
+Match 2: Pair 3 vs Pair 4
+  Team 1: Player 14 (R5) & Player 2 (R6)
+  Team 2: Player 8 (R7) & Player 11 (R8)
+  [opponentCount=0 for all pairings, pairs are sequential]
+
+Match 3: Pair 5 vs Pair 6
+  Team 1: Player 4 (R9) & Player 6 (R10)
+  Team 2: Player 13 (R11) & Player 10 (R12)
+  [opponentCount=0 for all pairings, pairs are sequential]
+```
+
+#### Step 6: Assign Courts
+Sequential or random assignment to Bane 1, 2, 3
+
+### Result for Round 2 - MEXICANO:
+| Court | Team 1 | Team 2 | Break Players |
+|-------|--------|--------|---------------|
+| Bane 1 | Player 5 (R1) & Player 9 (R3) | Player 12 (R2) & Player 1 (R4) | Player 7 (R14) |
+| Bane 2 | Player 14 (R5) & Player 2 (R6) | Player 8 (R7) & Player 11 (R8) | Player 3 (R13) |
+| Bane 3 | Player 4 (R9) & Player 6 (R10) | Player 13 (R11) & Player 10 (R12) | |
+
+### Key Characteristics of Mexicano:
+- ✅ **Fair break distribution** - same pause fairness as Americano
+- ✅ **Point-based ranking** - players sorted by performance
+- ✅ **Partner rotation** - tracks history, avoids repetition
+- ✅ **Opponent variety** - tracks history, ensures diverse matchups
+- ✅ **Skill balancing** - similar-ranked players paired and matched
+- ✅ **Competitive balance** - teams with similar combined rankings face each other
+
+---
+
+## Round 3+: MEXICANO Continues Strategic Pairing
+
+Each subsequent round in Mexicano mode:
+1. Recalculates all player statistics (points, partners, opponents)
+2. Re-sorts players by current total points
+3. Applies fair break selection
+4. Generates optimal pairs avoiding previous partners
+5. Matches pairs avoiding previous opponents
+6. Creates balanced, competitive games
+
+**Mexicano Advantages:**
+- ✅ Players rotate through different partners
+- ✅ Players face variety of opponents
+- ✅ Similar-skilled players compete together
+- ✅ Games remain competitive throughout tournament
+- ✅ Strategic depth and engagement
+
+---
+
+## PART 3: FINAL ROUND (Both Algorithms)
+
+Both Americano and Mexicano use the same final round algorithm.
 
 ### Algorithm: `generateFinalRound()`
 
@@ -283,21 +461,15 @@ Sequential (default) assigns best matches to first courts
 
 ---
 
-## Summary of Issues
+---
 
-### What Works Well:
-1. ✅ **Fair break distribution** - pause fairness logic prevents consecutive breaks
-2. ✅ **Final round strategy** - rank-based pairing creates exciting finale
-3. ✅ **Simplicity** - easy to understand and predictable
+## PART 4: COMPARISON & IMPLEMENTATION PLAN
 
-### What's Missing (Specification F-006):
-1. ❌ **No Americano algorithm** for regular rounds
-2. ❌ **No partner rotation tracking** - players can get same partner repeatedly
-3. ❌ **No opponent history tracking** - players can face same opponents multiple times
-4. ❌ **No point-based balancing** - teams aren't matched by skill level
-5. ❌ **Purely random matchups** - except for final round
+---
 
-### Current Behavior Summary:
+## Algorithm Comparison Summary
+
+### Americano (Current Default)
 
 | Round Type | Partner Selection | Opponent Selection | Based On |
 |------------|-------------------|--------------------| ---------|
@@ -305,40 +477,353 @@ Sequential (default) assigns best matches to first courts
 | Regular (2-N) | Random | Random | Shuffle |
 | Final | Rank-based pattern | Rank-based pattern | Tournament standings |
 
-### Specification F-006 Expected Behavior:
+**Pros:**
+- ✅ Simple and fast
+- ✅ Unpredictable and varied
+- ✅ Easy to understand
+- ✅ Fair break distribution
+
+**Cons:**
+- ❌ Can repeat partners
+- ❌ Can repeat opponents
+- ❌ No skill balancing
+- ❌ Games can be imbalanced
+
+### Mexicano (Planned, Will Be New Default)
 
 | Round Type | Partner Selection | Opponent Selection | Based On |
 |------------|-------------------|--------------------| ---------|
 | First | Random | Random | Shuffle |
-| Regular (2-N) | **History-aware** | **Ranking + history** | **Points, partners, opponents** |
+| Regular (2-N) | **History-aware + rank** | **History-aware + rank** | **Points, partners, opponents** |
 | Final | Rank-based pattern | Rank-based pattern | Tournament standings |
 
----
+**Pros:**
+- ✅ Partner rotation guaranteed
+- ✅ Opponent variety enforced
+- ✅ Skill-based balancing
+- ✅ Competitive games
+- ✅ Strategic depth
+- ✅ Authentic Mexicano format
 
-## Potential Impact
-
-### Player Experience:
-- Players may get paired with the same partner multiple times
-- Players may face the same opponents repeatedly
-- Highly skilled players may be paired with beginners randomly
-- Point totals in standings don't influence regular round matchups
-- Less variety and strategic depth during regular play
-
-### Tournament Fairness:
-- Random matchups can create imbalanced games
-- Strong players grouped together randomly can dominate
-- No mechanism to ensure competitive balance
-- Break fairness is the only non-random element
+**Cons:**
+- ⚠️ More complex algorithm
+- ⚠️ Slightly slower computation
+- ⚠️ Less random/unpredictable
 
 ---
 
-## Recommendations for Review
+## Implementation Plan
 
-Consider whether the current random approach is desirable or if implementing the full Americano algorithm (F-006) would improve:
-1. **Partner variety** - track and rotate partners
-2. **Opponent variety** - avoid repeated matchups
-3. **Competitive balance** - match similar-skilled teams
-4. **Strategic depth** - make regular rounds more engaging
-5. **Americano authenticity** - follow traditional format rules
+### Phase 1: Data Model Updates
 
-The algorithm is well-structured and the pause fairness logic works excellently. The question is whether to add the partner/opponent tracking and point-based matching for regular rounds.
+#### 1.1 Add Tournament Format Enum
+**File:** `lib/models/tournament_settings.dart`
+
+```dart
+/// Tournament matchup format
+enum TournamentFormat {
+  /// Americano: Random partner/opponent selection (simple)
+  americano,
+  
+  /// Mexicano: Strategic pairing with history tracking (default)
+  mexicano,
+}
+```
+
+#### 1.2 Update TournamentSettings Model
+**File:** `lib/models/tournament_settings.dart`
+
+Add new field:
+```dart
+final TournamentFormat format;
+
+// Default to Mexicano (new standard)
+const TournamentSettings({
+  // ... existing fields ...
+  this.format = TournamentFormat.mexicano,
+});
+```
+
+Update:
+- `copyWith()` method
+- `toJson()` / `fromJson()` methods
+- `isCustomized` getter
+- `summary` getter
+
+#### 1.3 Create PlayerStats Model
+**File:** `lib/models/player_stats.dart` (new file)
+
+```dart
+/// Statistics for a player used in Mexicano algorithm
+class PlayerStats {
+  final Player player;
+  final int totalPoints;
+  final int gamesPlayed;
+  final Map<String, int> partnerCounts;   // playerId -> count
+  final Map<String, int> opponentCounts;  // playerId -> count
+  final List<int> pauseRounds;
+  
+  PlayerStats({
+    required this.player,
+    required this.totalPoints,
+    required this.gamesPlayed,
+    required this.partnerCounts,
+    required this.opponentCounts,
+    required this.pauseRounds,
+  });
+  
+  factory PlayerStats.initial(Player player) {
+    return PlayerStats(
+      player: player,
+      totalPoints: 0,
+      gamesPlayed: 0,
+      partnerCounts: {},
+      opponentCounts: {},
+      pauseRounds: [],
+    );
+  }
+  
+  double get averagePoints => gamesPlayed > 0 ? totalPoints / gamesPlayed : 0.0;
+}
+```
+
+### Phase 2: Service Layer Implementation
+
+#### 2.1 Create Mexicano Algorithm Service
+**File:** `lib/services/mexicano_algorithm_service.dart` (new file)
+
+Implement methods from Specification F-006:
+- `calculatePlayerStats()` - Build stats from previous rounds
+- `generateOptimalPairs()` - Create pairs with partner rotation
+- `matchPairsToGames()` - Match pairs with opponent variety
+- `countPreviousPartners()` - Helper for partner history
+- `countPreviousOpponents()` - Helper for opponent history
+
+#### 2.2 Update TournamentService
+**File:** `lib/services/tournament_service.dart`
+
+Modify `generateNextRound()`:
+```dart
+Round generateNextRound(
+  List<Player> players,
+  List<Court> courts,
+  List<PlayerStanding> standings,
+  int roundNumber, {
+  TournamentFormat format = TournamentFormat.mexicano,
+  LaneAssignmentStrategy laneStrategy = LaneAssignmentStrategy.sequential,
+  List<Round> previousRounds = const [],
+}) {
+  if (format == TournamentFormat.mexicano) {
+    return _generateNextRoundMexicano(...);
+  } else {
+    return _generateNextRoundAmericano(...);
+  }
+}
+
+Round _generateNextRoundAmericano(...) {
+  // Current implementation (random shuffle)
+}
+
+Round _generateNextRoundMexicano(...) {
+  // New implementation using MexicanoAlgorithmService
+}
+```
+
+### Phase 3: UI Updates
+
+#### 3.1 Settings Screen - Add Format Selector
+**File:** `lib/widgets/tournament_settings_widget.dart`
+
+Add radio button group:
+```dart
+RadioListTile<TournamentFormat>(
+  title: Text('Mexicano (Anbefalet)'),
+  subtitle: Text('Strategisk parring baseret på point og historik'),
+  value: TournamentFormat.mexicano,
+  groupValue: _format,
+  onChanged: (value) => setState(() => _format = value!),
+),
+RadioListTile<TournamentFormat>(
+  title: Text('Americano'),
+  subtitle: Text('Tilfældig parring (simpel)'),
+  value: TournamentFormat.americano,
+  groupValue: _format,
+  onChanged: (value) => setState(() => _format = value!),
+),
+```
+
+#### 3.2 Match Card - Show Algorithm Info
+**File:** `lib/widgets/match_card.dart`
+
+Update `MatchupReasoning` display to show which algorithm was used.
+
+### Phase 4: Testing
+
+#### 4.1 Unit Tests
+**Files:**
+- `test/models/player_stats_test.dart` (new)
+- `test/services/mexicano_algorithm_service_test.dart` (new)
+- `test/services/tournament_service_test.dart` (update)
+
+Test cases:
+- Partner rotation works correctly
+- Opponent variety is enforced
+- Point-based sorting is accurate
+- Edge cases (few players, many overflow, etc.)
+- Both algorithms produce valid rounds
+- Settings persistence works
+
+#### 4.2 Integration Tests
+**File:** `test/integration/tournament_format_test.dart` (new)
+
+Test scenarios:
+- Complete tournament with Americano format
+- Complete tournament with Mexicano format
+- Switching formats mid-tournament (should not be allowed)
+- Verify partner/opponent distributions
+
+#### 4.3 Manual Testing
+**Scenarios:**
+1. Create tournament with Americano, verify random behavior
+2. Create tournament with Mexicano, verify strategic pairing
+3. 14 players, 3 courts scenario (from user example)
+4. Track partner/opponent encounters across multiple rounds
+5. Verify UI shows correct format in settings
+6. Test save/load with both formats
+
+### Phase 5: Documentation
+
+#### 5.1 Update Existing Docs
+- Update `README.md` with format options
+- Update `GETTING_STARTED.md` with format selection guide
+- Update `SPECIFICATION.md` with terminology changes
+
+#### 5.2 Create User Guide
+**File:** `docs/TOURNAMENT_FORMATS.md` (new)
+
+User-facing documentation:
+- When to use Americano vs Mexicano
+- How each algorithm works (simplified)
+- Benefits and trade-offs
+- Examples and scenarios
+
+---
+
+## Implementation Checklist
+
+### Sprint 1: Data Models & Core Algorithm
+- [ ] Add `TournamentFormat` enum to `tournament_settings.dart`
+- [ ] Update `TournamentSettings` model with `format` field
+- [ ] Create `PlayerStats` model in `lib/models/player_stats.dart`
+- [ ] Implement `MexicanoAlgorithmService` in `lib/services/`
+- [ ] Add unit tests for `PlayerStats` model
+- [ ] Add unit tests for `MexicanoAlgorithmService`
+
+### Sprint 2: Service Integration
+- [ ] Update `TournamentService.generateNextRound()` to support both formats
+- [ ] Extract current random logic to `_generateNextRoundAmericano()`
+- [ ] Implement `_generateNextRoundMexicano()` using new service
+- [ ] Update `MatchupReasoning` to include format information
+- [ ] Update unit tests for `TournamentService`
+- [ ] Verify backward compatibility with existing tournaments
+
+### Sprint 3: UI Updates
+- [ ] Add format selector to `TournamentSettingsWidget`
+- [ ] Update settings summary to show format
+- [ ] Add format indicator in match cards (optional)
+- [ ] Update default format to Mexicano in settings
+- [ ] Test UI flows for both formats
+- [ ] Verify settings persistence works correctly
+
+### Sprint 4: Testing & Documentation
+- [ ] Create integration tests for both formats
+- [ ] Manual testing with 14 players, 3 courts scenario
+- [ ] Verify partner/opponent rotation in Mexicano
+- [ ] Verify randomness in Americano
+- [ ] Update all documentation files
+- [ ] Create user guide for tournament formats
+- [ ] Code review and cleanup
+
+### Sprint 5: Validation & Deployment
+- [ ] Run full test suite (`flutter test`)
+- [ ] Run analyzer (`flutter analyze`)
+- [ ] Manual testing on web and mobile
+- [ ] Performance testing (algorithm speed)
+- [ ] Update CHANGELOG
+- [ ] Deploy to test environment
+- [ ] User acceptance testing
+- [ ] Deploy to production
+
+---
+
+## Technical Considerations
+
+### Performance
+- Mexicano algorithm is O(n²) for pairing generation
+- Should be fast enough for up to 72 players
+- Consider caching player stats if needed
+
+### Data Migration
+- Existing tournaments use Americano (random)
+- Default new tournaments to Mexicano
+- No migration needed - format is per-tournament setting
+
+### Backward Compatibility
+- Old tournaments without `format` field default to Americano
+- Preserve existing behavior for saved games
+- JSON serialization handles missing fields
+
+### Edge Cases
+- Very few players (4-8): both algorithms work
+- Many overflow players: pause fairness handles both
+- Mid-tournament format change: should be prevented (or warning shown)
+
+---
+
+## Success Criteria
+
+### Functional Requirements
+✅ Americano format produces random matchups (current behavior)
+✅ Mexicano format tracks partner/opponent history
+✅ Mexicano format rotates partners effectively
+✅ Mexicano format ensures opponent variety
+✅ Both formats respect pause fairness rules
+✅ Settings UI clearly shows format selection
+✅ Default format is Mexicano for new tournaments
+
+### Quality Requirements
+✅ All tests pass (unit + integration)
+✅ Code coverage > 80% for new code
+✅ Flutter analyze shows no errors
+✅ Documentation is complete and accurate
+✅ User guide is clear and helpful
+
+### User Experience
+✅ Format selection is intuitive
+✅ Algorithm choice is clear in UI
+✅ Performance is acceptable (< 2 seconds per round)
+✅ Users understand difference between formats
+
+---
+
+## Timeline Estimate
+
+- **Sprint 1 (Data Models):** 2-3 days
+- **Sprint 2 (Service Layer):** 3-4 days
+- **Sprint 3 (UI Updates):** 2-3 days
+- **Sprint 4 (Testing):** 2-3 days
+- **Sprint 5 (Validation):** 1-2 days
+
+**Total:** 10-15 days for complete implementation
+
+---
+
+## Next Steps
+
+1. **Review this plan** - Confirm approach and scope
+2. **Create GitHub issue** - Track implementation progress
+3. **Start Sprint 1** - Begin with data models
+4. **Iterative development** - Test after each sprint
+5. **Deploy incrementally** - Test environment first
+
+This plan provides a clear roadmap for implementing both Americano and Mexicano tournament formats with proper testing and documentation.
