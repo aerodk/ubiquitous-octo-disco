@@ -316,6 +316,13 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
 
     for (final round in widget.tournament.rounds) {
       for (final match in round.matches.where((m) => m.isCompleted)) {
+        // isCompleted ensures both scores are non-null
+        final team1Score = match.team1Score;
+        final team2Score = match.team2Score;
+        
+        // Additional safety check (should never be null due to isCompleted check)
+        if (team1Score == null || team2Score == null) continue;
+        
         // Check if player is in this match
         final isInTeam1 = match.team1.player1.id == player.id ||
             match.team1.player2.id == player.id;
@@ -336,16 +343,16 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                 : match.team1.player1.name;
             opponents =
                 '${match.team2.player1.name} & ${match.team2.player2.name}';
-            playerScore = match.team1Score!;
-            opponentScore = match.team2Score!;
+            playerScore = team1Score;
+            opponentScore = team2Score;
           } else {
             partner = match.team2.player1.id == player.id
                 ? match.team2.player2.name
                 : match.team2.player1.name;
             opponents =
                 '${match.team1.player1.name} & ${match.team1.player2.name}';
-            playerScore = match.team2Score!;
-            opponentScore = match.team1Score!;
+            playerScore = team2Score;
+            opponentScore = team1Score;
           }
 
           if (playerScore > opponentScore) {
