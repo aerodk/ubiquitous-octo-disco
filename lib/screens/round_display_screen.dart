@@ -185,6 +185,8 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
         standings,
         nextRoundNumber,
         laneStrategy: _tournament.settings.laneAssignmentStrategy,
+        format: _tournament.settings.format,
+        previousRounds: _tournament.rounds,
       );
       
       // Clear history since we generated a new round
@@ -532,12 +534,15 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       );
     } else {
       // Regenerate regular round with new court
+      final previousRounds = _tournament.rounds.sublist(0, _tournament.rounds.length - 1);
       newRound = _tournamentService.generateNextRound(
         _tournament.players,
         updatedCourts,
         standings,
         _currentRound.roundNumber,
         laneStrategy: _tournament.settings.laneAssignmentStrategy,
+        format: _tournament.settings.format,
+        previousRounds: previousRounds,
       );
     }
 
@@ -639,12 +644,15 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       );
     } else {
       // Regenerate regular round with fewer courts
+      final previousRounds = _tournament.rounds.sublist(0, _tournament.rounds.length - 1);
       newRound = _tournamentService.generateNextRound(
         _tournament.players,
         updatedCourts,
         standings,
         _currentRound.roundNumber,
         laneStrategy: _tournament.settings.laneAssignmentStrategy,
+        format: _tournament.settings.format,
+        previousRounds: previousRounds,
       );
     }
 

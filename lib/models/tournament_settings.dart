@@ -1,3 +1,18 @@
+/// Tournament matchup format
+/// Defines how partners and opponents are selected
+enum TournamentFormat {
+  /// Americano: Random partner/opponent selection
+  /// Simple, unpredictable matchups using random shuffling
+  /// Good for casual play and equal opportunity
+  americano,
+  
+  /// Mexicano: Strategic pairing with history tracking (default)
+  /// Tracks partner/opponent history to ensure rotation and variety
+  /// Balances teams by points, creates competitive games
+  /// Follows traditional Mexicano format rules
+  mexicano,
+}
+
 /// Pairing strategy for final round matches
 /// Defines how top players are paired in the final round
 enum PairingStrategy {
@@ -34,6 +49,10 @@ enum LaneAssignmentStrategy {
 /// Settings for tournament configuration
 /// Controls game rules and behavior
 class TournamentSettings {
+  /// Tournament matchup format (Americano or Mexicano)
+  /// Default: mexicano (strategic pairing with history tracking)
+  final TournamentFormat format;
+
   /// Minimum number of rounds required before final round can start
   /// Default: 3, Range: 2-10
   final int minRoundsBeforeFinal;
@@ -55,6 +74,7 @@ class TournamentSettings {
   final LaneAssignmentStrategy laneAssignmentStrategy;
 
   const TournamentSettings({
+    this.format = TournamentFormat.mexicano,
     this.minRoundsBeforeFinal = 3,
     this.pointsPerMatch = 24,
     this.finalRoundStrategy = PairingStrategy.balanced,
@@ -64,6 +84,7 @@ class TournamentSettings {
 
   /// Create a copy with modified fields
   TournamentSettings copyWith({
+    TournamentFormat? format,
     int? minRoundsBeforeFinal,
     int? pointsPerMatch,
     PairingStrategy? finalRoundStrategy,
@@ -71,6 +92,7 @@ class TournamentSettings {
     LaneAssignmentStrategy? laneAssignmentStrategy,
   }) {
     return TournamentSettings(
+      format: format ?? this.format,
       minRoundsBeforeFinal: minRoundsBeforeFinal ?? this.minRoundsBeforeFinal,
       pointsPerMatch: pointsPerMatch ?? this.pointsPerMatch,
       finalRoundStrategy: finalRoundStrategy ?? this.finalRoundStrategy,
@@ -81,7 +103,8 @@ class TournamentSettings {
 
   /// Check if settings differ from defaults
   bool get isCustomized {
-    return pointsPerMatch != 24 ||
+    return format != TournamentFormat.mexicano ||
+        pointsPerMatch != 24 ||
         finalRoundStrategy != PairingStrategy.balanced ||
         pausePointsAwarded != 12 ||
         laneAssignmentStrategy != LaneAssignmentStrategy.sequential;
@@ -89,11 +112,21 @@ class TournamentSettings {
 
   /// Get a short summary of settings for display
   String get summary {
+    final formatName = _formatName(format);
     final points = '$pointsPerMatch point';
     final strategy = _strategyName(finalRoundStrategy);
     final pausePoints = 'Pause: $pausePointsAwarded pt';
     final laneStrategy = _laneStrategyName(laneAssignmentStrategy);
-    return '$points • $strategy • $pausePoints • $laneStrategy';
+    return '$formatName • $points • $strategy • $pausePoints • $laneStrategy';
+  }
+
+  String _formatName(TournamentFormat format) {
+    switch (format) {
+      case TournamentFormat.americano:
+        return 'Americano';
+      case TournamentFormat.mexicano:
+        return 'Mexicano';
+    }
   }
 
   String _strategyName(PairingStrategy strategy) {
@@ -132,6 +165,7 @@ class TournamentSettings {
 
   factory TournamentSettings.fromJson(Map<String, dynamic> json) {
     return TournamentSettings(
+      format: _formatFromString(json['format'] as String?),
       minRoundsBeforeFinal: json['minRoundsBeforeFinal'] as int? ?? 3,
       pointsPerMatch: json['pointsPerMatch'] as int? ?? 24,
       finalRoundStrategy: _strategyFromString(
@@ -146,12 +180,32 @@ class TournamentSettings {
 
   Map<String, dynamic> toJson() {
     return {
+      'format': _formatToString(format),
       'minRoundsBeforeFinal': minRoundsBeforeFinal,
       'pointsPerMatch': pointsPerMatch,
       'finalRoundStrategy': _strategyToString(finalRoundStrategy),
       'pausePointsAwarded': pausePointsAwarded,
       'laneAssignmentStrategy': _laneStrategyToString(laneAssignmentStrategy),
     };
+  }
+
+  static TournamentFormat _formatFromString(String? value) {
+    switch (value) {
+      case 'americano':
+        return TournamentFormat.americano;
+      case 'mexicano':
+      default:
+        return TournamentFormat.mexicano;
+    }
+  }
+
+  static String _formatToString(TournamentFormat format) {
+    switch (format) {
+      case TournamentFormat.americano:
+        return 'americano';
+      case TournamentFormat.mexicano:
+        return 'mexicano';
+    }
   }
 
   static PairingStrategy _strategyFromString(String? value) {
@@ -200,6 +254,7 @@ class TournamentSettings {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is TournamentSettings &&
+        other.format == format &&
         other.minRoundsBeforeFinal == minRoundsBeforeFinal &&
         other.pointsPerMatch == pointsPerMatch &&
         other.finalRoundStrategy == finalRoundStrategy &&
@@ -210,6 +265,7 @@ class TournamentSettings {
   @override
   int get hashCode {
     return Object.hash(
+      format,
       minRoundsBeforeFinal,
       pointsPerMatch,
       finalRoundStrategy,

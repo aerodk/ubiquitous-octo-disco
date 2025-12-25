@@ -90,6 +90,11 @@ class _TournamentSettingsWidgetState extends State<TournamentSettingsWidget> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Tournament Format Setting
+                _buildTournamentFormatSection(theme),
+                
+                const Divider(height: 32),
+                
                 // Points Per Match Setting
                 _buildPointsPerMatchSection(theme),
                 
@@ -112,6 +117,62 @@ class _TournamentSettingsWidgetState extends State<TournamentSettingsWidget> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildTournamentFormatSection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Turnering format',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Vælg hvordan spillere matches i normale runder.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: Colors.grey[600],
+          ),
+        ),
+        const SizedBox(height: 12),
+        RadioListTile<TournamentFormat>(
+          title: const Text('Mexicano (Anbefalet)'),
+          subtitle: const Text('Strategisk parring baseret på point og historik. Sikrer partner-rotation og modstander-variation.'),
+          value: TournamentFormat.mexicano,
+          groupValue: _currentSettings.format,
+          onChanged: widget.enabled
+              ? (value) {
+                  if (value != null) {
+                    _updateSettings(_currentSettings.copyWith(
+                      format: value,
+                    ));
+                  }
+                }
+              : null,
+          dense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 0),
+        ),
+        RadioListTile<TournamentFormat>(
+          title: const Text('Americano'),
+          subtitle: const Text('Tilfældig parring. Simpel og uforudsigelig, men kan gentage partnere og modstandere.'),
+          value: TournamentFormat.americano,
+          groupValue: _currentSettings.format,
+          onChanged: widget.enabled
+              ? (value) {
+                  if (value != null) {
+                    _updateSettings(_currentSettings.copyWith(
+                      format: value,
+                    ));
+                  }
+                }
+              : null,
+          dense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 0),
+        ),
+      ],
     );
   }
 
