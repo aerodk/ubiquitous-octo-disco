@@ -1,9 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'screens/setup_screen.dart';
 import 'screens/round_display_screen.dart';
 import 'services/persistence_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase
+  // Note: Firebase config is loaded from environment variables
+  // defined in GitHub Actions secrets or local .env
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    // Firebase initialization failed - app will work in local-only mode
+    debugPrint('Firebase initialization failed: $e');
+    debugPrint('App will run in local-only mode without cloud storage.');
+  }
+  
   runApp(const PadelTournamentApp());
 }
 

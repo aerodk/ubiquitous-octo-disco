@@ -2,6 +2,8 @@
 
 This guide provides step-by-step instructions for setting up Firebase for the Padel Tournament App (Version 8.0).
 
+**Important:** For GitHub Actions deployment, see [GITHUB_SECRETS_SETUP.md](GITHUB_SECRETS_SETUP.md) to configure Firebase credentials as repository secrets.
+
 ---
 
 ## Overview
@@ -11,8 +13,9 @@ You will need to:
 2. Register your web app (and optionally mobile apps)
 3. Enable Firestore database
 4. Configure security rules
-5. Obtain configuration files
-6. Add configuration to the Flutter app
+5. Obtain configuration values
+6. Add configuration to GitHub repository secrets (for deployment)
+7. (Optional) Configure for local development
 
 ---
 
@@ -168,107 +171,87 @@ Ask: "Update Firestore security rules to allow anonymous read and write access t
 
 ---
 
-## Part 6: Configure Flutter App
+## Part 6: Configure GitHub Secrets for Deployment
 
-### Step 1: Add Firebase Dependencies
+**For automated deployment via GitHub Actions:**
 
-Add to `pubspec.yaml`:
+The app is configured to load Firebase credentials from environment variables during build. This keeps your Firebase configuration secure.
 
-```yaml
-dependencies:
-  firebase_core: ^2.24.2
-  cloud_firestore: ^4.14.0
-  crypto: ^3.0.3  # For passcode hashing
-```
+### Follow the GitHub Secrets Setup Guide
 
-Run:
-```bash
-flutter pub get
-```
+👉 **See [GITHUB_SECRETS_SETUP.md](GITHUB_SECRETS_SETUP.md)** for complete instructions.
 
-### Step 2: Create Firebase Configuration File
+**Quick Summary:**
 
-Create `lib/firebase_options.dart`:
+1. Go to your GitHub repository → **Settings** → **Secrets and variables** → **Actions**
+2. Add these 6 secrets from your Firebase config:
+   - `FIREBASE_API_KEY`
+   - `FIREBASE_AUTH_DOMAIN`
+   - `FIREBASE_PROJECT_ID`
+   - `FIREBASE_STORAGE_BUCKET`
+   - `FIREBASE_MESSAGING_SENDER_ID`
+   - `FIREBASE_APP_ID`
+3. The GitHub Actions workflows will automatically inject these during build
 
-```dart
-// File generated from Firebase Console configuration
-import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
-import 'package:flutter/foundation.dart'
-    show defaultTargetPlatform, kIsWeb, TargetPlatform;
-
-class DefaultFirebaseOptions {
-  static FirebaseOptions get currentPlatform {
-    if (kIsWeb) {
-      return web;
-    }
-    switch (defaultTargetPlatform) {
-      case TargetPlatform.android:
-        return android;
-      case TargetPlatform.iOS:
-        return ios;
-      default:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions are not supported for this platform.',
-        );
-    }
-  }
-
-  // Web configuration (from Firebase Console)
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'YOUR_API_KEY',  // Replace with your values
-    authDomain: 'YOUR_PROJECT_ID.firebaseapp.com',
-    projectId: 'YOUR_PROJECT_ID',
-    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    appId: 'YOUR_APP_ID',
-  );
-
-  // Android configuration (optional)
-  static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'YOUR_ANDROID_API_KEY',
-    appId: 'YOUR_ANDROID_APP_ID',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
-  );
-
-  // iOS configuration (optional)
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'YOUR_IOS_API_KEY',
-    appId: 'YOUR_IOS_APP_ID',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
-    iosBundleId: 'com.example.starCano',
-  );
-}
-```
-
-**IMPORTANT**: Replace all `YOUR_*` placeholders with actual values from Firebase Console.
-
-### Step 3: Initialize Firebase in Main
-
-Update `lib/main.dart`:
-
-```dart
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  
-  runApp(const MyApp());
-}
-```
+**The codebase is already configured:**
+- ✅ `lib/firebase_options.dart` - Uses environment variables
+- ✅ `lib/main.dart` - Initializes Firebase
+- ✅ `.github/workflows/deploy-pages.yml` - Production deployment with secrets
+- ✅ `.github/workflows/deploy-test.yml` - Test deployment with secrets
 
 ---
 
-## Part 7: Test Firebase Connection
+## Part 7: Local Development (Optional)
+
+### Option 1: Build with Environment Variables
+
+```bash
+flutter run -d chrome \
+  --dart-define=FIREBASE_API_KEY="your-api-key" \
+  --dart-define=FIREBASE_AUTH_DOMAIN="your-project.firebaseapp.com" \
+  --dart-define=FIREBASE_PROJECT_ID="your-project-id" \
+  --dart-define=FIREBASE_STORAGE_BUCKET="your-project.appspot.com" \
+  --dart-define=FIREBASE_MESSAGING_SENDER_ID="123456789012" \
+  --dart-define=FIREBASE_APP_ID="1:123456789012:web:abc123"
+```
+
+### Option 2: Temporary Hardcoding (Testing Only)
+
+Edit `lib/firebase_options.dart` and replace the `String.fromEnvironment` calls:
+
+```dart
+static FirebaseOptions web = FirebaseOptions(
+  apiKey: 'AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+  authDomain: 'your-project.firebaseapp.com',
+  projectId: 'your-project-id',
+  storageBucket: 'your-project.appspot.com',
+  messagingSenderId: '123456789012',
+  appId: '1:123456789012:web:abc123',
+);
+```
+
+⚠️ **WARNING:** Never commit hardcoded credentials! Use `.gitignore` if testing locally.
+
+---
+
+## Part 8: Verify Configuration
+
+Before proceeding with app development, verify:
+
+- [ ] Firebase project created
+- [ ] Web app registered in Firebase Console
+- [ ] Firestore database enabled and running
+- [ ] Security rules configured and published
+- [ ] Firebase configuration obtained from Console
+- [ ] GitHub repository secrets configured (see [GITHUB_SECRETS_SETUP.md](GITHUB_SECRETS_SETUP.md))
+- [ ] Dependencies added to `pubspec.yaml` (✅ already done)
+- [ ] `lib/firebase_options.dart` created (✅ already done)
+- [ ] `lib/main.dart` updated to initialize Firebase (✅ already done)
+- [ ] `lib/services/firebase_service.dart` created (✅ already done)
+
+---
+
+## Part 9: Test Firebase Connection (Optional)
 
 Create a simple test to verify Firebase is working:
 
@@ -296,7 +279,7 @@ Future<void> testFirebaseConnection() async {
 
 ---
 
-## Part 8: Enable Indexes (Optional but Recommended)
+## Part 10: Enable Indexes (Optional but Recommended)
 
 For better query performance:
 
@@ -311,22 +294,6 @@ For better query performance:
 ### Using Gemini:
 
 Ask: "Create a Firestore composite index on the tournaments collection for createdAt descending and tournamentCode ascending"
-
----
-
-## Verification Checklist
-
-Before proceeding with app development, verify:
-
-- [ ] Firebase project created
-- [ ] Web app registered in Firebase Console
-- [ ] Firestore database enabled and running
-- [ ] Security rules configured and published
-- [ ] Firebase configuration copied from Console
-- [ ] `firebase_core` and `cloud_firestore` dependencies added to `pubspec.yaml`
-- [ ] `lib/firebase_options.dart` created with your configuration
-- [ ] `main.dart` updated to initialize Firebase
-- [ ] Test connection successful
 
 ---
 
