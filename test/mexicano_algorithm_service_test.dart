@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ubiquitous_octo_disco/models/player.dart';
-import 'package:ubiquitous_octo_disco/models/court.dart';
-import 'package:ubiquitous_octo_disco/models/match.dart';
-import 'package:ubiquitous_octo_disco/models/round.dart';
-import 'package:ubiquitous_octo_disco/services/mexicano_algorithm_service.dart';
+import 'package:star_cano/models/player.dart';
+import 'package:star_cano/models/court.dart';
+import 'package:star_cano/models/match.dart';
+import 'package:star_cano/models/round.dart';
+import 'package:star_cano/services/mexicano_algorithm_service.dart';
 
 void main() {
   group('MexicanoAlgorithmService', () {

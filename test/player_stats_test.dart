@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ubiquitous_octo_disco/models/player.dart';
-import 'package:ubiquitous_octo_disco/models/player_stats.dart';
+import 'package:star_cano/models/player.dart';
+import 'package:star_cano/models/player_stats.dart';
 
 void main() {
   group('PlayerStats', () {
