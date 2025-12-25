@@ -31,7 +31,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   static final StandingsService _standingsService = StandingsService();
   
   // Toggle for compact/detailed view
-  bool _isCompactView = false;
+  bool _isCompactView = true;
 
   @override
   Widget build(BuildContext context) {
