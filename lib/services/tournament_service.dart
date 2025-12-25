@@ -4,8 +4,10 @@ import '../models/match.dart';
 import '../models/round.dart';
 import '../models/player_standing.dart';
 import '../models/tournament_settings.dart';
+import 'mexicano_algorithm_service.dart';
 
 class TournamentService {
+  final MexicanoAlgorithmService _mexicanoService = MexicanoAlgorithmService();
   /// Assigns courts to matches based on the lane assignment strategy
   /// Sequential: Best players on first lanes (default)
   /// Random: Randomize lane assignments
@@ -142,7 +144,38 @@ class TournamentService {
   /// Generates a regular round (non-final) with pause fairness
   /// Avoids consecutive pauses and distributes breaks fairly
   /// Takes standings to track pause history and ensure fair distribution
+  /// Supports both Americano (random) and Mexicano (strategic) formats
   Round generateNextRound(
+    List<Player> players,
+    List<Court> courts,
+    List<PlayerStanding> standings,
+    int roundNumber, {
+    LaneAssignmentStrategy laneStrategy = LaneAssignmentStrategy.sequential,
+    TournamentFormat format = TournamentFormat.mexicano,
+    List<Round> previousRounds = const [],
+  }) {
+    if (format == TournamentFormat.mexicano) {
+      return _generateNextRoundMexicano(
+        players,
+        courts,
+        standings,
+        roundNumber,
+        laneStrategy: laneStrategy,
+        previousRounds: previousRounds,
+      );
+    } else {
+      return _generateNextRoundAmericano(
+        players,
+        courts,
+        standings,
+        roundNumber,
+        laneStrategy: laneStrategy,
+      );
+    }
+  }
+
+  /// Generate next round using Americano format (random shuffling)
+  Round _generateNextRoundAmericano(
     List<Player> players,
     List<Court> courts,
     List<PlayerStanding> standings,
@@ -191,8 +224,67 @@ class TournamentService {
     }
 
     // Apply lane assignment strategy with reasoning
-    const pairingDescription = 'Normal runde: Spillere blandes tilfældigt efter at have valgt dem der skal holde pause. '
+    const pairingDescription = 'Americano: Spillere blandes tilfældigt efter at have valgt dem der skal holde pause. '
         'Pause-valg baseres på retfærdighed: Færrest pauser → Flest kampe spillet.';
+    
+    final matches = _assignCourtsToMatches(
+      tempMatches,
+      courts,
+      laneStrategy,
+      roundType: 'regular',
+      pairingDescription: pairingDescription,
+    );
+
+    return Round(
+      roundNumber: roundNumber,
+      matches: matches,
+      playersOnBreak: playersOnBreak,
+    );
+  }
+
+  /// Generate next round using Mexicano format (strategic pairing)
+  Round _generateNextRoundMexicano(
+    List<Player> players,
+    List<Court> courts,
+    List<PlayerStanding> standings,
+    int roundNumber, {
+    LaneAssignmentStrategy laneStrategy = LaneAssignmentStrategy.sequential,
+    List<Round> previousRounds = const [],
+  }) {
+    final totalPlayers = players.length;
+    final overflowCount = _computeOverflowCount(totalPlayers, courts.length);
+
+    // Select players for break using pause fairness logic
+    final playersOnBreak = <Player>[];
+    if (overflowCount > 0) {
+      playersOnBreak.addAll(_selectBreakPlayersWithFairness(
+        players,
+        standings,
+        overflowCount,
+      ));
+    }
+
+    // Get active players (those not on break)
+    final activePlayers = players
+        .where((p) => !playersOnBreak.any((bp) => bp.id == p.id))
+        .toList();
+
+    // Calculate player statistics from previous rounds
+    final playerStats = _mexicanoService.calculatePlayerStats(players, previousRounds);
+
+    // Sort active players by points (highest first)
+    final sortedPlayers = _mexicanoService.sortPlayersByPoints(activePlayers, playerStats);
+
+    // Generate optimal pairs (minimize partner repetition, prefer similar rankings)
+    final pairs = _mexicanoService.generateOptimalPairs(sortedPlayers, playerStats);
+
+    // Match pairs to create games (minimize opponent repetition)
+    final tempMatches = _mexicanoService.matchPairsToGames(pairs, courts, playerStats);
+
+    // Apply lane assignment strategy with reasoning
+    const pairingDescription = 'Mexicano: Spillere sorteres efter point og parres strategisk.\n'
+        'Partner-valg prioriterer: 1) Mindst gange spillet sammen, 2) Tæt på i rangering.\n'
+        'Modstander-valg prioriterer: Mindst gange mødt hinanden.';
     
     final matches = _assignCourtsToMatches(
       tempMatches,
