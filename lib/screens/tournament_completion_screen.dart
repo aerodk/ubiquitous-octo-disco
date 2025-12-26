@@ -6,12 +6,20 @@ import '../models/player_standing.dart';
 import '../services/standings_service.dart';
 import '../services/persistence_service.dart';
 import '../widgets/export_dialog.dart';
+import '../widgets/save_tournament_dialog.dart';
 import 'setup_screen.dart';
 
 class TournamentCompletionScreen extends StatefulWidget {
   final Tournament tournament;
+  final String? cloudCode;
+  final String? cloudPasscode;
 
-  const TournamentCompletionScreen({super.key, required this.tournament});
+  const TournamentCompletionScreen({
+    super.key,
+    required this.tournament,
+    this.cloudCode,
+    this.cloudPasscode,
+  });
 
   @override
   State<TournamentCompletionScreen> createState() =>
@@ -24,6 +32,10 @@ class _TournamentCompletionScreenState
   final PersistenceService _persistenceService = PersistenceService();
   late List<PlayerStanding> _standings;
   late AnimationController _confettiController;
+  
+  // Track cloud storage codes
+  String? _cloudCode;
+  String? _cloudPasscode;
   
   // Track which positions have been revealed
   final Set<int> _revealedPositions = {};
@@ -38,6 +50,8 @@ class _TournamentCompletionScreenState
   void initState() {
     super.initState();
     _standings = _standingsService.calculateStandings(widget.tournament);
+    _cloudCode = widget.cloudCode;
+    _cloudPasscode = widget.cloudPasscode;
     
     // Setup confetti animation
     _confettiController = AnimationController(
@@ -97,6 +111,24 @@ class _TournamentCompletionScreenState
     return _standings
         .map((s) => s.biggestWinMargin)
         .reduce((a, b) => a > b ? a : b);
+  }
+
+  Future<void> _saveToCloud() async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => SaveTournamentDialog(
+        tournament: widget.tournament,
+        existingCode: _cloudCode,
+        existingPasscode: _cloudPasscode,
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        _cloudCode = result['code'] as String;
+        _cloudPasscode = result['passcode'] as String;
+      });
+    }
   }
 
   Future<void> _startNewTournament() async {
@@ -272,6 +304,57 @@ class _TournamentCompletionScreenState
                   ),
                 ),
                 const SizedBox(height: 16),
+
+                // Action buttons
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: _saveToCloud,
+                        icon: Icon(
+                          _cloudCode != null ? Icons.cloud_upload : Icons.cloud_upload_outlined,
+                          color: Colors.white,
+                        ),
+                        label: Text(
+                          _cloudCode != null ? 'Opdater' : 'Gem Cloud',
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => ExportDialog(
+                              tournament: widget.tournament,
+                              standings: _standings,
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.download, color: Colors.white),
+                        label: const Text(
+                          'Eksporter',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 12),
 
                 // Action buttons
                 SizedBox(

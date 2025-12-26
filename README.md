@@ -6,6 +6,27 @@
 
 A Flutter mobile application that helps organize and run Padel tournaments in Americano/Mexicano format.
 
+## Latest Features - Version 8.0: Firebase Cloud Storage ☁️
+
+**Save and access your tournaments from anywhere!**
+
+- **Cloud Storage**: Save tournaments to Firebase Firestore
+- **8-Digit Tournament Codes**: Unique identifier for each tournament
+- **6-Digit Passcode Protection**: Secure access with SHA-256 hashed passcodes
+- **Cross-Device Access**: Load tournaments on any device with your codes
+- **No Login Required**: Anonymous access - no user accounts needed
+- **Update Tournaments**: Save changes to existing tournaments
+- **Offline Support**: Graceful handling when Firebase is unavailable
+
+### How to Use Cloud Storage
+
+1. **Save**: Click the cloud upload icon (☁️) in the app
+2. **Get Codes**: Note your 8-digit tournament code and 6-digit passcode
+3. **Load**: Click cloud download (☁️⬇️) and enter your codes on any device
+4. **Update**: Make changes and save again with the same codes
+
+See [Firebase Setup Guide](docs/FIREBASE_SETUP.md) for deployment configuration.
+
 ## Version 1.0 - MVP Implementation
 
 This implementation includes the core features needed to set up and start a Padel tournament.
