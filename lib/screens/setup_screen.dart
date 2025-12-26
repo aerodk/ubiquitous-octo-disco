@@ -11,6 +11,7 @@ import '../utils/constants.dart';
 import '../widgets/tournament_settings_widget.dart';
 import '../widgets/load_tournament_dialog.dart';
 import 'round_display_screen.dart';
+import 'tournament_completion_screen.dart';
 
 class SetupScreen extends StatefulWidget {
   const SetupScreen({super.key});
@@ -159,11 +160,17 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => RoundDisplayScreen(
-              tournament: tournament,
-              cloudCode: code,
-              cloudPasscode: passcode,
-            ),
+            builder: (context) => tournament.isCompleted
+                ? TournamentCompletionScreen(
+                    tournament: tournament,
+                    cloudCode: code,
+                    cloudPasscode: passcode,
+                  )
+                : RoundDisplayScreen(
+                    tournament: tournament,
+                    cloudCode: code,
+                    cloudPasscode: passcode,
+                  ),
           ),
         );
       }

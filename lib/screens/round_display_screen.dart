@@ -9,6 +9,7 @@ import '../widgets/match_card.dart';
 import '../widgets/court_visualization/bench_section.dart';
 import '../widgets/save_tournament_dialog.dart';
 import '../services/tournament_service.dart';
+import '../services/firebase_service.dart';
 import '../utils/constants.dart';
 import 'setup_screen.dart';
 import 'leaderboard_screen.dart';
@@ -34,6 +35,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   final PersistenceService _persistenceService = PersistenceService();
   final TournamentService _tournamentService = TournamentService();
   final StandingsService _standingsService = StandingsService();
+  final FirebaseService _firebaseService = FirebaseService();
   late Tournament _tournament;
   
   // Track cloud storage codes
@@ -49,6 +51,28 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     _tournament = widget.tournament;
     _cloudCode = widget.cloudCode;
     _cloudPasscode = widget.cloudPasscode;
+  }
+
+  /// Sync the current tournament to cloud if codes are known
+  Future<void> _syncToCloudIfConfigured(Tournament tournament) async {
+    if (_cloudCode == null || _cloudPasscode == null) return;
+
+    final isAvailable = await _firebaseService.isFirebaseAvailable();
+    if (!isAvailable) return;
+
+    try {
+      await _firebaseService.updateTournament(
+        tournamentCode: _cloudCode!,
+        passcode: _cloudPasscode!,
+        tournament: tournament,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Kunne ikke gemme til cloud: $e')),
+        );
+      }
+    }
   }
 
   Round get _currentRound => _tournament.currentRound!;
@@ -175,7 +199,11 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => RoundDisplayScreen(tournament: updatedTournament),
+        builder: (context) => RoundDisplayScreen(
+          tournament: updatedTournament,
+          cloudCode: _cloudCode,
+          cloudPasscode: _cloudPasscode,
+        ),
       ),
     );
   }
@@ -236,11 +264,17 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       createdAt: _tournament.createdAt,
       settings: _tournament.settings,
     );
-    
+
+    await _syncToCloudIfConfigured(updatedTournament);
+
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => RoundDisplayScreen(tournament: updatedTournament),
+        builder: (context) => RoundDisplayScreen(
+          tournament: updatedTournament,
+          cloudCode: _cloudCode,
+          cloudPasscode: _cloudPasscode,
+        ),
       ),
     );
   }
@@ -346,12 +380,18 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       createdAt: _tournament.createdAt,
       settings: _tournament.settings,
     );
-    
+
+    await _syncToCloudIfConfigured(updatedTournament);
+
     if (mounted) {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => RoundDisplayScreen(tournament: updatedTournament),
+          builder: (context) => RoundDisplayScreen(
+            tournament: updatedTournament,
+            cloudCode: _cloudCode,
+            cloudPasscode: _cloudPasscode,
+          ),
         ),
       );
     }

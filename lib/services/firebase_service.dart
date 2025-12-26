@@ -234,15 +234,17 @@ class FirebaseService {
   /// Returns true if Firebase is working, false otherwise
   Future<bool> isFirebaseAvailable() async {
     try {
-      // Log Firebase configuration for debugging
-      debugPrint('=== Firebase Configuration Check ===');
       final options = DefaultFirebaseOptions.currentPlatform;
-      debugPrint('API Key: ${options.apiKey.isEmpty ? "MISSING" : "Present (${options.apiKey.substring(0, 10)}...)"}');
-      debugPrint('Project ID: ${options.projectId.isEmpty ? "MISSING" : options.projectId}');
-      debugPrint('Auth Domain: ${options.authDomain?.isEmpty ?? true ? "MISSING" : options.authDomain}');
-      debugPrint('Storage Bucket: ${options.storageBucket?.isEmpty ?? true ? "MISSING" : options.storageBucket}');
-      debugPrint('App ID: ${options.appId.isEmpty ? "MISSING" : "Present"}');
-      debugPrint('Collection: $tournamentsCollection');
+      if (kDebugMode) {
+        // Log Firebase configuration for debugging
+        debugPrint('=== Firebase Configuration Check ===');
+        debugPrint('API Key: ${options.apiKey.isEmpty ? "MISSING" : "Present (${options.apiKey.substring(0, 10)}...)"}');
+        debugPrint('Project ID: ${options.projectId.isEmpty ? "MISSING" : options.projectId}');
+        debugPrint('Auth Domain: ${options.authDomain?.isEmpty ?? true ? "MISSING" : options.authDomain}');
+        debugPrint('Storage Bucket: ${options.storageBucket?.isEmpty ?? true ? "MISSING" : options.storageBucket}');
+        debugPrint('App ID: ${options.appId.isEmpty ? "MISSING" : "Present"}');
+        debugPrint('Collection: $tournamentsCollection');
+      }
       
       // Check if any required field is missing
       if (options.apiKey.isEmpty || options.projectId.isEmpty || options.appId.isEmpty) {
@@ -251,15 +253,21 @@ class FirebaseService {
         return false;
       }
       
-      debugPrint('✅ Firebase configuration looks good, testing connection...');
+      if(kDebugMode){
+        debugPrint('✅ Firebase configuration looks good, testing connection...');
+      }
       
       // Try to access Firestore
       await _firestore.collection(tournamentsCollection).limit(1).get();
-      debugPrint('✅ Firebase connection successful!');
+      if(kDebugMode){
+        debugPrint('✅ Firebase connection successful!');
+      }
       return true;
     } catch (e, stackTrace) {
-      debugPrint('❌ Firebase error: $e');
-      debugPrint('Stack trace: $stackTrace');
+      if(kDebugMode) {
+        debugPrint('❌ Firebase error: $e');
+        debugPrint('Stack trace: $stackTrace');
+      }
       return false;
     }
   }

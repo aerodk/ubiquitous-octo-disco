@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'screens/setup_screen.dart';
 import 'screens/round_display_screen.dart';
+import 'screens/tournament_completion_screen.dart';
 import 'services/persistence_service.dart';
 
 void main() async {
@@ -62,11 +63,13 @@ class _AppInitializerState extends State<AppInitializer> {
     
     if (mounted) {
       if (tournament != null) {
-        // Navigate to round display if tournament exists
+        // Navigate based on completion state
+        final destination = tournament.isCompleted
+            ? TournamentCompletionScreen(tournament: tournament)
+            : RoundDisplayScreen(tournament: tournament);
+
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => RoundDisplayScreen(tournament: tournament),
-          ),
+          MaterialPageRoute(builder: (context) => destination),
         );
       } else {
         // Navigate to setup if no tournament exists

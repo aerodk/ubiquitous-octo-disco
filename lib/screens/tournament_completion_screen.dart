@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../services/firebase_service.dart';
 import '../models/tournament.dart';
 import '../models/player.dart';
 import '../models/player_standing.dart';
@@ -30,6 +31,7 @@ class _TournamentCompletionScreenState
     extends State<TournamentCompletionScreen> with TickerProviderStateMixin {
   final StandingsService _standingsService = StandingsService();
   final PersistenceService _persistenceService = PersistenceService();
+  final FirebaseService _firebaseService = FirebaseService();
   late List<PlayerStanding> _standings;
   late AnimationController _confettiController;
   
@@ -58,6 +60,11 @@ class _TournamentCompletionScreenState
       duration: const Duration(seconds: 2),
       vsync: this,
     )..forward();
+
+    // Persist final standings locally so completion view is saved
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _persistCompletion();
+    });
     
     // Setup medal animations for top 3
     for (int i = 1; i <= 3 && i <= _standings.length; i++) {
@@ -69,6 +76,25 @@ class _TournamentCompletionScreenState
         duration: const Duration(milliseconds: 1500),
         vsync: this,
       );
+    }
+  }
+
+  Future<void> _persistCompletion() async {
+    try {
+      await _persistenceService.saveTournament(widget.tournament);
+      // If cloud is configured, also update the cloud copy
+      if (_cloudCode != null && _cloudPasscode != null) {
+        final isAvailable = await _firebaseService.isFirebaseAvailable();
+        if (isAvailable) {
+          await _firebaseService.updateTournament(
+            tournamentCode: _cloudCode!,
+            passcode: _cloudPasscode!,
+            tournament: widget.tournament,
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Failed to persist completed tournament: $e');
     }
   }
 
