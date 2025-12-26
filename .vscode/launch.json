@@ -17,6 +17,34 @@
             "type": "dart"
         },
         {
+            "name": "Firebase (TEST mode)",
+            "request": "launch",
+            "type": "dart",
+            "args": [
+                "--dart-define=FIREBASE_ENV=test",
+                "--dart-define=FIREBASE_API_KEY=AIzaSyA6Nxx-BnzSEhYe1PIe4atpHrMJIt8lJBk",
+                "--dart-define=FIREBASE_AUTH_DOMAIN=padel-star-cano.firebaseapp.com",
+                "--dart-define=FIREBASE_PROJECT_ID=padel-star-cano",
+                "--dart-define=FIREBASE_STORAGE_BUCKET=padel-star-cano.firebasestorage.app",
+                "--dart-define=FIREBASE_MESSAGING_SENDER_ID=1093883425780",
+                "--dart-define=FIREBASE_APP_ID=1:1093883425780:web:7bbaac6854192242dbbfa1"
+            ]
+        },
+        {
+            "name": "Firebase (PRODUCTION mode)",
+            "request": "launch",
+            "type": "dart",
+            "args": [
+                "--dart-define=FIREBASE_ENV=production",
+                "--dart-define=FIREBASE_API_KEY=AIzaSyA6Nxx-BnzSEhYe1PIe4atpHrMJIt8lJBk",
+                "--dart-define=FIREBASE_AUTH_DOMAIN=padel-star-cano.firebaseapp.com",
+                "--dart-define=FIREBASE_PROJECT_ID=padel-star-cano",
+                "--dart-define=FIREBASE_STORAGE_BUCKET=padel-star-cano.firebasestorage.app",
+                "--dart-define=FIREBASE_MESSAGING_SENDER_ID=1093883425780",
+                "--dart-define=FIREBASE_APP_ID=1:1093883425780:web:7bbaac6854192242dbbfa1"
+            ]
+        },
+        {
             "name": "ubiquitous-octo-disco (profile mode)",
             "request": "launch",
             "type": "dart",

@@ -2,7 +2,9 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import '../models/tournament.dart';
+import '../firebase_options.dart';
 
 /// Service for managing tournament data in Firebase Firestore
 /// 
@@ -11,12 +13,19 @@ import '../models/tournament.dart';
 /// - Generate 6-digit numeric passcodes
 /// - Save/load tournaments to/from Firestore
 /// - Passcode-based authentication
+/// - Environment-based collection names (test vs production)
 class FirebaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final Random _random = Random.secure();
 
-  /// Collection name for tournaments in Firestore
-  static const String tournamentsCollection = 'tournaments';
+  /// Get collection name based on environment
+  /// - Production: 'tournaments'
+  /// - Test: 'tournaments_test'
+  /// Set via --dart-define=FIREBASE_ENV=test or FIREBASE_ENV=production
+  String get tournamentsCollection {
+    const env = String.fromEnvironment('FIREBASE_ENV', defaultValue: 'production');
+    return env == 'test' ? 'tournaments_test' : 'tournaments';
+  }
 
   /// Generate a unique 8-digit tournament code
   /// Returns a string like "12345678"
@@ -225,10 +234,32 @@ class FirebaseService {
   /// Returns true if Firebase is working, false otherwise
   Future<bool> isFirebaseAvailable() async {
     try {
+      // Log Firebase configuration for debugging
+      debugPrint('=== Firebase Configuration Check ===');
+      final options = DefaultFirebaseOptions.currentPlatform;
+      debugPrint('API Key: ${options.apiKey.isEmpty ? "MISSING" : "Present (${options.apiKey.substring(0, 10)}...)"}');
+      debugPrint('Project ID: ${options.projectId.isEmpty ? "MISSING" : options.projectId}');
+      debugPrint('Auth Domain: ${options.authDomain?.isEmpty ?? true ? "MISSING" : options.authDomain}');
+      debugPrint('Storage Bucket: ${options.storageBucket?.isEmpty ?? true ? "MISSING" : options.storageBucket}');
+      debugPrint('App ID: ${options.appId.isEmpty ? "MISSING" : "Present"}');
+      debugPrint('Collection: $tournamentsCollection');
+      
+      // Check if any required field is missing
+      if (options.apiKey.isEmpty || options.projectId.isEmpty || options.appId.isEmpty) {
+        debugPrint('❌ Firebase configuration is incomplete!');
+        debugPrint('Make sure you are running with --dart-define flags or using the launch.json configuration.');
+        return false;
+      }
+      
+      debugPrint('✅ Firebase configuration looks good, testing connection...');
+      
       // Try to access Firestore
-      await _firestore.collection('_test_').limit(1).get();
+      await _firestore.collection(tournamentsCollection).limit(1).get();
+      debugPrint('✅ Firebase connection successful!');
       return true;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('❌ Firebase error: $e');
+      debugPrint('Stack trace: $stackTrace');
       return false;
     }
   }
