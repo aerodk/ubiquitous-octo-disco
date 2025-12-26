@@ -804,8 +804,12 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                               key: ValueKey(match.id),
                               match: match,
                               maxPoints: _tournament.settings.pointsPerMatch,
-                              onScoreChanged: () {
+                              onScoreChanged: () async {
                                 setState(() {});
+                                // Save tournament immediately after score change
+                                await _persistenceService.saveTournament(_tournament);
+                                // Also save to full history to preserve scores on navigation back
+                                await _persistenceService.saveFullTournamentHistory(_tournament);
                               },
                               onPlayerForceToPause: (player) => _overridePlayerPauseStatus(player, false),
                             );
