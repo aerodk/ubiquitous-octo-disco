@@ -7,6 +7,7 @@ import '../services/persistence_service.dart';
 import '../services/standings_service.dart';
 import '../widgets/match_card.dart';
 import '../widgets/court_visualization/bench_section.dart';
+import '../widgets/save_tournament_dialog.dart';
 import '../services/tournament_service.dart';
 import '../utils/constants.dart';
 import 'setup_screen.dart';
@@ -15,8 +16,15 @@ import 'tournament_completion_screen.dart';
 
 class RoundDisplayScreen extends StatefulWidget {
   final Tournament tournament;
+  final String? cloudCode;
+  final String? cloudPasscode;
 
-  const RoundDisplayScreen({super.key, required this.tournament});
+  const RoundDisplayScreen({
+    super.key,
+    required this.tournament,
+    this.cloudCode,
+    this.cloudPasscode,
+  });
 
   @override
   State<RoundDisplayScreen> createState() => _RoundDisplayScreenState();
@@ -28,6 +36,10 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   final StandingsService _standingsService = StandingsService();
   late Tournament _tournament;
   
+  // Track cloud storage codes
+  String? _cloudCode;
+  String? _cloudPasscode;
+  
   // Track players who were newly moved to pause after court adjustment
   Set<String> _newlyPausedPlayerIds = {};
 
@@ -35,6 +47,8 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   void initState() {
     super.initState();
     _tournament = widget.tournament;
+    _cloudCode = widget.cloudCode;
+    _cloudPasscode = widget.cloudPasscode;
   }
 
   Round get _currentRound => _tournament.currentRound!;
@@ -76,6 +90,8 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       MaterialPageRoute(
         builder: (context) => TournamentCompletionScreen(
           tournament: completedTournament,
+          cloudCode: _cloudCode,
+          cloudPasscode: _cloudPasscode,
         ),
       ),
     );
@@ -112,6 +128,24 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
         MaterialPageRoute(builder: (context) => const SetupScreen()),
         (route) => false,
       );
+    }
+  }
+
+  Future<void> _saveToCloud() async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => SaveTournamentDialog(
+        tournament: _tournament,
+        existingCode: _cloudCode,
+        existingPasscode: _cloudPasscode,
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        _cloudCode = result['code'] as String;
+        _cloudPasscode = result['passcode'] as String;
+      });
     }
   }
 
@@ -740,6 +774,11 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
               ? Colors.amber[700]
               : Theme.of(context).colorScheme.inversePrimary,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.cloud_upload),
+            onPressed: _saveToCloud,
+            tooltip: _cloudCode != null ? 'Opdater Cloud ($_cloudCode)' : 'Gem i Cloud',
+          ),
           IconButton(
             icon: const Icon(Icons.leaderboard),
             onPressed: () {

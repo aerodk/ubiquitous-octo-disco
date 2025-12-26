@@ -9,6 +9,7 @@ import '../services/tournament_service.dart';
 import '../services/persistence_service.dart';
 import '../utils/constants.dart';
 import '../widgets/tournament_settings_widget.dart';
+import '../widgets/load_tournament_dialog.dart';
 import 'round_display_screen.dart';
 
 class SetupScreen extends StatefulWidget {
@@ -132,6 +133,40 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
         _courtCount = 1;
       });
       await _persistenceService.clearSetupState();
+    }
+  }
+
+  /// Load tournament from Firebase Cloud
+  Future<void> _loadFromCloud() async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => const LoadTournamentDialog(),
+    );
+
+    if (result != null) {
+      final tournament = result['tournament'] as Tournament;
+      final code = result['code'] as String;
+      final passcode = result['passcode'] as String;
+
+      // Save tournament locally
+      await _persistenceService.saveTournament(tournament);
+      
+      // Clear setup state
+      await _persistenceService.clearSetupState();
+
+      // Navigate to round display with loaded tournament
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => RoundDisplayScreen(
+              tournament: tournament,
+              cloudCode: code,
+              cloudPasscode: passcode,
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -261,6 +296,11 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         automaticallyImplyLeading: false, // Remove back button
         actions: [
+          IconButton(
+            icon: const Icon(Icons.cloud_download),
+            onPressed: _loadFromCloud,
+            tooltip: 'Hent Turnering fra Cloud',
+          ),
           if (_players.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.delete_sweep),
