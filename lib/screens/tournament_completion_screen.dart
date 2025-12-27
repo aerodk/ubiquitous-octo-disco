@@ -6,8 +6,10 @@ import '../models/player.dart';
 import '../models/player_standing.dart';
 import '../services/standings_service.dart';
 import '../services/persistence_service.dart';
+import '../services/display_mode_service.dart';
 import '../widgets/export_dialog.dart';
 import '../widgets/save_tournament_dialog.dart';
+import '../utils/constants.dart';
 import 'setup_screen.dart';
 
 class TournamentCompletionScreen extends StatefulWidget {
@@ -32,6 +34,7 @@ class _TournamentCompletionScreenState
   final StandingsService _standingsService = StandingsService();
   final PersistenceService _persistenceService = PersistenceService();
   final FirebaseService _firebaseService = FirebaseService();
+  final DisplayModeService _displayModeService = DisplayModeService();
   late List<PlayerStanding> _standings;
   late AnimationController _confettiController;
   
@@ -47,6 +50,9 @@ class _TournamentCompletionScreenState
   
   // Toggle for compact/detailed view
   bool _isCompactView = true;
+  
+  // Display mode (mobile/desktop)
+  bool _isDesktopMode = false;
 
   @override
   void initState() {
@@ -64,6 +70,7 @@ class _TournamentCompletionScreenState
     // Persist final standings locally so completion view is saved
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _persistCompletion();
+      _loadDisplayMode();
     });
     
     // Setup medal animations for top 3
@@ -77,6 +84,20 @@ class _TournamentCompletionScreenState
         vsync: this,
       );
     }
+  }
+  
+  Future<void> _loadDisplayMode() async {
+    final isDesktop = await _displayModeService.isDesktopMode();
+    setState(() {
+      _isDesktopMode = isDesktop;
+    });
+  }
+
+  Future<void> _toggleDisplayMode() async {
+    final newMode = await _displayModeService.toggleDisplayMode();
+    setState(() {
+      _isDesktopMode = newMode;
+    });
   }
 
   Future<void> _persistCompletion() async {
@@ -204,6 +225,12 @@ class _TournamentCompletionScreenState
         backgroundColor: Colors.amber[700], 
         automaticallyImplyLeading: false,
         actions: [
+          // Display mode toggle (mobile/desktop)
+          IconButton(
+            icon: Icon(_isDesktopMode ? Icons.desktop_windows : Icons.phone_android),
+            tooltip: _isDesktopMode ? 'Skift til mobil visning' : 'Skift til desktop visning',
+            onPressed: _toggleDisplayMode,
+          ),
           // Toggle compact/detailed view
           IconButton(
             icon: Icon(_isCompactView ? Icons.view_list : Icons.view_compact),
@@ -245,43 +272,47 @@ class _TournamentCompletionScreenState
         children: [
           // Main content
           SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(_isDesktopMode 
+              ? Constants.desktopModeCardPadding 
+              : Constants.mobileModeCardPadding),
             child: Column(
               children: [
                 // Trophy icon with animation
                 FadeTransition(
                   opacity: _confettiController,
-                  child: const Icon(
+                  child: Icon(
                     Icons.emoji_events,
-                    size: 80,
+                    size: 80 * (_isDesktopMode ? Constants.desktopModeScaleFactor : 1.0),
                     color: Colors.amber,
                   ),
                 ),
-                const SizedBox(height: 8),
-                const Text(
+                SizedBox(height: 8 * (_isDesktopMode ? Constants.desktopModeScaleFactor : 1.0)),
+                Text(
                   '🎉 Tillykke! 🎉',
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: 24 * (_isDesktopMode ? Constants.desktopModeFontScale : 1.0),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24 * (_isDesktopMode ? Constants.desktopModeScaleFactor : 1.0)),
 
                 // Podium (Top 3)
                 _buildPodium(),
-                const SizedBox(height: 32),
+                SizedBox(height: 32 * (_isDesktopMode ? Constants.desktopModeScaleFactor : 1.0)),
 
                 // Tournament Statistics
                 Card(
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.all(_isDesktopMode 
+                      ? Constants.desktopModeCardPadding 
+                      : Constants.mobileModeCardPadding),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Turnerings Statistik',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: 18 * (_isDesktopMode ? Constants.desktopModeFontScale : 1.0),
                             fontWeight: FontWeight.bold,
                           ),
                         ),

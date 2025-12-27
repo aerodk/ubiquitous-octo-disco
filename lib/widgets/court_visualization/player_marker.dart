@@ -1,26 +1,32 @@
 import 'package:flutter/material.dart';
 import '../../models/player.dart';
 import '../../utils/colors.dart';
+import '../../utils/constants.dart';
 
 /// A visual marker for a player with person icon and name
 /// F-021: Player Marker Component
 class PlayerMarker extends StatelessWidget {
   final Player player;
   final VoidCallback? onLongPress;
+  final bool isDesktopMode;
 
   const PlayerMarker({
     super.key,
     required this.player,
     this.onLongPress,
+    this.isDesktopMode = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final double fontScale = isDesktopMode ? Constants.desktopModeFontScale : 1.0;
+    final double sizeScale = isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
+    
     final Widget marker = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: 12 * sizeScale, vertical: 4 * sizeScale),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20 * sizeScale),
         border: Border.all(color: AppColors.playerBorder, width: 1.5),
         boxShadow: [
           BoxShadow(
@@ -36,16 +42,16 @@ class PlayerMarker extends StatelessWidget {
           // Person icon
           Icon(
             Icons.person,
-            size: 20,
+            size: 20 * sizeScale,
             color: AppColors.playerIcon,
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8 * sizeScale),
           // Player name
           Flexible(
             child: Text(
               player.name,
-              style: const TextStyle(
-                fontSize: 16,
+              style: TextStyle(
+                fontSize: 16 * fontScale,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textDark,
               ),

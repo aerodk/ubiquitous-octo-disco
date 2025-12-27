@@ -5,6 +5,7 @@ import '../models/tournament.dart';
 import '../models/court.dart';
 import '../services/persistence_service.dart';
 import '../services/standings_service.dart';
+import '../services/display_mode_service.dart';
 import '../widgets/match_card.dart';
 import '../widgets/court_visualization/bench_section.dart';
 import '../widgets/save_tournament_dialog.dart';
@@ -36,6 +37,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   final TournamentService _tournamentService = TournamentService();
   final StandingsService _standingsService = StandingsService();
   final FirebaseService _firebaseService = FirebaseService();
+  final DisplayModeService _displayModeService = DisplayModeService();
   late Tournament _tournament;
   
   // Track cloud storage codes
@@ -44,6 +46,9 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   
   // Track players who were newly moved to pause after court adjustment
   Set<String> _newlyPausedPlayerIds = {};
+  
+  // Display mode (mobile/desktop)
+  bool _isDesktopMode = false;
 
   @override
   void initState() {
@@ -51,6 +56,21 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     _tournament = widget.tournament;
     _cloudCode = widget.cloudCode;
     _cloudPasscode = widget.cloudPasscode;
+    _loadDisplayMode();
+  }
+
+  Future<void> _loadDisplayMode() async {
+    final isDesktop = await _displayModeService.isDesktopMode();
+    setState(() {
+      _isDesktopMode = isDesktop;
+    });
+  }
+
+  Future<void> _toggleDisplayMode() async {
+    final newMode = await _displayModeService.toggleDisplayMode();
+    setState(() {
+      _isDesktopMode = newMode;
+    });
   }
 
   /// Sync the current tournament to cloud if codes are known
@@ -815,6 +835,11 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
               : Theme.of(context).colorScheme.inversePrimary,
         actions: [
           IconButton(
+            icon: Icon(_isDesktopMode ? Icons.desktop_windows : Icons.phone_android),
+            tooltip: _isDesktopMode ? 'Skift til mobil visning' : 'Skift til desktop visning',
+            onPressed: _toggleDisplayMode,
+          ),
+          IconButton(
             icon: const Icon(Icons.cloud_upload),
             onPressed: _saveToCloud,
             tooltip: _cloudCode != null ? 'Opdater Cloud ($_cloudCode)' : 'Gem i Cloud',
@@ -850,18 +875,29 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   // Determine number of columns based on screen width
+                  // For desktop mode, force to behave like a larger screen
+                  final effectiveWidth = _isDesktopMode 
+                    ? constraints.maxWidth * Constants.desktopModeScaleFactor
+                    : constraints.maxWidth;
+                  
                   final int crossAxisCount;
-                  if (constraints.maxWidth >= 1200) {
+                  if (effectiveWidth >= 1200) {
                     crossAxisCount = 3; // 3 columns on extra large screens
-                  } else if (constraints.maxWidth >= 800) {
+                  } else if (effectiveWidth >= 800) {
                     crossAxisCount = 2; // 2 columns on large screens
                   } else {
                     crossAxisCount = 1; // 1 column on small screens
                   }
+                  
+                  final double cardPadding = _isDesktopMode 
+                    ? Constants.desktopModeCardPadding 
+                    : Constants.mobileModeCardPadding;
+                  final double cardSpacing = _isDesktopMode ? 24 : 16;
+                  final double cardHeight = _isDesktopMode ? 400 : 300;
 
                   return SingleChildScrollView(
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(cardPadding),
                       child: Column(
                         children: [
                       // Display matches in a responsive grid
@@ -871,10 +907,10 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                           physics: const NeverScrollableScrollPhysics(),
                           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: crossAxisCount,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
+                            crossAxisSpacing: cardSpacing,
+                            mainAxisSpacing: cardSpacing,
                             // Ensure enough vertical space for match content with scores
-                            mainAxisExtent: 300,
+                            mainAxisExtent: cardHeight,
                           ),
                           itemCount: _currentRound.matches.length,
                           itemBuilder: (context, index) {
@@ -883,6 +919,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                               key: ValueKey(match.id),
                               match: match,
                               maxPoints: _tournament.settings.pointsPerMatch,
+                              isDesktopMode: _isDesktopMode,
                               onScoreChanged: () async {
                                 setState(() {});
                                 // Save tournament immediately after score change

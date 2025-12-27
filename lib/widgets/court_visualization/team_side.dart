@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/match.dart';
 import '../../models/player.dart';
 import '../../utils/colors.dart';
+import '../../utils/constants.dart';
 import 'player_marker.dart';
 import 'score_display.dart';
 
@@ -13,6 +14,7 @@ class TeamSide extends StatelessWidget {
   final int? score;
   final Function(Player)? onPlayerLongPress;
   final VoidCallback? onScoreTap;
+  final bool isDesktopMode;
 
   const TeamSide({
     super.key,
@@ -21,10 +23,14 @@ class TeamSide extends StatelessWidget {
     this.score,
     this.onPlayerLongPress,
     this.onScoreTap,
+    this.isDesktopMode = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final double fontScale = isDesktopMode ? Constants.desktopModeFontScale : 1.0;
+    final double sizeScale = isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
+    
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -32,33 +38,36 @@ class TeamSide extends StatelessWidget {
         // Team label
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 14,
+          style: TextStyle(
+            fontSize: 14 * fontScale,
             fontWeight: FontWeight.w600,
             color: AppColors.teamLabel,
             letterSpacing: 1.2,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8 * sizeScale),
         // Player 1
         PlayerMarker(
           player: team.player1,
+          isDesktopMode: isDesktopMode,
           onLongPress: onPlayerLongPress != null
               ? () => onPlayerLongPress!(team.player1)
               : null,
         ),
-        const SizedBox(height: 6),
+        SizedBox(height: 6 * sizeScale),
         // Player 2
         PlayerMarker(
           player: team.player2,
+          isDesktopMode: isDesktopMode,
           onLongPress: onPlayerLongPress != null
               ? () => onPlayerLongPress!(team.player2)
               : null,
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8 * sizeScale),
         // Score display
         ScoreDisplay(
           score: score,
+          isDesktopMode: isDesktopMode,
           onTap: onScoreTap,
         ),
       ],
