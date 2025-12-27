@@ -468,8 +468,11 @@ class _TournamentCompletionScreenState
 
     // Make podium significantly larger
     final screenWidth = MediaQuery.of(context).size.width;
-    // Increase scale factor for larger podiums
-    final scaleFactor = screenWidth > 600 ? 2.5 : 1.8;
+    // Increase scale factor for larger podiums or desktop mode
+    final baseScaleFactor = screenWidth > 600 ? 2.5 : 1.8;
+    final scaleFactor = _isDesktopMode 
+      ? baseScaleFactor * Constants.desktopModeScaleFactor 
+      : baseScaleFactor;
     // Leave extra headroom for medal/name so columns do not overflow the bottom
     final firstPlaceHeight = 180.0 * scaleFactor;
     final podiumHeight = firstPlaceHeight + (120.0 * scaleFactor); // More vertical space
@@ -496,15 +499,21 @@ class _TournamentCompletionScreenState
             ],
           ),
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: 24 * (_isDesktopMode ? Constants.desktopModeScaleFactor : 1.0)),
         // Show All button for remaining positions
         if (_standings.length > 3 && !_showAllPositions)
           ElevatedButton.icon(
             onPressed: _revealAllPositions,
-            icon: const Icon(Icons.visibility),
-            label: const Text('Vis Alle Placeringer'),
+            icon: Icon(Icons.visibility, size: 24 * (_isDesktopMode ? Constants.desktopModeFontScale : 1.0)),
+            label: Text(
+              'Vis Alle Placeringer',
+              style: TextStyle(fontSize: 16 * (_isDesktopMode ? Constants.desktopModeFontScale : 1.0)),
+            ),
             style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: EdgeInsets.symmetric(
+                horizontal: 24 * (_isDesktopMode ? Constants.desktopModeScaleFactor : 1.0),
+                vertical: 12 * (_isDesktopMode ? Constants.desktopModeScaleFactor : 1.0),
+              ),
             ),
           ),
       ],
@@ -736,15 +745,24 @@ class _TournamentCompletionScreenState
   }
 
   Widget _buildStatRow(String label, String value) {
+    final double fontScale = _isDesktopMode ? Constants.desktopModeFontScale : 1.0;
+    final double sizeScale = _isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
+    
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: EdgeInsets.symmetric(vertical: 4 * sizeScale),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label),
+          Text(
+            label,
+            style: TextStyle(fontSize: 14 * fontScale),
+          ),
           Text(
             value,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14 * fontScale,
+            ),
           ),
         ],
       ),
@@ -767,6 +785,8 @@ class _TournamentCompletionScreenState
   Widget _buildLeaderboardTile(PlayerStanding s) {
     // All positions are hidden until revealed (including top 3)
     final isRevealed = _showAllPositions || _revealedPositions.contains(s.rank);
+    final double fontScale = _isDesktopMode ? Constants.desktopModeFontScale : 1.0;
+    final double sizeScale = _isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
     
     return InkWell(
       onTap: isRevealed ? null : () => _revealLeaderboardPosition(s.rank),
@@ -775,17 +795,19 @@ class _TournamentCompletionScreenState
         duration: const Duration(milliseconds: 300),
         decoration: BoxDecoration(
           color: isRevealed ? null : Colors.grey[200],
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(4 * sizeScale),
         ),
         child: ListTile(
           dense: true,
           leading: CircleAvatar(
+            radius: 20 * sizeScale,
             backgroundColor: isRevealed ? _getRankColor(s.rank) : Colors.grey,
             child: Text(
               isRevealed ? '${s.rank}' : '?',
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
+                fontSize: 14 * fontScale,
               ),
             ),
           ),
@@ -793,6 +815,7 @@ class _TournamentCompletionScreenState
             isRevealed ? s.player.name : '???',
             style: TextStyle(
               color: isRevealed ? Colors.black : Colors.grey[600],
+              fontSize: 16 * fontScale,
             ),
           ),
           subtitle: Text(
@@ -802,12 +825,13 @@ class _TournamentCompletionScreenState
             style: TextStyle(
               color: isRevealed ? null : Colors.grey[500],
               fontStyle: isRevealed ? null : FontStyle.italic,
+              fontSize: 12 * fontScale,
             ),
           ),
           trailing: Text(
             isRevealed ? '${s.totalPoints}' : '?',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 18 * fontScale,
               fontWeight: FontWeight.bold,
               color: isRevealed ? Colors.black : Colors.grey[600],
             ),
@@ -833,6 +857,10 @@ class _TournamentCompletionScreenState
     final Color? cardColor = _getCardColor(standing.rank);
     final IconData? medalIcon = _getMedalIcon(standing.rank);
     
+    final double fontScale = _isDesktopMode ? Constants.desktopModeFontScale : 1.0;
+    final double sizeScale = _isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
+    final double cardPadding = _isDesktopMode ? Constants.desktopModeCardPadding : Constants.mobileModeCardPadding;
+    
     return GestureDetector(
       onTap: isRevealed ? null : () => _revealLeaderboardPosition(standing.rank),
       onLongPress: isRevealed ? () => _showGameHistoryDialog(context, standing) : null,
@@ -840,14 +868,14 @@ class _TournamentCompletionScreenState
         duration: const Duration(milliseconds: 300),
         decoration: BoxDecoration(
           color: isRevealed ? null : Colors.grey[200],
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(4 * sizeScale),
         ),
         child: Card(
-          margin: const EdgeInsets.only(bottom: 12),
+          margin: EdgeInsets.only(bottom: 12 * sizeScale),
           elevation: isTop3 ? 4 : 2,
           color: isRevealed ? cardColor : Colors.grey[200],
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(cardPadding),
             child: isRevealed 
               ? Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -857,8 +885,8 @@ class _TournamentCompletionScreenState
                       children: [
                         // Rank badge
                         Container(
-                          width: 40,
-                          height: 40,
+                          width: 40 * sizeScale,
+                          height: 40 * sizeScale,
                           decoration: BoxDecoration(
                             color: isTop3
                                 ? Colors.white.withOpacity(0.3)
@@ -869,29 +897,29 @@ class _TournamentCompletionScreenState
                             child: Text(
                               '#${standing.rank}',
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: 16 * fontScale,
                                 fontWeight: FontWeight.bold,
                                 color: isTop3 ? Colors.white : Colors.black87,
                               ),
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: 12 * sizeScale),
                         // Medal icon for top 3
                         if (medalIcon != null) ...[
                           Icon(
                             medalIcon,
-                            size: 32,
+                            size: 32 * sizeScale,
                             color: _getMedalColor(standing.rank),
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12 * sizeScale),
                         ],
                         // Player name
                         Expanded(
                           child: Text(
                             standing.player.name,
                             style: TextStyle(
-                              fontSize: 20,
+                              fontSize: 20 * fontScale,
                               fontWeight: FontWeight.bold,
                               color: isTop3 ? Colors.white : Colors.black87,
                             ),
@@ -899,20 +927,22 @@ class _TournamentCompletionScreenState
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16 * sizeScale),
                     // Statistics Grid
                     _buildStatisticsGrid(context, standing, isTop3),
                   ],
                 )
               : ListTile(
                   dense: true,
-                  leading: const CircleAvatar(
+                  leading: CircleAvatar(
+                    radius: 20 * sizeScale,
                     backgroundColor: Colors.grey,
                     child: Text(
                       '?',
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
+                        fontSize: 14 * fontScale,
                       ),
                     ),
                   ),
@@ -920,6 +950,7 @@ class _TournamentCompletionScreenState
                     '???',
                     style: TextStyle(
                       color: Colors.grey[600],
+                      fontSize: 16 * fontScale,
                     ),
                   ),
                   subtitle: Text(
@@ -927,12 +958,13 @@ class _TournamentCompletionScreenState
                     style: TextStyle(
                       color: Colors.grey[500],
                       fontStyle: FontStyle.italic,
+                      fontSize: 12 * fontScale,
                     ),
                   ),
                   trailing: Text(
                     '?',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 18 * fontScale,
                       fontWeight: FontWeight.bold,
                       color: Colors.grey[600],
                     ),
@@ -949,6 +981,7 @@ class _TournamentCompletionScreenState
       BuildContext context, PlayerStanding standing, bool isTop3) {
     final textColor = isTop3 ? Colors.white : Colors.black87;
     final subtitleColor = isTop3 ? Colors.white70 : Colors.grey[600];
+    final double sizeScale = _isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
 
     return Column(
       children: [
@@ -976,7 +1009,7 @@ class _TournamentCompletionScreenState
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12 * sizeScale),
         // Secondary stats row
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -1011,21 +1044,24 @@ class _TournamentCompletionScreenState
 
   Widget _buildStatItem(
       String label, String value, Color? textColor, Color? subtitleColor) {
+    final double fontScale = _isDesktopMode ? Constants.desktopModeFontScale : 1.0;
+    final double sizeScale = _isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
+    
     return Column(
       children: [
         Text(
           value,
           style: TextStyle(
-            fontSize: 24,
+            fontSize: 24 * fontScale,
             fontWeight: FontWeight.bold,
             color: textColor,
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: 4 * sizeScale),
         Text(
           label,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 12 * fontScale,
             color: subtitleColor,
           ),
           textAlign: TextAlign.center,
