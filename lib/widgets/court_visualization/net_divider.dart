@@ -1,27 +1,18 @@
 import 'package:flutter/material.dart';
 import '../../utils/colors.dart';
-import '../../utils/constants.dart';
 
 /// A vertical divider that resembles a net with optional VS badge
 /// F-022: Net Divider Component
 class NetDivider extends StatelessWidget {
-  final bool isDesktopMode;
-  
-  const NetDivider({
-    super.key,
-    this.isDesktopMode = false,
-  });
+  const NetDivider({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final double fontScale = isDesktopMode ? Constants.desktopModeFontScale : 1.0;
-    final double sizeScale = isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
-    
     return Column(
       children: [
         Expanded(
           child: Container(
-            width: 4 * sizeScale,
+            width: 4,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 begin: Alignment.topCenter,
@@ -32,24 +23,24 @@ class NetDivider extends StatelessWidget {
                   AppColors.netPrimary,
                 ],
               ),
-              borderRadius: BorderRadius.circular(2 * sizeScale),
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
         ),
         // VS label in middle
         Padding(
-          padding: EdgeInsets.symmetric(vertical: 8 * sizeScale),
+          padding: const EdgeInsets.symmetric(vertical: 8),
           child: Container(
-            padding: EdgeInsets.all(6 * sizeScale),
+            padding: const EdgeInsets.all(6),
             decoration: const BoxDecoration(
               color: AppColors.netAccent,
               shape: BoxShape.circle,
             ),
-            child: Text(
+            child: const Text(
               'VS',
               style: TextStyle(
                 color: AppColors.textLight,
-                fontSize: 10 * fontScale,
+                fontSize: 10,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -57,7 +48,7 @@ class NetDivider extends StatelessWidget {
         ),
         Expanded(
           child: Container(
-            width: 4 * sizeScale,
+            width: 4,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 begin: Alignment.topCenter,
@@ -68,7 +59,7 @@ class NetDivider extends StatelessWidget {
                   AppColors.netPrimary,
                 ],
               ),
-              borderRadius: BorderRadius.circular(2 * sizeScale),
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
         ),

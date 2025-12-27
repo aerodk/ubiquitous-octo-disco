@@ -3,9 +3,7 @@ import '../models/tournament.dart';
 import '../models/player.dart';
 import '../models/player_standing.dart';
 import '../services/standings_service.dart';
-import '../services/display_mode_service.dart';
 import '../widgets/export_dialog.dart';
-import '../utils/constants.dart';
 
 /// F-007: Live Leaderboard
 /// Displays live tournament standings with detailed player statistics.
@@ -31,25 +29,9 @@ class LeaderboardScreen extends StatefulWidget {
 class _LeaderboardScreenState extends State<LeaderboardScreen> {
   // Service is stateless and can be shared
   static final StandingsService _standingsService = StandingsService();
-  final DisplayModeService _displayModeService = DisplayModeService();
   
   // Toggle for compact/detailed view
   bool _isCompactView = true;
-  
-  // Display mode (mobile/desktop)
-  bool _isDesktopMode = false;
-
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  Future<void> _toggleDisplayMode() async {
-    final newMode = await _displayModeService.toggleDisplayMode();
-    setState(() {
-      _isDesktopMode = newMode;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,12 +43,6 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
         title: const Text('Leaderboard'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
-          // Display mode toggle (mobile/desktop)
-          IconButton(
-            icon: Icon(_isDesktopMode ? Icons.desktop_windows : Icons.phone_android),
-            tooltip: _isDesktopMode ? 'Skift til mobil visning' : 'Skift til desktop visning',
-            onPressed: _toggleDisplayMode,
-          ),
           // Toggle compact/detailed view
           if (hasMatches) ...[
             IconButton(
@@ -105,9 +81,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
               ),
             )
           : ListView.builder(
-              padding: EdgeInsets.all(_isDesktopMode 
-                ? Constants.desktopModeCardPadding 
-                : Constants.mobileModeCardPadding),
+              padding: const EdgeInsets.all(16),
               itemCount: standings.length,
               itemBuilder: (context, index) {
                 final standing = standings[index];
@@ -125,20 +99,15 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     final bool isTop3 = standing.rank <= 3 && standing.matchesPlayed > 0;
     final Color? cardColor = _getCardColor(standing.rank, standing.matchesPlayed);
     final IconData? medalIcon = _getMedalIcon(standing.rank, standing.matchesPlayed);
-    
-    // Scale factors for desktop mode
-    final double fontScale = _isDesktopMode ? Constants.desktopModeFontScale : 1.0;
-    final double sizeScale = _isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
-    final double cardPadding = _isDesktopMode ? Constants.desktopModeCardPadding : Constants.mobileModeCardPadding;
 
     return GestureDetector(
       onLongPress: () => _showGameHistoryDialog(context, standing),
       child: Card(
-        margin: EdgeInsets.only(bottom: 12 * sizeScale),
+        margin: const EdgeInsets.only(bottom: 12),
         elevation: isTop3 ? 4 : 2,
         color: cardColor,
         child: Padding(
-          padding: EdgeInsets.all(cardPadding),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -147,8 +116,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                 children: [
                   // Rank badge
                   Container(
-                    width: 40 * sizeScale,
-                    height: 40 * sizeScale,
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
                       color: isTop3
                           ? Colors.white.withOpacity(0.3)
@@ -159,29 +128,29 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                       child: Text(
                         '#${standing.rank}',
                         style: TextStyle(
-                          fontSize: 16 * fontScale,
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: isTop3 ? Colors.white : Colors.black87,
                         ),
                       ),
                     ),
                   ),
-                  SizedBox(width: 12 * sizeScale),
+                  const SizedBox(width: 12),
                   // Medal icon for top 3
                   if (medalIcon != null) ...[
                     Icon(
                       medalIcon,
-                      size: 32 * sizeScale,
+                      size: 32,
                       color: _getMedalColor(standing.rank),
                     ),
-                    SizedBox(width: 12 * sizeScale),
+                    const SizedBox(width: 12),
                   ],
                   // Player name
                   Expanded(
                     child: Text(
                       standing.player.name,
                       style: TextStyle(
-                        fontSize: 20 * fontScale,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: isTop3 ? Colors.white : Colors.black87,
                       ),
@@ -192,7 +161,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                     _buildPositionChangeIndicator(standing.rankChange!, isTop3),
                 ],
               ),
-              SizedBox(height: 16 * sizeScale),
+              const SizedBox(height: 16),
               // Statistics Grid
               _buildStatisticsGrid(context, standing, isTop3),
             ],
@@ -208,66 +177,60 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       BuildContext context, PlayerStanding standing) {
     final bool isTop3 = standing.rank <= 3 && standing.matchesPlayed > 0;
     final Color? cardColor = _getCardColor(standing.rank, standing.matchesPlayed);
-    
-    // Scale factors for desktop mode
-    final double fontScale = _isDesktopMode ? Constants.desktopModeFontScale : 1.0;
-    final double sizeScale = _isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
-    final double cardPaddingH = _isDesktopMode ? Constants.desktopModeCardPadding : 16.0;
-    final double cardPaddingV = _isDesktopMode ? Constants.desktopModeCardPadding * 0.5 : 12.0;
 
     return GestureDetector(
       onLongPress: () => _showGameHistoryDialog(context, standing),
       child: Card(
-        margin: EdgeInsets.only(bottom: 8 * sizeScale),
+        margin: const EdgeInsets.only(bottom: 8),
         elevation: isTop3 ? 3 : 1,
         color: cardColor,
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: cardPaddingH, vertical: cardPaddingV),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
               // Rank
               Text(
                 '${standing.rank}.',
                 style: TextStyle(
-                  fontSize: 18 * fontScale,
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: isTop3 ? Colors.white : Colors.black87,
                 ),
               ),
-              SizedBox(width: 12 * sizeScale),
+              const SizedBox(width: 12),
               // Player Name
               Expanded(
                 child: Text(
                   standing.player.name,
                   style: TextStyle(
-                    fontSize: 16 * fontScale,
+                    fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: isTop3 ? Colors.white : Colors.black87,
                   ),
                 ),
               ),
-              SizedBox(width: 12 * sizeScale),
+              const SizedBox(width: 12),
               // Win/Loss
               Text(
                 '${standing.wins}W/${standing.losses}L',
                 style: TextStyle(
-                  fontSize: 14 * fontScale,
+                  fontSize: 14,
                   color: isTop3 ? Colors.white70 : Colors.grey[700],
                 ),
               ),
-              SizedBox(width: 12 * sizeScale),
+              const SizedBox(width: 12),
               // Points
               Text(
                 '${standing.totalPoints} pt',
                 style: TextStyle(
-                  fontSize: 16 * fontScale,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: isTop3 ? Colors.white : Colors.black87,
                 ),
               ),
               // Position change indicator
               if (standing.rankChange != null) ...[
-                SizedBox(width: 8 * sizeScale),
+                const SizedBox(width: 8),
                 _buildPositionChangeIndicator(standing.rankChange!, isTop3),
               ],
             ],
@@ -425,7 +388,6 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       BuildContext context, PlayerStanding standing, bool isTop3) {
     final textColor = isTop3 ? Colors.white : Colors.black87;
     final subtitleColor = isTop3 ? Colors.white70 : Colors.grey[600];
-    final double sizeScale = _isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
 
     return Column(
       children: [
@@ -453,7 +415,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             ),
           ],
         ),
-        SizedBox(height: 12 * sizeScale),
+        const SizedBox(height: 12),
         // Secondary stats row
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -488,24 +450,21 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
 
   Widget _buildStatItem(
       String label, String value, Color? textColor, Color? subtitleColor) {
-    final double fontScale = _isDesktopMode ? Constants.desktopModeFontScale : 1.0;
-    final double sizeScale = _isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
-    
     return Column(
       children: [
         Text(
           value,
           style: TextStyle(
-            fontSize: 24 * fontScale,
+            fontSize: 24,
             fontWeight: FontWeight.bold,
             color: textColor,
           ),
         ),
-        SizedBox(height: 4 * sizeScale),
+        const SizedBox(height: 4),
         Text(
           label,
           style: TextStyle(
-            fontSize: 12 * fontScale,
+            fontSize: 12,
             color: subtitleColor,
           ),
           textAlign: TextAlign.center,
@@ -562,8 +521,6 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   Widget _buildPositionChangeIndicator(int change, bool isTop3) {
     final Color indicatorColor;
     final String prefix;
-    final double fontScale = _isDesktopMode ? Constants.desktopModeFontScale : 1.0;
-    final double sizeScale = _isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
     
     if (change > 0) {
       // Positive change = rank improvement (moved up)
@@ -580,10 +537,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     }
     
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8 * sizeScale, vertical: 4 * sizeScale),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: isTop3 ? Colors.white.withOpacity(0.2) : indicatorColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12 * sizeScale),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: indicatorColor,
           width: 1.5,
@@ -592,7 +549,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       child: Text(
         '$prefix$change',
         style: TextStyle(
-          fontSize: 14 * fontScale,
+          fontSize: 14,
           fontWeight: FontWeight.bold,
           color: isTop3 ? Colors.white : indicatorColor,
         ),
