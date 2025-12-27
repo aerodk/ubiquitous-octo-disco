@@ -96,20 +96,20 @@ When you switch to Desktop Mode:
 
 1. **Before Connecting**: Switch to Desktop Mode BEFORE connecting to the big screen
 2. **Test First**: Try both modes to see which looks better on your display
-3. **Keep Consistent**: Once you find your preferred mode, the app remembers it
+3. **Session-Based**: Toggle stays active during your current session
 4. **Portrait vs Landscape**: Desktop Mode works in both orientations
 
 ### 💡 Pro Tips
 
 1. **Multiple Displays**: The setting applies to all screens in the app
 2. **Quick Toggle**: You can switch modes anytime without losing data
-3. **Presentations**: Start in Desktop Mode for tournaments with spectators
+3. **Presentations**: Toggle to Desktop Mode at the start of presentation sessions
 4. **Personal Use**: Stay in Mobile Mode for handheld tournament management
 
 ### ⚠️ Things to Know
 
 1. **Not Automatic**: The app won't automatically switch modes when you connect to a big screen - you need to tap the icon
-2. **Persists**: Your choice is saved, so you might need to switch back to Mobile Mode after disconnecting
+2. **Resets on Restart**: App always starts in Mobile Mode - toggle to Desktop Mode when needed
 3. **All Screens**: The mode affects all main screens (Leaderboard, Round Display, Completion)
 4. **No Effect on Setup**: The setup screen (player/court registration) isn't affected by this setting
 

@@ -42,17 +42,6 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   @override
   void initState() {
     super.initState();
-    // Load display mode asynchronously after first frame
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadDisplayMode());
-  }
-
-  Future<void> _loadDisplayMode() async {
-    final isDesktop = await _displayModeService.isDesktopMode();
-    if (mounted) {
-      setState(() {
-        _isDesktopMode = isDesktop;
-      });
-    }
   }
 
   Future<void> _toggleDisplayMode() async {

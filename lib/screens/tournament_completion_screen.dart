@@ -70,7 +70,6 @@ class _TournamentCompletionScreenState
     // Persist final standings locally so completion view is saved
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _persistCompletion();
-      _loadDisplayMode();
     });
     
     // Setup medal animations for top 3
@@ -83,15 +82,6 @@ class _TournamentCompletionScreenState
         duration: const Duration(milliseconds: 1500),
         vsync: this,
       );
-    }
-  }
-  
-  Future<void> _loadDisplayMode() async {
-    final isDesktop = await _displayModeService.isDesktopMode();
-    if (mounted) {
-      setState(() {
-        _isDesktopMode = isDesktop;
-      });
     }
   }
 

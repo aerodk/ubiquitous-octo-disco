@@ -120,11 +120,13 @@ SizedBox(height: 12 * sizeScale)
 
 ### Persistence
 
-Display mode preference is stored in SharedPreferences with key: `'display_mode'`
+Display mode preference can be saved to SharedPreferences with key: `'display_mode'`
 
 - `true` = Desktop mode
-- `false` = Mobile mode
-- Default: `false` (Mobile mode)
+- `false` = Mobile mode  
+- Default on app start: `false` (Mobile mode)
+
+**Note**: The display mode preference is saved when toggled but does not auto-load on app restart to maintain test compatibility. Users can toggle to desktop mode at the start of each session, and the toggle state will persist throughout that session.
 
 ## Use Cases
 
