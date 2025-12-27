@@ -88,9 +88,11 @@ class _TournamentCompletionScreenState
   
   Future<void> _loadDisplayMode() async {
     final isDesktop = await _displayModeService.isDesktopMode();
-    setState(() {
-      _isDesktopMode = isDesktop;
-    });
+    if (mounted) {
+      setState(() {
+        _isDesktopMode = isDesktop;
+      });
+    }
   }
 
   Future<void> _toggleDisplayMode() async {

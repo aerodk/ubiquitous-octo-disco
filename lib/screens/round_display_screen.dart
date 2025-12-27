@@ -56,14 +56,17 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     _tournament = widget.tournament;
     _cloudCode = widget.cloudCode;
     _cloudPasscode = widget.cloudPasscode;
-    _loadDisplayMode();
+    // Load display mode asynchronously after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadDisplayMode());
   }
 
   Future<void> _loadDisplayMode() async {
     final isDesktop = await _displayModeService.isDesktopMode();
-    setState(() {
-      _isDesktopMode = isDesktop;
-    });
+    if (mounted) {
+      setState(() {
+        _isDesktopMode = isDesktop;
+      });
+    }
   }
 
   Future<void> _toggleDisplayMode() async {
