@@ -24,4 +24,14 @@ class Constants {
   static const String duplicateNameError = 'Spilleren findes allerede';
   static const String maxPlayersError = 'Maksimum 72 spillere tilladt';
   static const String minPlayersError = 'Minimum 4 spillere påkrævet';
+  
+  // Display mode constants (for manual desktop/mobile toggle)
+  static const double desktopModeScaleFactor = 1.5; // Scale UI elements by 50% for desktop mode
+  static const double desktopModeFontScale = 1.3; // Scale fonts by 30% for desktop mode
+  static const double desktopModeCardPadding = 24.0; // Increased padding for desktop
+  static const double mobileModeCardPadding = 16.0; // Standard mobile padding
+  
+  // Breakpoint for automatic responsive design (in logical pixels)
+  static const double tabletBreakpoint = 600.0;
+  static const double desktopBreakpoint = 900.0;
 }
