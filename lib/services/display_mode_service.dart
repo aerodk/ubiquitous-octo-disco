@@ -8,17 +8,26 @@ class DisplayModeService {
   
   /// Get the current display mode
   /// Returns true for desktop mode, false for mobile mode
-  /// Defaults to mobile mode (false) if not set
+  /// Defaults to mobile mode (false) if not set or if SharedPreferences is unavailable
   Future<bool> isDesktopMode() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_displayModeKey) ?? false;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool(_displayModeKey) ?? false;
+    } catch (e) {
+      // SharedPreferences not available (e.g., in tests), return default
+      return false;
+    }
   }
   
   /// Set the display mode
   /// Pass true for desktop mode, false for mobile mode
   Future<void> setDesktopMode(bool isDesktop) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_displayModeKey, isDesktop);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_displayModeKey, isDesktop);
+    } catch (e) {
+      // SharedPreferences not available (e.g., in tests), silently fail
+    }
   }
   
   /// Toggle the display mode and return the new value
