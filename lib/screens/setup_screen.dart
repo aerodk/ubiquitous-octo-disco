@@ -187,7 +187,7 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
   Future<void> _saveToCloud() async {
     // Validation: Minimum players
     if (_players.length < Constants.minPlayers) {
-      _showError('Du skal have mindst ${Constants.minPlayers} spillere for at gemme til cloud.');
+      _showError(Constants.minPlayersError);
       return;
     }
 
@@ -202,7 +202,7 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
 
     // Create tournament with empty rounds list
     final tournament = Tournament(
-      name: 'Padel Turnering',
+      name: Constants.defaultTournamentName,
       players: _players,
       courts: courts,
       rounds: [], // Empty rounds - tournament not started yet
@@ -373,7 +373,7 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
 
     // Create tournament
     final tournament = Tournament(
-      name: 'Padel Turnering',
+      name: Constants.defaultTournamentName,
       players: _players,
       courts: courts,
       rounds: [firstRound],

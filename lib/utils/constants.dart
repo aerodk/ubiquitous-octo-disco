@@ -15,6 +15,7 @@ class Constants {
 
   // Default names
   static String getDefaultCourtName(int index) => 'Bane ${index + 1}';
+  static const String defaultTournamentName = 'Padel Turnering';
 
   // Player standing constants
   static const int noLossesSentinel = 999; // Used to represent no losses in smallestLossMargin
