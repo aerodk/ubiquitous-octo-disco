@@ -79,7 +79,6 @@ class _AppInitializerState extends State<AppInitializer> {
   Future<void> _loadTournamentFromUrl(Map<String, dynamic> tournamentInfo) async {
     final code = tournamentInfo['code'] as String;
     final passcode = tournamentInfo['passcode'] as String?;
-    final isReadOnly = tournamentInfo['isReadOnly'] as bool;
 
     try {
       // Show loading indicator
