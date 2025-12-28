@@ -382,6 +382,118 @@ void main() {
       // R13 should sit out (lowest rank with fewest pauses)
       expect(round.playersOnBreak[0].id, '13');
     });
+
+    test('should prioritize players who have not been on break yet', () {
+      // Test scenario: R13 has been on break before, R12 has not
+      final players = List.generate(
+        13,
+        (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
+      );
+      
+      final standings = List.generate(
+        13,
+        (i) => PlayerStanding(
+          player: players[i],
+          totalPoints: 50 - i * 2,
+          wins: 4,
+          losses: 0,
+          matchesPlayed: 4,
+          biggestWinMargin: 10,
+          smallestLossMargin: 5,
+          headToHeadPoints: {},
+          rank: i + 1,
+          pauseCount: i == 12 ? 1 : 0, // R13 has been on break once, others have not
+        ),
+      );
+
+      final courts = [
+        Court(id: '1', name: 'Bane 1'),
+        Court(id: '2', name: 'Bane 2'),
+        Court(id: '3', name: 'Bane 3'),
+      ];
+
+      final round = service.generateFinalRound(courts, standings, 4);
+
+      expect(round.playersOnBreak.length, 1);
+      
+      // R12 should sit out (lowest rank who has not been on break yet)
+      // even though R13 is lower ranked, R13 has already been on break
+      expect(round.playersOnBreak[0].id, '12');
+    });
+
+    test('should select lowest ranked when all bottom players have been on break', () {
+      // Test scenario: All bottom half players have been on break
+      final players = List.generate(
+        13,
+        (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
+      );
+      
+      final standings = List.generate(
+        13,
+        (i) => PlayerStanding(
+          player: players[i],
+          totalPoints: 50 - i * 2,
+          wins: 4,
+          losses: 0,
+          matchesPlayed: 4,
+          biggestWinMargin: 10,
+          smallestLossMargin: 5,
+          headToHeadPoints: {},
+          rank: i + 1,
+          pauseCount: i >= 6 ? 1 : 0, // Bottom half (R7-R13) have all been on break
+        ),
+      );
+
+      final courts = [
+        Court(id: '1', name: 'Bane 1'),
+        Court(id: '2', name: 'Bane 2'),
+        Court(id: '3', name: 'Bane 3'),
+      ];
+
+      final round = service.generateFinalRound(courts, standings, 4);
+
+      expect(round.playersOnBreak.length, 1);
+      
+      // R13 should sit out (lowest rank, since all bottom half have been on break)
+      expect(round.playersOnBreak[0].id, '13');
+    });
+
+    test('should skip multiple players who have been on break', () {
+      // Test scenario: R13 and R12 have been on break, R11 has not
+      final players = List.generate(
+        13,
+        (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
+      );
+      
+      final standings = List.generate(
+        13,
+        (i) => PlayerStanding(
+          player: players[i],
+          totalPoints: 50 - i * 2,
+          wins: 4,
+          losses: 0,
+          matchesPlayed: 4,
+          biggestWinMargin: 10,
+          smallestLossMargin: 5,
+          headToHeadPoints: {},
+          rank: i + 1,
+          pauseCount: (i == 11 || i == 12) ? 1 : 0, // R12 and R13 have been on break
+        ),
+      );
+
+      final courts = [
+        Court(id: '1', name: 'Bane 1'),
+        Court(id: '2', name: 'Bane 2'),
+        Court(id: '3', name: 'Bane 3'),
+      ];
+
+      final round = service.generateFinalRound(courts, standings, 4);
+
+      expect(round.playersOnBreak.length, 1);
+      
+      // R11 should sit out (lowest rank who has not been on break yet)
+      expect(round.playersOnBreak[0].id, '11');
+    });
   });
 
   group('TournamentService - Pairing Strategies (V5.0)', () {
