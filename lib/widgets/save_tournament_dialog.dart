@@ -89,7 +89,8 @@ class _SaveTournamentDialogState extends State<SaveTournamentDialog> {
         await _firebaseService.updateTournament(
           tournamentCode: code,
           passcode: passcode,
-          tournament: widget.tournament.copyWith(name: name),
+          // Update tournament with new name
+          tournament: widget.tournament.copyWith(name: name)
         );
       } else {
         // Generate new codes
@@ -316,6 +317,7 @@ class _SaveTournamentDialogState extends State<SaveTournamentDialog> {
             Navigator.pop(context, {
               'code': _tournamentCode,
               'passcode': _passcode,
+              'name': _nameController.text.trim(),
             });
           },
           style: ElevatedButton.styleFrom(

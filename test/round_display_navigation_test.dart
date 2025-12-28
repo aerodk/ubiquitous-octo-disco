@@ -6,7 +6,6 @@ import 'package:star_cano/models/match.dart';
 import 'package:star_cano/models/round.dart';
 import 'package:star_cano/models/tournament.dart';
 import 'package:star_cano/screens/round_display_screen.dart';
-
 void main() {
   group('RoundDisplayScreen Navigation Tests', () {
     late List<Player> players;
@@ -70,7 +69,7 @@ void main() {
     testWidgets('should display round number correctly', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: RoundDisplayScreen(tournament: tournamentWithOneRound),
+          home: RoundDisplayScreen(tournament: tournamentWithOneRound, enableCloud: false),
         ),
       );
 
@@ -80,17 +79,17 @@ void main() {
     testWidgets('should display next round button', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: RoundDisplayScreen(tournament: tournamentWithOneRound),
+          home: RoundDisplayScreen(tournament: tournamentWithOneRound, enableCloud: false),
         ),
       );
 
-      expect(find.text('Generer Næste Runde (2)'), findsOneWidget);
+      expect(find.text('Næste Runde (2)'), findsOneWidget);
     });
 
     testWidgets('should show second round when tournament has two rounds', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: RoundDisplayScreen(tournament: tournamentWithTwoRounds),
+          home: RoundDisplayScreen(tournament: tournamentWithTwoRounds, enableCloud: false),
         ),
       );
 
@@ -100,7 +99,7 @@ void main() {
     testWidgets('should allow back navigation when no scores entered', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: RoundDisplayScreen(tournament: tournamentWithTwoRounds),
+          home: RoundDisplayScreen(tournament: tournamentWithTwoRounds, enableCloud: false),
         ),
       );
 
@@ -121,7 +120,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: RoundDisplayScreen(tournament: tournamentWithTwoRounds),
+          home: RoundDisplayScreen(tournament: tournamentWithTwoRounds, enableCloud: false),
         ),
       );
 
@@ -138,7 +137,7 @@ void main() {
     testWidgets('should not show back button on first round', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: RoundDisplayScreen(tournament: tournamentWithOneRound),
+          home: RoundDisplayScreen(tournament: tournamentWithOneRound, enableCloud: false),
         ),
       );
 
@@ -150,7 +149,7 @@ void main() {
     testWidgets('back button should be enabled when on second round with no scores', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: RoundDisplayScreen(tournament: tournamentWithTwoRounds),
+          home: RoundDisplayScreen(tournament: tournamentWithTwoRounds, enableCloud: false),
         ),
       );
 
@@ -171,7 +170,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: RoundDisplayScreen(tournament: tournamentWithTwoRounds),
+          home: RoundDisplayScreen(tournament: tournamentWithTwoRounds, enableCloud: false),
         ),
       );
 
@@ -222,7 +221,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: RoundDisplayScreen(tournament: freshTournament),
+          home: RoundDisplayScreen(tournament: freshTournament, enableCloud: false),
         ),
       );
 
@@ -239,12 +238,12 @@ void main() {
     testWidgets('should show warning when trying to generate next round without all scores', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: RoundDisplayScreen(tournament: tournamentWithOneRound),
+          home: RoundDisplayScreen(tournament: tournamentWithOneRound, enableCloud: false),
         ),
       );
 
       // Tap the next round button
-      await tester.tap(find.text('Generer Næste Runde (2)'));
+      await tester.tap(find.text('Næste Runde (2)'));
       await tester.pump();
 
       // Should show a snackbar warning
@@ -288,13 +287,13 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: RoundDisplayScreen(tournament: tournamentWith3CompletedRounds),
+          home: RoundDisplayScreen(tournament: tournamentWith3CompletedRounds, enableCloud: false),
         ),
       );
 
       // Both buttons should be visible
-      expect(find.text('Start Sidste Runde'), findsOneWidget);
-      expect(find.text('Generer Næste Runde (4)'), findsOneWidget);
+      expect(find.text('Sidste Runde'), findsOneWidget);
+      expect(find.text('Næste Runde (4)'), findsOneWidget);
     });
 
     testWidgets('should only show next round button before 3 rounds are completed', (WidgetTester tester) async {
@@ -326,13 +325,13 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: RoundDisplayScreen(tournament: tournamentWith2CompletedRounds),
+          home: RoundDisplayScreen(tournament: tournamentWith2CompletedRounds, enableCloud: false),
         ),
       );
 
       // Only next round button should be visible
-      expect(find.text('Generer Næste Runde (3)'), findsOneWidget);
-      expect(find.text('Start Sidste Runde'), findsNothing);
+      expect(find.text('Næste Runde (3)'), findsOneWidget);
+      expect(find.text('Sidste Runde'), findsNothing);
     });
 
     testWidgets('should show "Vis Resultat" button when final round is completed', (WidgetTester tester) async {
@@ -366,14 +365,14 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: RoundDisplayScreen(tournament: tournamentWithCompletedFinalRound),
+          home: RoundDisplayScreen(tournament: tournamentWithCompletedFinalRound, enableCloud: false),
         ),
       );
 
       // Should show "Vis Resultat" button
       expect(find.text('Vis Resultat'), findsOneWidget);
       // Should NOT show "Generer Næste Runde" button (in final round)
-      expect(find.textContaining('Generer Næste Runde'), findsNothing);
+      expect(find.textContaining('Næste Runde'), findsNothing);
     });
 
     testWidgets('should not show "Vis Resultat" button when final round is not completed', (WidgetTester tester) async {
@@ -413,14 +412,14 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: RoundDisplayScreen(tournament: tournamentWithIncompleteFinalRound),
+          home: RoundDisplayScreen(tournament: tournamentWithIncompleteFinalRound, enableCloud: false),
         ),
       );
 
       // Should NOT show "Vis Resultat" button (final round not completed)
       expect(find.text('Vis Resultat'), findsNothing);
       // Should NOT show "Generer Næste Runde" button (in final round)
-      expect(find.textContaining('Generer Næste Runde'), findsNothing);
+      expect(find.textContaining('Næste Runde'), findsNothing);
     });
   });
 }

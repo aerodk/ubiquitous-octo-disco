@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/match.dart';
 import '../models/player.dart';
 import '../utils/colors.dart';
+import '../utils/constants.dart';
 import 'court_visualization/team_side.dart';
 import 'court_visualization/net_divider.dart';
 import 'matchup_reasoning_dialog.dart';
@@ -13,6 +14,8 @@ class MatchCard extends StatefulWidget {
   final VoidCallback? onScoreChanged;
   final int maxPoints;
   final Function(Player)? onPlayerForceToPause;
+  final bool isDesktopMode;
+  final double zoomFactor;
 
   const MatchCard({
     super.key,
@@ -20,6 +23,8 @@ class MatchCard extends StatefulWidget {
     this.onScoreChanged,
     this.maxPoints = 24,
     this.onPlayerForceToPause,
+    this.isDesktopMode = false,
+    this.zoomFactor = 1.0,
   });
 
   @override
@@ -60,12 +65,18 @@ class _MatchCardState extends State<MatchCard> {
 
   @override
   Widget build(BuildContext context) {
+    final double baseFontScale = widget.isDesktopMode ? Constants.desktopModeFontScale : 1.0;
+    final double baseSizeScale = widget.isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
+    final double fontScale = baseFontScale * widget.zoomFactor;
+    final double sizeScale = baseSizeScale * widget.zoomFactor;
+    final double cardPadding = (widget.isDesktopMode ? Constants.desktopModeCardPadding : Constants.mobileModeCardPadding) * widget.zoomFactor;
+    
     return Card(
       margin: EdgeInsets.zero,
       elevation: 6,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: AppColors.courtBorder, width: 3),
+        borderRadius: BorderRadius.circular(16 * sizeScale),
+        side: BorderSide(color: AppColors.courtBorder, width: 3 * sizeScale),
       ),
       child: IntrinsicHeight(
         child: Column(
@@ -73,31 +84,31 @@ class _MatchCardState extends State<MatchCard> {
           children: [
           // Header Section - Court Name & Actions
           Container(
-            padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
+            padding: EdgeInsets.all(cardPadding),
+            decoration: BoxDecoration(
               color: AppColors.courtHeader,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(13)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(13 * sizeScale)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.sports_tennis, color: AppColors.textLight, size: 24),
-                const SizedBox(width: 8),
+                Icon(Icons.sports_tennis, color: AppColors.textLight, size: 24 * sizeScale),
+                SizedBox(width: 8 * sizeScale),
                 Text(
                   widget.match.court.name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.textLight,
-                    fontSize: 20,
+                    fontSize: 20 * fontScale,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const Spacer(),
                 IconButton(
-                  icon: const Icon(Icons.edit, color: AppColors.textLight),
+                  icon: Icon(Icons.edit, color: AppColors.textLight, size: 24 * sizeScale),
                   onPressed: () => _showScoreInput(),
                   tooltip: 'Indtast score',
                 ),
                 IconButton(
-                  icon: const Icon(Icons.info_outline, color: AppColors.textLight),
+                  icon: Icon(Icons.info_outline, color: AppColors.textLight, size: 24 * sizeScale),
                   onPressed: _showMatchupReasoning,
                   tooltip: 'Vis kamp begrundelse',
                 ),
@@ -108,9 +119,9 @@ class _MatchCardState extends State<MatchCard> {
             // Court Body Layout - Three-Column Layout
             Flexible(
               child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
+                padding: EdgeInsets.all(20 * sizeScale),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
@@ -118,7 +129,7 @@ class _MatchCardState extends State<MatchCard> {
                       AppColors.courtBackgroundDark,
                     ],
                   ),
-                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(13)),
+                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(13 * sizeScale)),
                 ),
                 child: IntrinsicHeight(
                 child: Row(
@@ -131,6 +142,8 @@ class _MatchCardState extends State<MatchCard> {
                         team: widget.match.team1,
                         label: 'PAR 1',
                         score: widget.match.team1Score,
+                        isDesktopMode: widget.isDesktopMode,
+                        zoomFactor: widget.zoomFactor,
                         onPlayerLongPress: widget.onPlayerForceToPause != null
                             ? _showPlayerOptionsMenu
                             : null,
@@ -139,9 +152,12 @@ class _MatchCardState extends State<MatchCard> {
                     ),
                     
                     // Net (Center) - 20%
-                    const Expanded(
+                    Expanded(
                       flex: 2,
-                      child: NetDivider(),
+                      child: NetDivider(
+                        isDesktopMode: widget.isDesktopMode,
+                        zoomFactor: widget.zoomFactor,
+                      ),
                     ),
                     
                     // Par 2 (Right side) - 40%
@@ -151,6 +167,8 @@ class _MatchCardState extends State<MatchCard> {
                         team: widget.match.team2,
                         label: 'PAR 2',
                         score: widget.match.team2Score,
+                        isDesktopMode: widget.isDesktopMode,
+                        zoomFactor: widget.zoomFactor,
                         onPlayerLongPress: widget.onPlayerForceToPause != null
                             ? _showPlayerOptionsMenu
                             : null,

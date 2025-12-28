@@ -5,6 +5,7 @@ import '../models/tournament.dart';
 import '../models/court.dart';
 import '../services/persistence_service.dart';
 import '../services/standings_service.dart';
+import '../services/display_mode_service.dart';
 import '../widgets/match_card.dart';
 import '../widgets/court_visualization/bench_section.dart';
 import '../widgets/save_tournament_dialog.dart';
@@ -19,12 +20,14 @@ class RoundDisplayScreen extends StatefulWidget {
   final Tournament tournament;
   final String? cloudCode;
   final String? cloudPasscode;
+  final bool enableCloud;
 
   const RoundDisplayScreen({
     super.key,
     required this.tournament,
     this.cloudCode,
     this.cloudPasscode,
+    this.enableCloud = true,
   });
 
   @override
@@ -35,7 +38,8 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   final PersistenceService _persistenceService = PersistenceService();
   final TournamentService _tournamentService = TournamentService();
   final StandingsService _standingsService = StandingsService();
-  final FirebaseService _firebaseService = FirebaseService();
+  FirebaseService? _firebaseService;
+  final DisplayModeService _displayModeService = DisplayModeService();
   late Tournament _tournament;
   
   // Track cloud storage codes
@@ -44,6 +48,10 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   
   // Track players who were newly moved to pause after court adjustment
   Set<String> _newlyPausedPlayerIds = {};
+  
+  // Display mode (mobile/desktop)
+  bool _isDesktopMode = false;
+  double _zoomFactor = DisplayModeService.defaultZoomFactor;
 
   @override
   void initState() {
@@ -51,17 +59,48 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     _tournament = widget.tournament;
     _cloudCode = widget.cloudCode;
     _cloudPasscode = widget.cloudPasscode;
+    if (widget.enableCloud) {
+      _firebaseService = FirebaseService();
+    }
+    _loadDisplayPreferences();
+  }
+
+  Future<void> _loadDisplayPreferences() async {
+    final isDesktop = await _displayModeService.isDesktopMode();
+    final zoom = await _displayModeService.getZoomFactor();
+    if (!mounted) return;
+    setState(() {
+      _isDesktopMode = isDesktop;
+      _zoomFactor = zoom;
+    });
+  }
+
+  Future<void> _toggleDisplayMode() async {
+    final newMode = await _displayModeService.toggleDisplayMode();
+    setState(() {
+      _isDesktopMode = newMode;
+    });
+  }
+
+  Future<void> _adjustZoom(bool increase) async {
+    const double step = 0.1;
+    final target = _zoomFactor + (increase ? step : -step);
+    final clamped = await _displayModeService.setZoomFactor(target);
+    if (!mounted) return;
+    setState(() {
+      _zoomFactor = clamped;
+    });
   }
 
   /// Sync the current tournament to cloud if codes are known
   Future<void> _syncToCloudIfConfigured(Tournament tournament) async {
-    if (_cloudCode == null || _cloudPasscode == null) return;
+    if (_firebaseService == null || _cloudCode == null || _cloudPasscode == null) return;
 
-    final isAvailable = await _firebaseService.isFirebaseAvailable();
+    final isAvailable = await _firebaseService!.isFirebaseAvailable();
     if (!isAvailable) return;
 
     try {
-      await _firebaseService.updateTournament(
+      await _firebaseService!.updateTournament(
         tournamentCode: _cloudCode!,
         passcode: _cloudPasscode!,
         tournament: tournament,
@@ -156,6 +195,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   }
 
   Future<void> _saveToCloud() async {
+    if (_firebaseService == null) return;
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (context) => SaveTournamentDialog(
@@ -801,42 +841,105 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: _currentRound.isFinalRound
-              ? const Row(
-                  children: [
-                    Icon(Icons.emoji_events, color: Colors.amber),
-                    SizedBox(width: 8),
-                    Text('🏆 SIDSTE RUNDE'),
-                  ],
-                )
-              : Text('Runde ${_currentRound.roundNumber}'),
+          titleSpacing: 0,
+          title: Row(
+            children: [
+              Expanded(
+                child: _currentRound.isFinalRound
+                    ? const Row(
+                        children: [
+                          Icon(Icons.emoji_events, color: Colors.amber),
+                          SizedBox(width: 8),
+                          Text('🏆 SIDSTE RUNDE'),
+                        ],
+                      )
+                    : Text('Runde ${_currentRound.roundNumber}'),
+              ),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 8,
+                children: [
+                  if (_canStartFinalRound)
+                    ElevatedButton.icon(
+                      onPressed: _generateFinalRound,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber[600],
+                        foregroundColor: Colors.black,
+                        minimumSize: const Size(10, 36),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        elevation: 3,
+                      ),
+                      icon: const Icon(Icons.emoji_events, size: 18),
+                      label: const Text(
+                        'Sidste Runde',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  if (!_currentRound.isFinalRound)
+                    ElevatedButton(
+                      onPressed: _generateNextRound,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(10, 36),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        elevation: 3,
+                      ),
+                      child: Text(
+                        'Næste Runde (${_currentRound.roundNumber + 1})',
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
           backgroundColor: _currentRound.isFinalRound
               ? Colors.amber[700]
               : Theme.of(context).colorScheme.inversePrimary,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.cloud_upload),
-            onPressed: _saveToCloud,
-            tooltip: _cloudCode != null ? 'Opdater Cloud ($_cloudCode)' : 'Gem i Cloud',
-          ),
-          IconButton(
-            icon: const Icon(Icons.leaderboard),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => LeaderboardScreen(tournament: _tournament),
-                ),
-              );
-            },
-            tooltip: 'Vis stillinger',
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _resetTournament,
-            tooltip: 'Nulstil turnering',
-          ),
-        ],
+          actions: [
+            IconButton(
+              icon: Icon(_isDesktopMode ? Icons.desktop_windows : Icons.phone_android),
+              tooltip: _isDesktopMode ? 'Skift til mobil visning' : 'Skift til desktop visning',
+              onPressed: _toggleDisplayMode,
+            ),
+            IconButton(
+              icon: const Icon(Icons.zoom_out_map),
+              tooltip: 'Zoom ud',
+              onPressed: _zoomFactor > DisplayModeService.minZoomFactor + 0.01
+                  ? () => _adjustZoom(false)
+                  : null,
+            ),
+            IconButton(
+              icon: const Icon(Icons.zoom_in_map),
+              tooltip: 'Zoom ind',
+              onPressed: _zoomFactor < DisplayModeService.maxZoomFactor - 0.01
+                  ? () => _adjustZoom(true)
+                  : null,
+            ),
+            IconButton(
+              icon: const Icon(Icons.cloud_upload),
+              onPressed: widget.enableCloud ? _saveToCloud : null,
+              tooltip: _cloudCode != null ? 'Opdater Cloud ($_cloudCode)' : 'Gem i Cloud',
+            ),
+            IconButton(
+              icon: const Icon(Icons.leaderboard),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => LeaderboardScreen(tournament: _tournament),
+                  ),
+                );
+              },
+              tooltip: 'Vis stillinger',
+            ),
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _resetTournament,
+              tooltip: 'Nulstil turnering',
+            ),
+          ],
           leading: _tournament.rounds.length > 1
               ? IconButton(
                   icon: const Icon(Icons.arrow_back),
@@ -850,18 +953,28 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   // Determine number of columns based on screen width
+                  // For desktop mode, force to behave like a larger screen
+                  final double sizeScale = (_isDesktopMode ? Constants.desktopModeScaleFactor : 1.0) * _zoomFactor;
+                  final effectiveWidth = constraints.maxWidth * sizeScale;
+                  
                   final int crossAxisCount;
-                  if (constraints.maxWidth >= 1200) {
+                  if (effectiveWidth >= 1200) {
                     crossAxisCount = 3; // 3 columns on extra large screens
-                  } else if (constraints.maxWidth >= 800) {
+                  } else if (effectiveWidth >= 800) {
                     crossAxisCount = 2; // 2 columns on large screens
                   } else {
                     crossAxisCount = 1; // 1 column on small screens
                   }
+                  
+                  final double cardPadding = (_isDesktopMode 
+                    ? Constants.desktopModeCardPadding 
+                    : Constants.mobileModeCardPadding) * _zoomFactor;
+                  final double cardSpacing = (_isDesktopMode ? 24 : 16) * _zoomFactor;
+                  final double cardHeight = (_isDesktopMode ? 400 : 300) * _zoomFactor;
 
                   return SingleChildScrollView(
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(cardPadding),
                       child: Column(
                         children: [
                       // Display matches in a responsive grid
@@ -871,10 +984,10 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                           physics: const NeverScrollableScrollPhysics(),
                           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: crossAxisCount,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
+                            crossAxisSpacing: cardSpacing,
+                            mainAxisSpacing: cardSpacing,
                             // Ensure enough vertical space for match content with scores
-                            mainAxisExtent: 300,
+                            mainAxisExtent: cardHeight,
                           ),
                           itemCount: _currentRound.matches.length,
                           itemBuilder: (context, index) {
@@ -883,6 +996,8 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                               key: ValueKey(match.id),
                               match: match,
                               maxPoints: _tournament.settings.pointsPerMatch,
+                              isDesktopMode: _isDesktopMode,
+                              zoomFactor: _zoomFactor,
                               onScoreChanged: () async {
                                 setState(() {});
                                 // Save tournament immediately after score change
@@ -991,38 +1106,11 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
               ),
             ),
             
-            // Bottom buttons section
+            // Bottom buttons section (only show completion when final round is done)
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
-                  // Final round button (gold themed, shown when eligible)
-                  if (_canStartFinalRound)
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton.icon(
-                        onPressed: _generateFinalRound,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.amber[600],
-                          foregroundColor: Colors.black,
-                          elevation: 8,
-                        ),
-                        icon: const Icon(Icons.emoji_events, size: 28),
-                        label: const Text(
-                          'Start Sidste Runde',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  
-                  // Add spacing between buttons when both are shown
-                  if (_canStartFinalRound && !_currentRound.isFinalRound)
-                    const SizedBox(height: 12),
-                  
                   // Show result button when final round is completed
                   if (_currentRound.isFinalRound && _currentRound.isCompleted)
                     SizedBox(
@@ -1042,24 +1130,6 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
-                        ),
-                      ),
-                    ),
-                  
-                  // Regular next round button (shown when not in final round)
-                  if (!_currentRound.isFinalRound)
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: _generateNextRound,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: Text(
-                          'Generer Næste Runde (${_currentRound.roundNumber + 1})',
-                          style: const TextStyle(fontSize: 16),
                         ),
                       ),
                     ),
