@@ -55,7 +55,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: RoundDisplayScreen(tournament: tournament),
+          home: RoundDisplayScreen(tournament: tournament, enableCloud: false),
         ),
       );
       await tester.pumpAndSettle();
@@ -103,7 +103,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: RoundDisplayScreen(tournament: tournament),
+          home: RoundDisplayScreen(tournament: tournament, enableCloud: false),
         ),
       );
       await tester.pumpAndSettle();
@@ -163,7 +163,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: RoundDisplayScreen(tournament: tournament),
+          home: RoundDisplayScreen(tournament: tournament, enableCloud: false),
         ),
       );
       await tester.pumpAndSettle();
@@ -200,7 +200,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: RoundDisplayScreen(tournament: tournament),
+          home: RoundDisplayScreen(tournament: tournament, enableCloud: false),
         ),
       );
       await tester.pumpAndSettle();
