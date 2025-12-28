@@ -89,7 +89,12 @@ class _SaveTournamentDialogState extends State<SaveTournamentDialog> {
         await _firebaseService.updateTournament(
           tournamentCode: code,
           passcode: passcode,
-          tournament: widget.tournament.copyWith(name: name),
+          /// Creates a copy of the tournament with an updated name field.
+          /// This is necessary because the tournament object is immutable, so we must
+          /// create a new instance with the modified name rather than mutating the
+          /// existing object directly. This follows the immutability pattern common
+          /// in Flutter and Dart applications.
+          tournament: widget.tournament.copyWith(name: name)
         );
       } else {
         // Generate new codes
@@ -316,6 +321,7 @@ class _SaveTournamentDialogState extends State<SaveTournamentDialog> {
             Navigator.pop(context, {
               'code': _tournamentCode,
               'passcode': _passcode,
+              'name': _nameController.text.trim(),
             });
           },
           style: ElevatedButton.styleFrom(

@@ -154,6 +154,13 @@ class _TournamentCompletionScreenState
         _cloudCode = result['code'] as String;
         _cloudPasscode = result['passcode'] as String;
       });
+
+      // If tournament name was changed, update locally and save
+      final newName = result['name'] as String?;
+      if (newName != null && newName != widget.tournament.name) {
+        final updatedTournament = widget.tournament.copyWith(name: newName);
+        await _persistenceService.saveTournament(updatedTournament);
+      }
     }
   }
 

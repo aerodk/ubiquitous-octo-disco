@@ -144,6 +144,7 @@ class FirebaseService {
 
       final data = {
         'lastModified': FieldValue.serverTimestamp(),
+        'name': tournament.name,
         'tournamentData': tournament.toJson(),
       };
 
