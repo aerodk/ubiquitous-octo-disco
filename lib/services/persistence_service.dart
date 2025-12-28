@@ -81,9 +81,9 @@ class PersistenceService {
     await prefs.setInt(_setupCourtsKey, courtCount);
     
     // Save court custom names if provided
-    if (courtCustomNames != null && courtCustomNames.isNotEmpty) {
+    if (courtCustomNames?.isNotEmpty == true) {
       // Convert Map<int, String> to Map<String, String> for JSON encoding
-      final courtNamesStringKeys = courtCustomNames.map(
+      final courtNamesStringKeys = courtCustomNames!.map(
         (key, value) => MapEntry(key.toString(), value),
       );
       await prefs.setString(_setupCourtNamesKey, jsonEncode(courtNamesStringKeys));
