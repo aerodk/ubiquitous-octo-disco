@@ -10,6 +10,7 @@ import '../services/persistence_service.dart';
 import '../utils/constants.dart';
 import '../widgets/tournament_settings_widget.dart';
 import '../widgets/load_tournament_dialog.dart';
+import '../widgets/save_tournament_dialog.dart';
 import 'round_display_screen.dart';
 import 'tournament_completion_screen.dart';
 
@@ -180,6 +181,54 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
     }
   }
 
+  /// Save setup state to Firebase Cloud
+  /// Creates a tournament with the current players, courts, and settings
+  /// but without any rounds (empty rounds list)
+  Future<void> _saveToCloud() async {
+    // Validation: Minimum players
+    if (_players.length < Constants.minPlayers) {
+      _showError(Constants.minPlayersError);
+      return;
+    }
+
+    // Generate courts using custom names if available
+    final courts = List.generate(
+      _courtCount,
+      (index) => Court(
+        id: (index + 1).toString(),
+        name: _courtCustomNames[index] ?? Constants.getDefaultCourtName(index),
+      ),
+    );
+
+    // Create tournament with empty rounds list
+    final tournament = Tournament(
+      name: Constants.defaultTournamentName,
+      players: _players,
+      courts: courts,
+      rounds: [], // Empty rounds - tournament not started yet
+      settings: _tournamentSettings,
+    );
+
+    // Show save dialog
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => SaveTournamentDialog(
+        tournament: tournament,
+      ),
+    );
+
+    if (result != null && mounted) {
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Turnering gemt! Kode: ${result['code']}'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
   void _addPlayer() {
     final name = _playerNameController.text.trim();
 
@@ -324,7 +373,7 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
 
     // Create tournament
     final tournament = Tournament(
-      name: 'Padel Turnering',
+      name: Constants.defaultTournamentName,
       players: _players,
       courts: courts,
       rounds: [firstRound],
@@ -370,6 +419,12 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
             onPressed: _loadFromCloud,
             tooltip: 'Hent Turnering fra Cloud',
           ),
+          if (_players.length >= Constants.minPlayers)
+            IconButton(
+              icon: const Icon(Icons.cloud_upload),
+              onPressed: _saveToCloud,
+              tooltip: 'Gem til Cloud',
+            ),
           if (_players.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.delete_sweep),
