@@ -504,6 +504,7 @@ class TournamentService {
 
   /// Selects players to sit out using rolling pause prioritization
   /// Prioritizes: 1) Most games played (in bottom half), 2) Lowest rank, 3) Fewest pauses
+  /// For the first break player, prioritizes players who haven't been on break yet
   List<Player> _selectBreakPlayers(
     List<PlayerStanding> standings,
     int count,
@@ -517,9 +518,23 @@ class TournamentService {
 
     final breakPlayers = <Player>[];
 
-    // Always seat out the lowest-ranked player first to satisfy rolling pause fairness
+    // Select the first break player from bottom half, prioritizing those who haven't been on break
     if (count > 0 && bottomHalf.isNotEmpty) {
-      breakPlayers.add(bottomHalf.last.player);
+      // Start from the last (lowest-ranked) and work backwards to find someone who hasn't been on break
+      Player? firstBreakPlayer;
+      for (int i = bottomHalf.length - 1; i >= 0; i--) {
+        if (bottomHalf[i].pauseCount == 0) {
+          firstBreakPlayer = bottomHalf[i].player;
+          break;
+        }
+      }
+      
+      // If all have been on break before, use the last (lowest-ranked) player
+      if (firstBreakPlayer == null) {
+        firstBreakPlayer = bottomHalf.last.player;
+      }
+      
+      breakPlayers.add(firstBreakPlayer);
     }
 
     // Select remaining seats (if any) favoring bottom-half players with most games, then worst rank
