@@ -5,6 +5,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// useful when mirroring mobile screen to a larger display via HDMI
 class DisplayModeService {
   static const String _displayModeKey = 'display_mode';
+  static const String _zoomFactorKey = 'display_zoom_factor';
+
+  // Zoom bounds for manual scaling
+  static const double defaultZoomFactor = 1.0;
+  static const double minZoomFactor = 0.8;
+  static const double maxZoomFactor = 1.5;
   
   /// Get the current display mode
   /// Returns true for desktop mode, false for mobile mode
@@ -26,6 +32,28 @@ class DisplayModeService {
     final currentMode = await isDesktopMode();
     await setDesktopMode(!currentMode);
     return !currentMode;
+  }
+
+  /// Get the current zoom factor for display scaling
+  /// Defaults to [defaultZoomFactor] and clamps to valid range
+  Future<double> getZoomFactor() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getDouble(_zoomFactorKey);
+    return _clampZoom(saved ?? defaultZoomFactor);
+  }
+
+  /// Persist the zoom factor (will be clamped to valid range)
+  Future<double> setZoomFactor(double zoom) async {
+    final clamped = _clampZoom(zoom);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_zoomFactorKey, clamped);
+    return clamped;
+  }
+
+  double _clampZoom(double zoom) {
+    if (zoom < minZoomFactor) return minZoomFactor;
+    if (zoom > maxZoomFactor) return maxZoomFactor;
+    return zoom;
   }
 }
 

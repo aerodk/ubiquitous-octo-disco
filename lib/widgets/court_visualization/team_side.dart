@@ -15,6 +15,7 @@ class TeamSide extends StatelessWidget {
   final Function(Player)? onPlayerLongPress;
   final VoidCallback? onScoreTap;
   final bool isDesktopMode;
+  final double zoomFactor;
 
   const TeamSide({
     super.key,
@@ -24,12 +25,15 @@ class TeamSide extends StatelessWidget {
     this.onPlayerLongPress,
     this.onScoreTap,
     this.isDesktopMode = false,
+    this.zoomFactor = 1.0,
   });
 
   @override
   Widget build(BuildContext context) {
-    final double fontScale = isDesktopMode ? Constants.desktopModeFontScale : 1.0;
-    final double sizeScale = isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
+    final double baseFontScale = isDesktopMode ? Constants.desktopModeFontScale : 1.0;
+    final double baseSizeScale = isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
+    final double fontScale = baseFontScale * zoomFactor;
+    final double sizeScale = baseSizeScale * zoomFactor;
     
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -50,6 +54,7 @@ class TeamSide extends StatelessWidget {
         PlayerMarker(
           player: team.player1,
           isDesktopMode: isDesktopMode,
+          zoomFactor: zoomFactor,
           onLongPress: onPlayerLongPress != null
               ? () => onPlayerLongPress!(team.player1)
               : null,
@@ -59,6 +64,7 @@ class TeamSide extends StatelessWidget {
         PlayerMarker(
           player: team.player2,
           isDesktopMode: isDesktopMode,
+          zoomFactor: zoomFactor,
           onLongPress: onPlayerLongPress != null
               ? () => onPlayerLongPress!(team.player2)
               : null,
@@ -68,6 +74,7 @@ class TeamSide extends StatelessWidget {
         ScoreDisplay(
           score: score,
           isDesktopMode: isDesktopMode,
+          zoomFactor: zoomFactor,
           onTap: onScoreTap,
         ),
       ],

@@ -6,16 +6,20 @@ import '../../utils/constants.dart';
 /// F-022: Net Divider Component
 class NetDivider extends StatelessWidget {
   final bool isDesktopMode;
+  final double zoomFactor;
   
   const NetDivider({
     super.key,
     this.isDesktopMode = false,
+    this.zoomFactor = 1.0,
   });
 
   @override
   Widget build(BuildContext context) {
-    final double fontScale = isDesktopMode ? Constants.desktopModeFontScale : 1.0;
-    final double sizeScale = isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
+    final double baseFontScale = isDesktopMode ? Constants.desktopModeFontScale : 1.0;
+    final double baseSizeScale = isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
+    final double fontScale = baseFontScale * zoomFactor;
+    final double sizeScale = baseSizeScale * zoomFactor;
     
     return Column(
       children: [

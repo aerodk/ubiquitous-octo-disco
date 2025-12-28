@@ -15,6 +15,7 @@ class MatchCard extends StatefulWidget {
   final int maxPoints;
   final Function(Player)? onPlayerForceToPause;
   final bool isDesktopMode;
+  final double zoomFactor;
 
   const MatchCard({
     super.key,
@@ -23,6 +24,7 @@ class MatchCard extends StatefulWidget {
     this.maxPoints = 24,
     this.onPlayerForceToPause,
     this.isDesktopMode = false,
+    this.zoomFactor = 1.0,
   });
 
   @override
@@ -63,9 +65,11 @@ class _MatchCardState extends State<MatchCard> {
 
   @override
   Widget build(BuildContext context) {
-    final double fontScale = widget.isDesktopMode ? Constants.desktopModeFontScale : 1.0;
-    final double sizeScale = widget.isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
-    final double cardPadding = widget.isDesktopMode ? Constants.desktopModeCardPadding : Constants.mobileModeCardPadding;
+    final double baseFontScale = widget.isDesktopMode ? Constants.desktopModeFontScale : 1.0;
+    final double baseSizeScale = widget.isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
+    final double fontScale = baseFontScale * widget.zoomFactor;
+    final double sizeScale = baseSizeScale * widget.zoomFactor;
+    final double cardPadding = (widget.isDesktopMode ? Constants.desktopModeCardPadding : Constants.mobileModeCardPadding) * widget.zoomFactor;
     
     return Card(
       margin: EdgeInsets.zero,
@@ -139,6 +143,7 @@ class _MatchCardState extends State<MatchCard> {
                         label: 'PAR 1',
                         score: widget.match.team1Score,
                         isDesktopMode: widget.isDesktopMode,
+                        zoomFactor: widget.zoomFactor,
                         onPlayerLongPress: widget.onPlayerForceToPause != null
                             ? _showPlayerOptionsMenu
                             : null,
@@ -149,7 +154,10 @@ class _MatchCardState extends State<MatchCard> {
                     // Net (Center) - 20%
                     Expanded(
                       flex: 2,
-                      child: NetDivider(isDesktopMode: widget.isDesktopMode),
+                      child: NetDivider(
+                        isDesktopMode: widget.isDesktopMode,
+                        zoomFactor: widget.zoomFactor,
+                      ),
                     ),
                     
                     // Par 2 (Right side) - 40%
@@ -160,6 +168,7 @@ class _MatchCardState extends State<MatchCard> {
                         label: 'PAR 2',
                         score: widget.match.team2Score,
                         isDesktopMode: widget.isDesktopMode,
+                        zoomFactor: widget.zoomFactor,
                         onPlayerLongPress: widget.onPlayerForceToPause != null
                             ? _showPlayerOptionsMenu
                             : null,
