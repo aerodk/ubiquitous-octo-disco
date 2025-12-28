@@ -5,6 +5,9 @@ import 'screens/setup_screen.dart';
 import 'screens/round_display_screen.dart';
 import 'screens/tournament_completion_screen.dart';
 import 'services/persistence_service.dart';
+import 'services/share_service.dart';
+import 'services/firebase_service.dart';
+import 'models/tournament.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,11 +54,87 @@ class AppInitializer extends StatefulWidget {
 
 class _AppInitializerState extends State<AppInitializer> {
   final PersistenceService _persistenceService = PersistenceService();
+  final ShareService _shareService = ShareService();
+  final FirebaseService _firebaseService = FirebaseService();
 
   @override
   void initState() {
     super.initState();
-    _checkSavedTournament();
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    // First, check if there's a tournament in the URL
+    final tournamentInfo = _shareService.parseTournamentFromUrl(Uri.base);
+    
+    if (tournamentInfo != null) {
+      // Load tournament from URL
+      await _loadTournamentFromUrl(tournamentInfo);
+    } else {
+      // Check for saved tournament
+      await _checkSavedTournament();
+    }
+  }
+
+  Future<void> _loadTournamentFromUrl(Map<String, dynamic> tournamentInfo) async {
+    final code = tournamentInfo['code'] as String;
+    final passcode = tournamentInfo['passcode'] as String?;
+    final isReadOnly = tournamentInfo['isReadOnly'] as bool;
+
+    try {
+      // Show loading indicator
+      if (!mounted) return;
+      
+      // Load tournament from Firebase
+      Tournament tournament;
+      if (passcode != null) {
+        // Load with passcode (but still read-only)
+        tournament = await _firebaseService.loadTournament(
+          tournamentCode: code,
+          passcode: passcode,
+        );
+      } else {
+        // Load in read-only mode
+        tournament = await _firebaseService.loadTournamentReadOnly(
+          tournamentCode: code,
+        );
+      }
+
+      if (!mounted) return;
+
+      // Navigate to appropriate screen based on completion state
+      final destination = tournament.isCompleted
+          ? TournamentCompletionScreen(
+              tournament: tournament,
+              isReadOnly: true,
+            )
+          : RoundDisplayScreen(
+              tournament: tournament,
+              enableCloud: false, // Disable cloud sync for shared links
+              isReadOnly: true,
+            );
+
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => destination),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      
+      // Show error and navigate to setup
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Kunne ikke hente turnering: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+      
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => const SetupScreen(),
+        ),
+      );
+    }
   }
 
   Future<void> _checkSavedTournament() async {

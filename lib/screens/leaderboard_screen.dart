@@ -18,10 +18,12 @@ import '../utils/constants.dart';
 /// - Responsive design for mobile devices
 class LeaderboardScreen extends StatefulWidget {
   final Tournament tournament;
+  final bool isReadOnly;
 
   const LeaderboardScreen({
     super.key,
     required this.tournament,
+    this.isReadOnly = false,
   });
 
   @override

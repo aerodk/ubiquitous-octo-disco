@@ -9,6 +9,7 @@ import '../services/display_mode_service.dart';
 import '../widgets/match_card.dart';
 import '../widgets/court_visualization/bench_section.dart';
 import '../widgets/save_tournament_dialog.dart';
+import '../widgets/share_tournament_dialog.dart';
 import '../services/tournament_service.dart';
 import '../services/firebase_service.dart';
 import '../utils/constants.dart';
@@ -21,6 +22,7 @@ class RoundDisplayScreen extends StatefulWidget {
   final String? cloudCode;
   final String? cloudPasscode;
   final bool enableCloud;
+  final bool isReadOnly;
 
   const RoundDisplayScreen({
     super.key,
@@ -28,6 +30,7 @@ class RoundDisplayScreen extends StatefulWidget {
     this.cloudCode,
     this.cloudPasscode,
     this.enableCloud = true,
+    this.isReadOnly = false,
   });
 
   @override
@@ -803,6 +806,28 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     }
   }
 
+  Future<void> _showShareDialog() async {
+    // Only allow sharing if tournament is saved to cloud
+    if (_cloudCode == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gem turneringen i cloud først for at dele'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    await showDialog(
+      context: context,
+      builder: (context) => ShareTournamentDialog(
+        tournamentCode: _cloudCode!,
+        passcode: _cloudPasscode,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final round = widget.tournament.currentRound;
@@ -845,21 +870,36 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
           title: Row(
             children: [
               Expanded(
-                child: _currentRound.isFinalRound
-                    ? const Row(
-                        children: [
-                          Icon(Icons.emoji_events, color: Colors.amber),
-                          SizedBox(width: 8),
-                          Text('🏆 SIDSTE RUNDE'),
-                        ],
-                      )
-                    : Text('Runde ${_currentRound.roundNumber}'),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _currentRound.isFinalRound
+                        ? const Row(
+                            children: [
+                              Icon(Icons.emoji_events, color: Colors.amber),
+                              SizedBox(width: 8),
+                              Text('🏆 SIDSTE RUNDE'),
+                            ],
+                          )
+                        : Text('Runde ${_currentRound.roundNumber}'),
+                    if (widget.isReadOnly)
+                      const Text(
+                        'Kun Visning',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                          color: Colors.white70,
+                        ),
+                      ),
+                  ],
+                ),
               ),
               Wrap(
                 alignment: WrapAlignment.center,
                 spacing: 8,
                 children: [
-                  if (_canStartFinalRound)
+                  if (_canStartFinalRound && !widget.isReadOnly)
                     ElevatedButton.icon(
                       onPressed: _generateFinalRound,
                       style: ElevatedButton.styleFrom(
@@ -875,7 +915,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                         style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                       ),
                     ),
-                  if (!_currentRound.isFinalRound)
+                  if (!_currentRound.isFinalRound && !widget.isReadOnly)
                     ElevatedButton(
                       onPressed: _generateNextRound,
                       style: ElevatedButton.styleFrom(
@@ -917,28 +957,40 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                   ? () => _adjustZoom(true)
                   : null,
             ),
-            IconButton(
-              icon: const Icon(Icons.cloud_upload),
-              onPressed: widget.enableCloud ? _saveToCloud : null,
-              tooltip: _cloudCode != null ? 'Opdater Cloud ($_cloudCode)' : 'Gem i Cloud',
-            ),
+            if (!widget.isReadOnly) ...[
+              IconButton(
+                icon: const Icon(Icons.cloud_upload),
+                onPressed: widget.enableCloud ? _saveToCloud : null,
+                tooltip: _cloudCode != null ? 'Opdater Cloud ($_cloudCode)' : 'Gem i Cloud',
+              ),
+            ],
+            if (_cloudCode != null && !widget.isReadOnly)
+              IconButton(
+                icon: const Icon(Icons.share),
+                onPressed: _showShareDialog,
+                tooltip: 'Del turnering',
+              ),
             IconButton(
               icon: const Icon(Icons.leaderboard),
               onPressed: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => LeaderboardScreen(tournament: _tournament),
+                    builder: (context) => LeaderboardScreen(
+                      tournament: _tournament,
+                      isReadOnly: widget.isReadOnly,
+                    ),
                   ),
                 );
               },
               tooltip: 'Vis stillinger',
             ),
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: _resetTournament,
-              tooltip: 'Nulstil turnering',
-            ),
+            if (!widget.isReadOnly)
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: _resetTournament,
+                tooltip: 'Nulstil turnering',
+              ),
           ],
           leading: _tournament.rounds.length > 1
               ? IconButton(
@@ -998,14 +1050,15 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                               maxPoints: _tournament.settings.pointsPerMatch,
                               isDesktopMode: _isDesktopMode,
                               zoomFactor: _zoomFactor,
-                              onScoreChanged: () async {
+                              isReadOnly: widget.isReadOnly,
+                              onScoreChanged: widget.isReadOnly ? null : () async {
                                 setState(() {});
                                 // Save tournament immediately after score change
                                 await _persistenceService.saveTournament(_tournament);
                                 // Also save to full history to preserve scores on navigation back
                                 await _persistenceService.saveFullTournamentHistory(_tournament);
                               },
-                              onPlayerForceToPause: (player) => _overridePlayerPauseStatus(player, false),
+                              onPlayerForceToPause: widget.isReadOnly ? null : (player) => _overridePlayerPauseStatus(player, false),
                             );
                           },
                         ),
