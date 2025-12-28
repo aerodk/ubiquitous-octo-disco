@@ -37,6 +37,32 @@ void main() {
       expect(loaded.players[1].name, equals('Bob'));
       expect(loaded.players[2].name, equals('Charlie'));
       expect(loaded.courtCount, equals(2));
+      expect(loaded.courtCustomNames, isEmpty);
+    });
+
+    test('should save and load setup state with custom court names', () async {
+      final players = [
+        Player(id: '1', name: 'Alice'),
+        Player(id: '2', name: 'Bob'),
+      ];
+      const courtCount = 2;
+      final courtCustomNames = {
+        0: 'Center Court',
+        1: 'Side Court',
+      };
+
+      // Save setup state with custom names
+      await persistenceService.saveSetupState(players, courtCount, courtCustomNames);
+
+      // Load setup state
+      final loaded = await persistenceService.loadSetupState();
+
+      expect(loaded, isNotNull);
+      expect(loaded!.players.length, equals(2));
+      expect(loaded.courtCount, equals(2));
+      expect(loaded.courtCustomNames.length, equals(2));
+      expect(loaded.courtCustomNames[0], equals('Center Court'));
+      expect(loaded.courtCustomNames[1], equals('Side Court'));
     });
 
     test('should return null when no setup state is saved', () async {

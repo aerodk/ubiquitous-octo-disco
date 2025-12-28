@@ -219,7 +219,7 @@ void main() {
       await tester.enterText(find.byType(TextField), 'Player $i');
       await tester.ensureVisible(find.text('Tilføj'));
       await tester.tap(find.text('Tilføj'));
-      await tester.pump();
+      await tester.pumpAndSettle();
     }
     
     expect(find.text('1 bane'), findsOneWidget);
@@ -227,7 +227,7 @@ void main() {
     // Manually increase court count
     await tester.ensureVisible(find.byIcon(Icons.add).last);
     await tester.tap(find.byIcon(Icons.add).last);
-    await tester.pump();
+    await tester.pumpAndSettle();
     
     expect(find.text('2 baner'), findsOneWidget);
     
@@ -236,7 +236,7 @@ void main() {
     await tester.enterText(find.byType(TextField), 'Player 5');
     await tester.ensureVisible(find.text('Tilføj'));
     await tester.tap(find.text('Tilføj'));
-    await tester.pump();
+    await tester.pumpAndSettle();
     
     // Should stay at 1 court (formula: 5~/4 = 1)
     expect(find.text('1 bane'), findsOneWidget);
@@ -244,7 +244,7 @@ void main() {
     // Manually increase court count again
     await tester.ensureVisible(find.byIcon(Icons.add).last);
     await tester.tap(find.byIcon(Icons.add).last);
-    await tester.pump();
+    await tester.pumpAndSettle();
     
     expect(find.text('2 baner'), findsOneWidget);
     
@@ -254,7 +254,7 @@ void main() {
       await tester.enterText(find.byType(TextField), 'Player $i');
       await tester.ensureVisible(find.text('Tilføj'));
       await tester.tap(find.text('Tilføj'));
-      await tester.pump();
+      await tester.pumpAndSettle();
     }
     
     // Should auto-adjust to 2 courts (formula: 8~/4 = 2)
@@ -263,7 +263,7 @@ void main() {
     // Manually decrease court count
     await tester.ensureVisible(find.byIcon(Icons.remove).last);
     await tester.tap(find.byIcon(Icons.remove).last);
-    await tester.pump();
+    await tester.pumpAndSettle();
     
     expect(find.text('1 bane'), findsOneWidget);
   });

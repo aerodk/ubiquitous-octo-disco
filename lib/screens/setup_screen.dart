@@ -25,6 +25,7 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
   final FocusNode _playerNameFocusNode = FocusNode();
   final List<Player> _players = [];
   int _courtCount = 1;
+  final Map<int, String> _courtCustomNames = {}; // Map of court index to custom name
   TournamentSettings _tournamentSettings = const TournamentSettings();
   final TournamentService _tournamentService = TournamentService();
   final PersistenceService _persistenceService = PersistenceService();
@@ -57,6 +58,7 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
       setState(() {
         _players.addAll(savedState.players);
         _courtCount = savedState.courtCount;
+        _courtCustomNames.addAll(savedState.courtCustomNames);
         _isLoading = false;
       });
     } else {
@@ -68,7 +70,7 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
 
   /// Save current setup state to local storage
   Future<void> _saveState() async {
-    await _persistenceService.saveSetupState(_players, _courtCount);
+    await _persistenceService.saveSetupState(_players, _courtCount, _courtCustomNames);
   }
 
   /// Calculate suggested court count based on number of players
@@ -132,6 +134,7 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
       setState(() {
         _players.clear();
         _courtCount = 1;
+        _courtCustomNames.clear();
       });
       await _persistenceService.clearSetupState();
     }
@@ -237,6 +240,65 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
     );
   }
 
+  /// Show dialog to rename a court
+  Future<void> _renameCourtDialog(int courtIndex) async {
+    final TextEditingController controller = TextEditingController(
+      text: _courtCustomNames[courtIndex] ?? Constants.getDefaultCourtName(courtIndex),
+    );
+
+    final String? newName = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Omdøb ${_courtCustomNames[courtIndex] ?? Constants.getDefaultCourtName(courtIndex)}'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Bane navn',
+            hintText: 'F.eks. Center Court',
+            border: OutlineInputBorder(),
+          ),
+          onSubmitted: (value) => Navigator.pop(context, value.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuller'),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _courtCustomNames.remove(courtIndex);
+              });
+              Navigator.pop(context, Constants.getDefaultCourtName(courtIndex));
+            },
+            child: const Text('Nulstil til standard'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final name = controller.text.trim();
+              Navigator.pop(context, name);
+            },
+            child: const Text('Gem'),
+          ),
+        ],
+      ),
+    );
+
+    if (newName != null && newName.isNotEmpty && mounted) {
+      setState(() {
+        if (newName == Constants.getDefaultCourtName(courtIndex)) {
+          // If it's the default name, remove from custom names
+          _courtCustomNames.remove(courtIndex);
+        } else {
+          _courtCustomNames[courtIndex] = newName;
+        }
+      });
+      // Save state in background
+      unawaited(_saveState());
+    }
+  }
+
   void _generateFirstRound() async {
     // Validation: Minimum players
     if (_players.length < Constants.minPlayers) {
@@ -244,12 +306,12 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
       return;
     }
 
-    // Generate courts
+    // Generate courts using custom names if available
     final courts = List.generate(
       _courtCount,
       (index) => Court(
         id: (index + 1).toString(),
-        name: Constants.getDefaultCourtName(index),
+        name: _courtCustomNames[index] ?? Constants.getDefaultCourtName(index),
       ),
     );
 
@@ -443,6 +505,41 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
                         ),
                       ],
                     ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Court list with rename option
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _courtCount,
+                    itemBuilder: (context, index) {
+                      final courtName = _courtCustomNames[index] ?? Constants.getDefaultCourtName(index);
+                      final isCustomName = _courtCustomNames.containsKey(index);
+                      
+                      return Card(
+                        color: isCustomName ? Colors.blue[50] : null,
+                        child: ListTile(
+                          leading: const Icon(Icons.sports_tennis),
+                          title: Text(courtName),
+                          subtitle: isCustomName 
+                              ? Text(
+                                  'Brugerdefineret navn',
+                                  style: TextStyle(
+                                    color: Colors.blue[700],
+                                    fontSize: 12,
+                                  ),
+                                )
+                              : null,
+                          trailing: IconButton(
+                            icon: const Icon(Icons.edit),
+                            onPressed: () => _renameCourtDialog(index),
+                            tooltip: 'Omdøb bane',
+                          ),
+                        ),
+                      );
+                    },
                   ),
 
                   const SizedBox(height: 16),
