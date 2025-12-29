@@ -16,12 +16,17 @@ import 'package:star_cano/main.dart';
 void setupFirebaseMocks() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  const MethodChannel channel = MethodChannel(
+  const MethodChannel firebaseCoreChannel = MethodChannel(
     'plugins.flutter.io/firebase_core',
   );
 
+  const MethodChannel firestoreChannel = MethodChannel(
+    'plugins.flutter.io/cloud_firestore',
+  );
+
+  // Mock Firebase Core
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
+      .setMockMethodCallHandler(firebaseCoreChannel, (MethodCall methodCall) async {
     if (methodCall.method == 'Firebase#initializeCore') {
       return [
         {
@@ -43,6 +48,13 @@ void setupFirebaseMocks() {
         'pluginConstants': {},
       };
     }
+    return null;
+  });
+
+  // Mock Firestore
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(firestoreChannel, (MethodCall methodCall) async {
+    // Return null for all Firestore calls (we don't use Firestore in widget tests)
     return null;
   });
 }

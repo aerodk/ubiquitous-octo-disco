@@ -55,7 +55,6 @@ class AppInitializer extends StatefulWidget {
 class _AppInitializerState extends State<AppInitializer> {
   final PersistenceService _persistenceService = PersistenceService();
   final ShareService _shareService = ShareService();
-  final FirebaseService _firebaseService = FirebaseService();
 
   @override
   void initState() {
@@ -84,17 +83,20 @@ class _AppInitializerState extends State<AppInitializer> {
       // Show loading indicator
       if (!mounted) return;
       
+      // Create FirebaseService only when needed
+      final firebaseService = FirebaseService();
+      
       // Load tournament from Firebase
       Tournament tournament;
       if (passcode != null) {
         // Load with passcode (but still read-only)
-        tournament = await _firebaseService.loadTournament(
+        tournament = await firebaseService.loadTournament(
           tournamentCode: code,
           passcode: passcode,
         );
       } else {
         // Load in read-only mode
-        tournament = await _firebaseService.loadTournamentReadOnly(
+        tournament = await firebaseService.loadTournamentReadOnly(
           tournamentCode: code,
         );
       }
