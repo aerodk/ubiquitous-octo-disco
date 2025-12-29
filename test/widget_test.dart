@@ -6,10 +6,58 @@
 // tree, read text, and verify that the values of widget properties are correct.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:star_cano/main.dart';
+
+// Helper to setup Firebase mocking
+void setupFirebaseMocks() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  const MethodChannel firebaseCoreChannel = MethodChannel(
+    'plugins.flutter.io/firebase_core',
+  );
+
+  const MethodChannel firestoreChannel = MethodChannel(
+    'plugins.flutter.io/cloud_firestore',
+  );
+
+  // Mock Firebase Core
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(firebaseCoreChannel, (MethodCall methodCall) async {
+    if (methodCall.method == 'Firebase#initializeCore') {
+      return [
+        {
+          'name': '[DEFAULT]',
+          'options': {
+            'apiKey': 'test-api-key',
+            'appId': 'test-app-id',
+            'messagingSenderId': 'test-sender-id',
+            'projectId': 'test-project-id',
+          },
+          'pluginConstants': {},
+        }
+      ];
+    }
+    if (methodCall.method == 'Firebase#initializeApp') {
+      return {
+        'name': methodCall.arguments['appName'],
+        'options': methodCall.arguments['options'],
+        'pluginConstants': {},
+      };
+    }
+    return null;
+  });
+
+  // Mock Firestore
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(firestoreChannel, (MethodCall methodCall) async {
+    // Return null for all Firestore calls (we don't use Firestore in widget tests)
+    return null;
+  });
+}
 
 // Helper to build app and allow async init/state restoration to complete without hanging on infinite animations
 Future<void> pumpApp(WidgetTester tester) async {
@@ -21,6 +69,8 @@ Future<void> pumpApp(WidgetTester tester) async {
 }
 
 void main() {
+  setupFirebaseMocks();
+  
   setUp(() {
     // Ensure clean in-memory prefs for each test run
     SharedPreferences.setMockInitialValues({});

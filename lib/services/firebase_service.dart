@@ -205,6 +205,44 @@ class FirebaseService {
     }
   }
 
+  /// Load a tournament in read-only mode (without passcode verification)
+  /// 
+  /// This is used for shared links without passcode.
+  /// The tournament data is accessible, but cannot be modified.
+  /// 
+  /// Parameters:
+  /// - tournamentCode: The 8-digit tournament code
+  /// 
+  /// Returns the tournament data if successful
+  /// 
+  /// Throws an exception if:
+  /// - The tournament doesn't exist
+  /// - The load fails
+  Future<Tournament> loadTournamentReadOnly({
+    required String tournamentCode,
+  }) async {
+    try {
+      final doc = await _firestore
+          .collection(tournamentsCollection)
+          .doc(tournamentCode)
+          .get();
+
+      if (!doc.exists) {
+        throw Exception('Tournament not found');
+      }
+
+      final data = doc.data()!;
+      final tournamentData = data['tournamentData'] as Map<String, dynamic>;
+      
+      return Tournament.fromJson(tournamentData);
+    } catch (e) {
+      if (e.toString().contains('Tournament not found')) {
+        rethrow;
+      }
+      throw Exception('Failed to load tournament: $e');
+    }
+  }
+
   /// Verify that a passcode matches the stored hash
   /// 
   /// Returns true if the passcode is correct, false otherwise

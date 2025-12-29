@@ -9,6 +9,7 @@ import '../services/persistence_service.dart';
 import '../services/display_mode_service.dart';
 import '../widgets/export_dialog.dart';
 import '../widgets/save_tournament_dialog.dart';
+import '../widgets/share_tournament_dialog.dart';
 import '../utils/constants.dart';
 import 'setup_screen.dart';
 
@@ -16,12 +17,14 @@ class TournamentCompletionScreen extends StatefulWidget {
   final Tournament tournament;
   final String? cloudCode;
   final String? cloudPasscode;
+  final bool isReadOnly;
 
   const TournamentCompletionScreen({
     super.key,
     required this.tournament,
     this.cloudCode,
     this.cloudPasscode,
+    this.isReadOnly = false,
   });
 
   @override
@@ -178,6 +181,28 @@ class _TournamentCompletionScreenState
     }
   }
 
+  Future<void> _showShareDialog() async {
+    // Only allow sharing if tournament is saved to cloud
+    if (_cloudCode == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gem turneringen i cloud først for at dele'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    await showDialog(
+      context: context,
+      builder: (context) => ShareTournamentDialog(
+        tournamentCode: _cloudCode!,
+        passcode: _cloudPasscode,
+      ),
+    );
+  }
+
   Future<void> _startNewTournament() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -221,7 +246,22 @@ class _TournamentCompletionScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Turnering afsluttet'),
+        title: Row(
+          children: [
+            const Text('Turnering afsluttet'),
+            if (widget.isReadOnly) ...[
+              const SizedBox(width: 8),
+              const Text(
+                '(Kun Visning)',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontStyle: FontStyle.italic,
+                  color: Colors.white70,
+                ),
+              ),
+            ],
+          ],
+        ),
         backgroundColor: Colors.amber[700], 
         automaticallyImplyLeading: false,
         actions: [
@@ -255,6 +295,13 @@ class _TournamentCompletionScreenState
               );
             },
           ),
+          // Share button (only if saved to cloud and not already read-only)
+          if (_cloudCode != null && !widget.isReadOnly)
+            IconButton(
+              icon: const Icon(Icons.share),
+              tooltip: 'Del turnering',
+              onPressed: _showShareDialog,
+            ),
           // Future options info button
           IconButton(
             icon: const Icon(Icons.info_outline),
@@ -363,68 +410,70 @@ class _TournamentCompletionScreenState
                 const SizedBox(height: 16),
 
                 // Action buttons
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: _saveToCloud,
-                        icon: Icon(
-                          _cloudCode != null ? Icons.cloud_upload : Icons.cloud_upload_outlined,
-                          color: Colors.white,
-                        ),
-                        label: Text(
-                          _cloudCode != null ? 'Opdater' : 'Gem Cloud',
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) => ExportDialog(
-                              tournament: widget.tournament,
-                              standings: _standings,
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.download, color: Colors.white),
-                        label: const Text(
-                          'Eksporter',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                if (!widget.isReadOnly) ...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _saveToCloud,
+                          icon: Icon(
+                            _cloudCode != null ? Icons.cloud_upload : Icons.cloud_upload_outlined,
+                            color: Colors.white,
+                          ),
+                          label: Text(
+                            _cloudCode != null ? 'Opdater' : 'Gem Cloud',
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                
-                const SizedBox(height: 12),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) => ExportDialog(
+                                tournament: widget.tournament,
+                                standings: _standings,
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.download, color: Colors.white),
+                          label: const Text(
+                            'Eksporter',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 12),
 
-                // Action buttons
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _startNewTournament,
-                    icon: const Icon(Icons.add),
-                    label: const Text('Start Ny Turnering'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.all(16),
+                  // Action buttons
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _startNewTournament,
+                      icon: const Icon(Icons.add),
+                      label: const Text('Start Ny Turnering'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.all(16),
+                      ),
                     ),
                   ),
-                ),
+                ],
                 const SizedBox(height: 80), // Space for bottom padding
               ],
             ),

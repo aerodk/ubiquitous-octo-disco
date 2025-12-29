@@ -16,6 +16,7 @@ class MatchCard extends StatefulWidget {
   final Function(Player)? onPlayerForceToPause;
   final bool isDesktopMode;
   final double zoomFactor;
+  final bool isReadOnly;
 
   const MatchCard({
     super.key,
@@ -25,6 +26,7 @@ class MatchCard extends StatefulWidget {
     this.onPlayerForceToPause,
     this.isDesktopMode = false,
     this.zoomFactor = 1.0,
+    this.isReadOnly = false,
   });
 
   @override
@@ -144,10 +146,10 @@ class _MatchCardState extends State<MatchCard> {
                         score: widget.match.team1Score,
                         isDesktopMode: widget.isDesktopMode,
                         zoomFactor: widget.zoomFactor,
-                        onPlayerLongPress: widget.onPlayerForceToPause != null
+                        onPlayerLongPress: widget.onPlayerForceToPause != null && !widget.isReadOnly
                             ? _showPlayerOptionsMenu
                             : null,
-                        onScoreTap: () => _showScoreInput(isTeam1: true),
+                        onScoreTap: widget.isReadOnly ? null : () => _showScoreInput(isTeam1: true),
                       ),
                     ),
                     
@@ -169,10 +171,10 @@ class _MatchCardState extends State<MatchCard> {
                         score: widget.match.team2Score,
                         isDesktopMode: widget.isDesktopMode,
                         zoomFactor: widget.zoomFactor,
-                        onPlayerLongPress: widget.onPlayerForceToPause != null
+                        onPlayerLongPress: widget.onPlayerForceToPause != null && !widget.isReadOnly
                             ? _showPlayerOptionsMenu
                             : null,
-                        onScoreTap: () => _showScoreInput(isTeam1: false),
+                        onScoreTap: widget.isReadOnly ? null : () => _showScoreInput(isTeam1: false),
                       ),
                     ),
                   ],
