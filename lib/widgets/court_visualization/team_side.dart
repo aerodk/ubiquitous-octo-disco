@@ -50,32 +50,41 @@ class TeamSide extends StatelessWidget {
           ),
         ),
         SizedBox(height: 8 * sizeScale),
-        // Player 1
-        PlayerMarker(
-          player: team.player1,
-          isDesktopMode: isDesktopMode,
-          zoomFactor: zoomFactor,
-          onLongPress: onPlayerLongPress != null
-              ? () => onPlayerLongPress!(team.player1)
-              : null,
-        ),
-        SizedBox(height: 6 * sizeScale),
-        // Player 2
-        PlayerMarker(
-          player: team.player2,
-          isDesktopMode: isDesktopMode,
-          zoomFactor: zoomFactor,
-          onLongPress: onPlayerLongPress != null
-              ? () => onPlayerLongPress!(team.player2)
-              : null,
-        ),
-        SizedBox(height: 8 * sizeScale),
-        // Score display
-        ScoreDisplay(
-          score: score,
-          isDesktopMode: isDesktopMode,
-          zoomFactor: zoomFactor,
+        // Clickable area for team side (players + score)
+        GestureDetector(
           onTap: onScoreTap,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Player 1
+              PlayerMarker(
+                player: team.player1,
+                isDesktopMode: isDesktopMode,
+                zoomFactor: zoomFactor,
+                onLongPress: onPlayerLongPress != null
+                    ? () => onPlayerLongPress!(team.player1)
+                    : null,
+              ),
+              SizedBox(height: 6 * sizeScale),
+              // Player 2
+              PlayerMarker(
+                player: team.player2,
+                isDesktopMode: isDesktopMode,
+                zoomFactor: zoomFactor,
+                onLongPress: onPlayerLongPress != null
+                    ? () => onPlayerLongPress!(team.player2)
+                    : null,
+              ),
+              SizedBox(height: 8 * sizeScale),
+              // Score display
+              ScoreDisplay(
+                score: score,
+                isDesktopMode: isDesktopMode,
+                zoomFactor: zoomFactor,
+              ),
+            ],
+          ),
         ),
       ],
     );
