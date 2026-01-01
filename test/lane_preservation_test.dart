@@ -71,10 +71,8 @@ void main() {
       
       // The rounds should have different court assignments due to randomization
       // (This test may occasionally fail due to randomness, but proves the point)
-      bool hasDifferentAssignments = false;
       for (int i = 0; i < round2a.matches.length; i++) {
         if (round2a.matches[i].court.id != round2b.matches[i].court.id) {
-          hasDifferentAssignments = true;
           break;
         }
       }
