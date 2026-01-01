@@ -828,6 +828,145 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     );
   }
 
+  /// Show action menu (FAB bottom sheet)
+  void _showActionMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.grey[400],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+
+            // Display Mode Toggle
+            ListTile(
+              leading: Icon(
+                _isDesktopMode ? Icons.desktop_windows : Icons.phone_android,
+                color: Colors.blue,
+              ),
+              title: const Text('Display Mode'),
+              subtitle: Text(_isDesktopMode ? 'Desktop' : 'Mobile'),
+              onTap: () {
+                _toggleDisplayMode();
+                Navigator.pop(context);
+              },
+            ),
+
+            const Divider(),
+
+            // Zoom Controls
+            ListTile(
+              leading: const Icon(Icons.zoom_out_map, color: Colors.blue),
+              title: const Text('Zoom Ud'),
+              enabled: _zoomFactor > DisplayModeService.minZoomFactor + 0.01,
+              onTap: _zoomFactor > DisplayModeService.minZoomFactor + 0.01
+                  ? () {
+                      _adjustZoom(false);
+                      Navigator.pop(context);
+                    }
+                  : null,
+            ),
+            ListTile(
+              leading: const Icon(Icons.zoom_in_map, color: Colors.blue),
+              title: const Text('Zoom Ind'),
+              enabled: _zoomFactor < DisplayModeService.maxZoomFactor - 0.01,
+              onTap: _zoomFactor < DisplayModeService.maxZoomFactor - 0.01
+                  ? () {
+                      _adjustZoom(true);
+                      Navigator.pop(context);
+                    }
+                  : null,
+            ),
+
+            const Divider(),
+
+            // Leaderboard
+            ListTile(
+              leading: const Icon(Icons.leaderboard, color: Colors.green),
+              title: const Text('Se Stillinger'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => LeaderboardScreen(
+                      tournament: _tournament,
+                      isReadOnly: widget.isReadOnly,
+                    ),
+                  ),
+                );
+              },
+            ),
+
+            const Divider(),
+
+            // Cloud Save (only if NOT already saved)
+            if (!widget.isReadOnly && widget.enableCloud && _cloudCode == null) ...[
+              ListTile(
+                leading: const Icon(Icons.cloud_upload, color: Colors.blue),
+                title: const Text('Gem i Cloud'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _saveToCloud();
+                },
+              ),
+              const Divider(),
+            ],
+
+            // Cloud Update (only if already saved)
+            if (!widget.isReadOnly && widget.enableCloud && _cloudCode != null) ...[
+              ListTile(
+                leading: const Icon(Icons.cloud_upload_outlined, color: Colors.blue),
+                title: const Text('Opdater Cloud'),
+                subtitle: Text('Kode: $_cloudCode'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _saveToCloud();
+                },
+              ),
+              const Divider(),
+            ],
+
+            // Share (only if saved to cloud and not read-only)
+            if (_cloudCode != null && !widget.isReadOnly) ...[
+              ListTile(
+                leading: const Icon(Icons.share, color: Colors.green),
+                title: const Text('Del Turnering'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showShareDialog();
+                },
+              ),
+              const Divider(),
+            ],
+
+            // Reset Tournament
+            if (!widget.isReadOnly) ...[
+              ListTile(
+                leading: const Icon(Icons.refresh, color: Colors.orange),
+                title: const Text('Nulstil Turnering'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _resetTournament();
+                },
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final round = widget.tournament.currentRound;
@@ -837,16 +976,14 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
         appBar: AppBar(
           title: const Text('Turnering'),
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: _resetTournament,
-              tooltip: 'Nulstil turnering',
-            ),
-          ],
         ),
         body: const Center(
           child: Text('Ingen runder genereret endnu'),
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () => _showActionMenu(context),
+          tooltip: 'Indstillinger & Værktøjer',
+          child: const Icon(Icons.more_vert),
         ),
       );
     }
@@ -895,81 +1032,66 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                   ],
                 ),
               ),
-              Wrap(
-                alignment: WrapAlignment.center,
-                spacing: 8,
-                children: [
-                  if (_canStartFinalRound && !widget.isReadOnly)
-                    ElevatedButton.icon(
-                      onPressed: _generateFinalRound,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.amber[600],
-                        foregroundColor: Colors.black,
-                        minimumSize: const Size(10, 36),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        elevation: 3,
-                      ),
-                      icon: const Icon(Icons.emoji_events, size: 18),
-                      label: const Text(
-                        'Sidste Runde',
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  if (!_currentRound.isFinalRound && !widget.isReadOnly)
-                    ElevatedButton(
-                      onPressed: _generateNextRound,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(10, 36),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        elevation: 3,
-                      ),
-                      child: Text(
-                        'Næste Runde (${_currentRound.roundNumber + 1})',
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                ],
-              ),
+              // Zoom display chip
+              if (_zoomFactor != DisplayModeService.defaultZoomFactor)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Chip(
+                    label: Text('${(_zoomFactor * 100).toStringAsFixed(0)}%'),
+                    backgroundColor: Colors.blue[200],
+                  ),
+                ),
             ],
           ),
           backgroundColor: _currentRound.isFinalRound
               ? Colors.amber[700]
               : Theme.of(context).colorScheme.inversePrimary,
+          leading: _tournament.rounds.length > 1
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: _canGoBack ? _goToPreviousRound : null,
+                )
+              : null,
           actions: [
-            IconButton(
-              icon: Icon(_isDesktopMode ? Icons.desktop_windows : Icons.phone_android),
-              tooltip: _isDesktopMode ? 'Skift til mobil visning' : 'Skift til desktop visning',
-              onPressed: _toggleDisplayMode,
+            // Next Round / Final Round buttons + Leaderboard
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 4,
+              children: [
+                if (_canStartFinalRound && !widget.isReadOnly)
+                  ElevatedButton.icon(
+                    onPressed: _generateFinalRound,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber[600],
+                      foregroundColor: Colors.black,
+                      minimumSize: const Size(10, 36),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      elevation: 3,
+                    ),
+                    icon: const Icon(Icons.emoji_events, size: 18),
+                    label: const Text(
+                      'Sidste Runde',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                if (!_currentRound.isFinalRound && !widget.isReadOnly)
+                  ElevatedButton(
+                    onPressed: _generateNextRound,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(10, 36),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      elevation: 3,
+                    ),
+                    child: Text(
+                      'Næste Runde (${_currentRound.roundNumber + 1})',
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+              ],
             ),
-            IconButton(
-              icon: const Icon(Icons.zoom_out_map),
-              tooltip: 'Zoom ud',
-              onPressed: _zoomFactor > DisplayModeService.minZoomFactor + 0.01
-                  ? () => _adjustZoom(false)
-                  : null,
-            ),
-            IconButton(
-              icon: const Icon(Icons.zoom_in_map),
-              tooltip: 'Zoom ind',
-              onPressed: _zoomFactor < DisplayModeService.maxZoomFactor - 0.01
-                  ? () => _adjustZoom(true)
-                  : null,
-            ),
-            if (!widget.isReadOnly) ...[
-              IconButton(
-                icon: const Icon(Icons.cloud_upload),
-                onPressed: widget.enableCloud ? _saveToCloud : null,
-                tooltip: _cloudCode != null ? 'Opdater Cloud ($_cloudCode)' : 'Gem i Cloud',
-              ),
-            ],
-            if (_cloudCode != null && !widget.isReadOnly)
-              IconButton(
-                icon: const Icon(Icons.share),
-                onPressed: _showShareDialog,
-                tooltip: 'Del turnering',
-              ),
+            // Leaderboard button
             IconButton(
               icon: const Icon(Icons.leaderboard),
               onPressed: () {
@@ -985,19 +1107,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
               },
               tooltip: 'Vis stillinger',
             ),
-            if (!widget.isReadOnly)
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: _resetTournament,
-                tooltip: 'Nulstil turnering',
-              ),
           ],
-          leading: _tournament.rounds.length > 1
-              ? IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: _canGoBack ? _goToPreviousRound : null,
-                )
-              : null,
         ),
         body: Column(
           children: [
@@ -1190,6 +1300,11 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
               ),
             ),
           ],
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () => _showActionMenu(context),
+          tooltip: 'Indstillinger & Værktøjer',
+          child: const Icon(Icons.more_vert),
         ),
       ),
     );
