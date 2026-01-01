@@ -218,14 +218,56 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
     );
 
     if (result != null && mounted) {
+      final code = result['code'] as String;
+      final passcode = result['passcode'] as String;
+
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Turnering gemt! Kode: ${result['code']}'),
+          content: Text('Turnering gemt! Kode: $code'),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 3),
         ),
       );
+
+      // Generate courts using custom names if available
+      final courts = List.generate(
+        _courtCount,
+        (index) => Court(
+          id: (index + 1).toString(),
+          name: _courtCustomNames[index] ?? Constants.getDefaultCourtName(index),
+        ),
+      );
+
+      // Generate first round
+      final firstRound = _tournamentService.generateFirstRound(
+        _players,
+        courts,
+        laneStrategy: _tournamentSettings.laneAssignmentStrategy,
+      );
+
+      // Create tournament
+      final tournament = Tournament(
+        name: Constants.defaultTournamentName,
+        players: _players,
+        courts: courts,
+        rounds: [firstRound],
+        settings: _tournamentSettings,
+      );
+
+      // Navigate to round display with cloud codes
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => RoundDisplayScreen(
+              tournament: tournament,
+              cloudCode: code,
+              cloudPasscode: passcode,
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -386,12 +428,16 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
     // Clear setup state as we now have a tournament
     await _persistenceService.clearSetupState();
 
-    // Navigate to round display
+    // Navigate to round display with null cloud codes (not saved to cloud)
     if (mounted) {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => RoundDisplayScreen(tournament: tournament),
+          builder: (context) => RoundDisplayScreen(
+            tournament: tournament,
+            cloudCode: null,
+            cloudPasscode: null,
+          ),
         ),
       );
     }

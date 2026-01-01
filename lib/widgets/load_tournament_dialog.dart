@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../models/tournament.dart';
 import '../services/firebase_service.dart';
 
 /// Dialog for loading a tournament from Firebase Cloud Storage
