@@ -6,11 +6,17 @@ enum TournamentFormat {
   /// Good for casual play and equal opportunity
   americano,
   
-  /// Mexicano: Strategic pairing with history tracking (default)
-  /// Tracks partner/opponent history to ensure rotation and variety
-  /// Balances teams by points, creates competitive games
-  /// Follows traditional Mexicano format rules
+  /// Mexicano: Point-based competitive pairing (default)
+  /// Prioritizes competitive balance with point-difference limits
+  /// Players with similar points play together for balanced matches
+  /// Best for competitive tournaments
   mexicano,
+  
+  /// Social-Mexicano: Meeting-based variety pairing
+  /// Tracks partner/opponent history to ensure rotation and variety
+  /// Maximizes social interaction, even if matches are unbalanced
+  /// Good for social events where meeting variety matters
+  socialMexicano,
 }
 
 /// Pairing strategy for final round matches
@@ -126,6 +132,8 @@ class TournamentSettings {
         return 'Americano';
       case TournamentFormat.mexicano:
         return 'Mexicano';
+      case TournamentFormat.socialMexicano:
+        return 'Social-Mexicano';
     }
   }
 
@@ -193,6 +201,8 @@ class TournamentSettings {
     switch (value) {
       case 'americano':
         return TournamentFormat.americano;
+      case 'socialMexicano':
+        return TournamentFormat.socialMexicano;
       case 'mexicano':
       default:
         return TournamentFormat.mexicano;
@@ -205,6 +215,8 @@ class TournamentSettings {
         return 'americano';
       case TournamentFormat.mexicano:
         return 'mexicano';
+      case TournamentFormat.socialMexicano:
+        return 'socialMexicano';
     }
   }
 
