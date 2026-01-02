@@ -4,9 +4,10 @@ import 'package:star_cano/models/tournament_settings.dart';
 void main() {
   group('TournamentFormat', () {
     test('enum values are correctly defined', () {
-      expect(TournamentFormat.values.length, 2);
+      expect(TournamentFormat.values.length, 3);
       expect(TournamentFormat.values.contains(TournamentFormat.americano), true);
       expect(TournamentFormat.values.contains(TournamentFormat.mexicano), true);
+      expect(TournamentFormat.values.contains(TournamentFormat.socialMexicano), true);
     });
   });
 
