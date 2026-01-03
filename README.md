@@ -164,6 +164,144 @@ flutter test
 - **State Management:** StatefulWidget (simple state management for MVP)
 - **Data Persistence:** In-memory (no persistence in Version 1.0)
 
+## Tournament Formats: Americano vs Mexicano
+
+The app supports two tournament formats that differ in how players are paired for matches:
+
+### Americano (Random Pairing)
+
+**Current default format** - Uses random shuffling for simple, unpredictable matchups.
+
+**How it works:**
+- **First Round:** Players are randomly shuffled and grouped into matches of 4
+- **Regular Rounds:** Players are randomly shuffled again (after selecting who sits out)
+- **Final Round:** Uses rank-based pairing strategies
+
+**Characteristics:**
+- ✅ Simple and fast
+- ✅ Unpredictable and varied
+- ✅ Easy to understand
+- ✅ Fair break distribution
+- ❌ Can repeat partners and opponents
+- ❌ No skill balancing
+
+### Mexicano (Strategic Pairing)
+
+**Planned implementation** - Uses sophisticated partner/opponent selection with history tracking.
+
+**How it works:**
+- **First Round:** Random shuffling (same as Americano)
+- **Regular Rounds:** Strategic pairing based on:
+  - Player rankings (sorted by total points)
+  - Partner history (rotates to avoid repetition)
+  - Opponent history (ensures variety)
+  - Skill balancing (similar-ranked players paired together)
+- **Final Round:** Rank-based pairing (same as Americano)
+
+**Characteristics:**
+- ✅ Partner rotation guaranteed
+- ✅ Opponent variety enforced
+- ✅ Skill-based balancing
+- ✅ Competitive games
+- ✅ Strategic depth
+- ⚠️ More complex algorithm
+
+For detailed algorithm explanations, see [docs/CURRENT_MATCHUP_ALGORITHM.md](docs/CURRENT_MATCHUP_ALGORITHM.md).
+
+## Match-up Logic
+
+### Break/Pause Fairness
+
+When there are more players than available court slots, some players must sit out each round. The app ensures fairness using this priority system:
+
+1. **Fewest pauses** (ascending) - Players with fewer breaks go first
+2. **Most games played** (descending) - Among equal pauses, those who played more sit out
+3. **Random selection** - Among players with equal priority
+
+**Example:** With 14 players and 3 courts (12 slots), 2 players sit out each round. The algorithm ensures no player sits out consecutive rounds unless necessary.
+
+### Lane/Court Assignment
+
+Courts are assigned to matches using one of two strategies:
+
+- **Sequential (default):** Best-ranked matches get first courts
+- **Random:** Courts are shuffled for variety
+
+### Final Round Pairing
+
+After the minimum number of rounds (default: 3), you can start the final round with special pairing strategies:
+
+1. **Balanced (default):** Rank 1+3 vs Rank 2+4
+2. **Top Alliance:** Rank 1+2 vs Rank 3+4
+3. **Max Competition:** Rank 1+4 vs Rank 2+3
+
+These strategies create exciting finale matches based on tournament standings.
+
+## Tie-Breaker System
+
+The app uses a comprehensive 5-level hierarchical ranking system to determine player standings:
+
+### 1. Total Points (Primary Criterion)
+The sum of all points scored across all matches.
+
+**Example:**
+- Player A: Match 1 (15) + Match 2 (18) + Match 3 (12) = **45 points**
+- Player B: Match 1 (20) + Match 2 (14) + Match 3 (11) = **45 points**
+
+If tied → proceed to level 2
+
+### 2. Number of Wins (1st Tie-breaker)
+Count of matches won (team score higher than opponent).
+
+**Example:**
+- Player A: 2 wins, 1 loss
+- Player B: 1 win, 2 losses
+
+**Result:** Player A ranks higher
+
+If tied → proceed to level 3
+
+### 3. Head-to-Head Record (2nd Tie-breaker)
+Direct results when players faced each other as opponents.
+
+**How it works:**
+- Find all matches where both players were opponents (not partners)
+- Sum points scored in those matches
+- Higher head-to-head points wins
+
+**Special cases:**
+- Players never met: Skip to next criterion
+- Players were partners: Doesn't count for H2H
+- Multiple meetings: Sum all H2H matches
+
+If tied or not applicable → proceed to level 4
+
+### 4. Biggest Win Margin (3rd Tie-breaker)
+The largest margin of victory in any single match.
+
+**Example:**
+- Player A's wins: 18-12 (margin: 6), 20-15 (margin: 5) → **Biggest: 6**
+- Player B's wins: 17-14 (margin: 3) → **Biggest: 3**
+
+**Result:** Player A ranks higher
+
+**Note:** Players with no wins have biggest win margin = 0
+
+If tied → proceed to level 5
+
+### 5. Smallest Loss Margin (4th Tie-breaker)
+The smallest margin of defeat (closest loss = better performance).
+
+**Example:**
+- Player A's losses: 12-18 (margin: 6), 10-20 (margin: 10) → **Smallest: 6**
+- Player B's losses: 14-17 (margin: 3), 11-19 (margin: 8) → **Smallest: 3**
+
+**Result:** Player B ranks higher (3 < 6, closer match)
+
+**Note:** Players with no losses have smallest loss margin = 0 (best possible)
+
+If still tied → players share the same rank
+
 ### Validation Rules
 
 #### Players
