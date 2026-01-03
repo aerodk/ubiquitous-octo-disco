@@ -105,11 +105,6 @@ class _MatchCardState extends State<MatchCard> {
                 ),
                 const Spacer(),
                 IconButton(
-                  icon: Icon(Icons.edit, color: AppColors.textLight, size: 24 * sizeScale),
-                  onPressed: () => _showScoreInput(),
-                  tooltip: 'Indtast score',
-                ),
-                IconButton(
                   icon: Icon(Icons.info_outline, color: AppColors.textLight, size: 24 * sizeScale),
                   onPressed: _showMatchupReasoning,
                   tooltip: 'Vis kamp begrundelse',

@@ -136,7 +136,7 @@ void main() {
       expect(find.text('6'), findsOneWidget);
     });
 
-    testWidgets('should display edit button', (WidgetTester tester) async {
+    testWidgets('should display info button', (WidgetTester tester) async {
       final match = Match(
         court: Court(id: '1', name: 'Bane 1'),
         team1: Team(
@@ -157,7 +157,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.edit), findsOneWidget);
+      expect(find.byIcon(Icons.info_outline), findsOneWidget);
       expect(find.byIcon(Icons.sports_tennis), findsOneWidget);
     });
 
