@@ -4,18 +4,18 @@ import '../models/match.dart';
 import '../models/round.dart';
 import '../models/player_stats.dart';
 
-/// Service implementing the Mexicano algorithm for competitive point-based pairing
+/// Service implementing the Social-Mexicano algorithm for strategic partner/opponent pairing
+/// Based on Specification F-006
 /// 
-/// The Mexicano algorithm:
+/// The Social-Mexicano algorithm:
 /// 1. Sorts players by total points (highest first)
-/// 2. Pairs players within point-difference threshold (PRIORITY 1), preferring similar rankings (PRIORITY 2)
-/// 3. Matches teams by combined points for competitive balance (PRIORITY 1)
-/// 4. Creates balanced, competitive games
+/// 2. Pairs players to minimize partner repetition (PRIORITY 1), preferring similar rankings (PRIORITY 2)
+/// 3. Matches pairs to minimize opponent repetition (PRIORITY 1), preferring sequential pairs (PRIORITY 2)
+/// 4. Creates socially diverse games, though may be competitively unbalanced
 /// 
-/// Key difference from Social-Mexicano: Prioritizes competitive balance through point-difference
-/// limits over meeting variety. Players with large point gaps won't be paired even if they
-/// haven't played together before.
-class MexicanoAlgorithmService {
+/// Note: This was the original "Mexicano" implementation, renamed to clarify it prioritizes
+/// social variety (meeting different people) over competitive balance.
+class SocialMexicanoAlgorithmService {
   /// Calculate player statistics from all previous rounds
   /// Returns a map of player ID to PlayerStats
   Map<String, PlayerStats> calculatePlayerStats(
@@ -96,25 +96,14 @@ class MexicanoAlgorithmService {
     );
   }
   
-  /// Get point difference threshold based on round number
-  /// Early rounds: tighter threshold (less point separation)
-  /// Later rounds: looser threshold (clear tiers emerge)
-  int _getPointDifferenceThreshold(int roundNumber) {
-    if (roundNumber <= 3) return 8;   // Early rounds: tight pairing
-    if (roundNumber <= 5) return 12;  // Mid rounds: moderate pairing
-    return 16;                         // Late rounds: allow tier formation
-  }
-  
-  /// Generate optimal pairs from sorted players with point-difference constraints
-  /// Prioritizes: 1) Point difference within threshold, 2) Closest in ranking, 3) Fewest times played together
+  /// Generate optimal pairs from sorted players
+  /// Prioritizes: 1) Fewest times played together, 2) Closest in ranking
   List<Team> generateOptimalPairs(
     List<Player> sortedPlayers,
     Map<String, PlayerStats> stats,
-    int roundNumber,
   ) {
     final pairs = <Team>[];
     final usedPlayers = <String>{};
-    final threshold = _getPointDifferenceThreshold(roundNumber);
     
     // Iterate through players in ranking order
     for (int i = 0; i < sortedPlayers.length; i++) {
@@ -122,54 +111,26 @@ class MexicanoAlgorithmService {
       
       if (usedPlayers.contains(player1.id)) continue;
       
-      final player1Points = stats[player1.id]!.totalPoints;
-      
       // Find best partner for this player
       Player? bestPartner;
-      int bestRankingDiff = 999;
       int minPartnerCount = 999;
-      int currentThreshold = threshold;
+      int bestRankingDiff = 999;
       
-      // Try with current threshold first, then gradually increase if needed
-      while (bestPartner == null && currentThreshold <= threshold * 4) {
-        for (int j = i + 1; j < sortedPlayers.length; j++) {
-          final player2 = sortedPlayers[j];
-          
-          if (usedPlayers.contains(player2.id)) continue;
-          
-          final player2Points = stats[player2.id]!.totalPoints;
-          final pointDiff = (player1Points - player2Points).abs();
-          
-          // Priority 1: Point difference within threshold
-          if (pointDiff > currentThreshold) continue;
-          
-          final partnerCount = stats[player1.id]!.getPartnerCount(player2.id);
-          final rankingDiff = (j - i).abs();
-          
-          // Priority 2: Closest in ranking
-          // Priority 3: Fewest times played together
-          if (rankingDiff < bestRankingDiff ||
-              (rankingDiff == bestRankingDiff && partnerCount < minPartnerCount)) {
-            bestPartner = player2;
-            bestRankingDiff = rankingDiff;
-            minPartnerCount = partnerCount;
-          }
-        }
+      for (int j = i + 1; j < sortedPlayers.length; j++) {
+        final player2 = sortedPlayers[j];
         
-        // If no partner found, increase threshold and try again
-        if (bestPartner == null) {
-          currentThreshold += 4;
-        }
-      }
-      
-      // Fallback: if still no partner, take the closest available player
-      if (bestPartner == null) {
-        for (int j = i + 1; j < sortedPlayers.length; j++) {
-          final player2 = sortedPlayers[j];
-          if (!usedPlayers.contains(player2.id)) {
-            bestPartner = player2;
-            break;
-          }
+        if (usedPlayers.contains(player2.id)) continue;
+        
+        final partnerCount = stats[player1.id]!.getPartnerCount(player2.id);
+        final rankingDiff = (j - i).abs();
+        
+        // Priority 1: Fewest times played together
+        // Priority 2: Closest in ranking
+        if (partnerCount < minPartnerCount ||
+            (partnerCount == minPartnerCount && rankingDiff < bestRankingDiff)) {
+          bestPartner = player2;
+          minPartnerCount = partnerCount;
+          bestRankingDiff = rankingDiff;
         }
       }
       
@@ -184,7 +145,7 @@ class MexicanoAlgorithmService {
   }
   
   /// Match pairs to create games
-  /// Prioritizes: 1) Similar combined team points, 2) Fewest opponent encounters, 3) Sequential pairs
+  /// Prioritizes: 1) Fewest opponent encounters, 2) Sequential pairs
   List<Match> matchPairsToGames(
     List<Team> pairs,
     List<Court> courts,
@@ -198,35 +159,23 @@ class MexicanoAlgorithmService {
       if (usedPairs.contains(i)) continue;
       
       final team1 = pairs[i];
-      final team1Points = stats[team1.player1.id]!.totalPoints + 
-                         stats[team1.player2.id]!.totalPoints;
       
       // Find best opponent pair
       Team? bestOpponent;
       int bestOpponentIndex = -1;
-      int minPointsDiff = 999;
       int minOpponentCount = 999;
       
       for (int j = i + 1; j < pairs.length; j++) {
         if (usedPairs.contains(j)) continue;
         
         final team2 = pairs[j];
-        final team2Points = stats[team2.player1.id]!.totalPoints + 
-                           stats[team2.player2.id]!.totalPoints;
-        
-        // Calculate combined points difference
-        final pointsDiff = (team1Points - team2Points).abs();
         
         // Count total opponent encounters (all 4 combinations)
         final opponentCount = _countPreviousOpponents(team1, team2, stats);
         
-        // Priority 1: Minimize combined points difference (competitive balance)
-        // Priority 2: Minimize opponent encounters
-        if (pointsDiff < minPointsDiff ||
-            (pointsDiff == minPointsDiff && opponentCount < minOpponentCount)) {
+        if (opponentCount < minOpponentCount) {
           bestOpponent = team2;
           bestOpponentIndex = j;
-          minPointsDiff = pointsDiff;
           minOpponentCount = opponentCount;
         }
       }

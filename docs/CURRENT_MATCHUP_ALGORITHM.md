@@ -1,31 +1,41 @@
-# Tournament Matchup Algorithms - Americano vs Mexicano
+# Tournament Matchup Algorithms - Americano vs Mexicano vs Social-Mexicano
 
-This document provides a comprehensive explanation of the two matchup algorithms available in the Padel Tournament application.
+This document provides a comprehensive explanation of the three matchup algorithms available in the Padel Tournament application.
 
-## Terminology Update
+## Terminology
 
-Based on user feedback, the matchup algorithms are now defined as follows:
+The matchup algorithms are defined as follows:
 
 - **Americano:** Random shuffling for partner/opponent selection (current implementation)
-- **Mexicano:** Rank-based pairing with partner/opponent history tracking (from Specification F-006)
+- **Mexicano:** Point-based competitive pairing (NEW - default, recommended)
+- **Social-Mexicano:** Meeting-based variety pairing (formerly called "Mexicano")
 
 ## Executive Summary
 
-### Current Implementation: Americano (Random Shuffling)
+### Americano (Random Shuffling)
 
 The algorithm uses **random shuffling** for player assignment in all round types:
 1. **First Round:** Players are randomly shuffled and grouped into matches of 4
 2. **Regular Rounds:** Players are randomly shuffled again (after selecting who sits out)
 3. **Final Round:** Uses rank-based pairing strategies
 
-### Planned Implementation: Mexicano (Strategic Pairing)
+### Mexicano (Point-Based Competitive) - NEW DEFAULT
 
-The Mexicano algorithm (from Specification F-006) implements sophisticated partner/opponent selection:
+The Mexicano algorithm implements sophisticated point-based partner/opponent selection:
 - Sort players by total points after each round
-- Pair players with similar rankings
+- Pair players with similar point totals (within threshold)
+- Match teams with similar combined points for competitive balance
+- Track partner/opponent history as secondary priority
+- Creates balanced, competitive games throughout the tournament
+
+### Social-Mexicano (Meeting-Based Variety)
+
+The Social-Mexicano algorithm (formerly called "Mexicano") implements meeting-focused partner/opponent selection:
+- Sort players by total points after each round
+- Pair players to minimize partner repetition (PRIORITY 1), prefer similar rankings (PRIORITY 2)
 - Track and rotate partners to avoid repetition
 - Track and vary opponents to ensure variety
-- Match teams with similar combined point totals
+- May create unbalanced matches when top and bottom players haven't met yet
 
 ## Example Walkthrough: 14 Players, 3 Courts
 
@@ -194,9 +204,9 @@ Regular rounds continue using the same Americano algorithm:
 
 ---
 
-## PART 2: MEXICANO ALGORITHM (Planned Implementation)
+## PART 2: MEXICANO ALGORITHM (Point-Based Competitive - NEW DEFAULT)
 
-The Mexicano algorithm implements sophisticated partner/opponent selection based on Specification F-006.
+The Mexicano algorithm implements sophisticated point-based partner/opponent selection for competitive balance.
 
 ---
 
@@ -204,7 +214,7 @@ The Mexicano algorithm implements sophisticated partner/opponent selection based
 
 ### Algorithm: `generateNextRound()` with Mexicano Mode
 
-**Location:** To be implemented in `lib/services/tournament_service.dart`
+**Location:** `lib/services/tournament_service.dart` and `lib/services/mexicano_algorithm_service.dart`
 
 ### Step-by-Step Process:
 
@@ -259,56 +269,68 @@ For 2 overflow in Round 2:
 → Example: Player 7 (rank 14) and Player 3 (rank 13)
 ```
 
-#### Step 4: Generate Optimal Pairs (History-Aware)
+#### Step 4: Generate Optimal Pairs (Point-Difference Constraints)
 ```
 Active players (12 total): Ranks 1-6, 8-12 (excluding ranks 13-14)
 [Player 5, Player 12, Player 9, Player 1, Player 14, Player 2,
  Player 8, Player 11, Player 4, Player 6, Player 13, Player 10]
 
-Pair Generation Algorithm:
+Pair Generation Algorithm (NEW):
 For each player (in ranking order):
   If player not yet paired:
     Find best partner from remaining players:
-      Priority 1: Fewest times played together (partner history)
-      Priority 2: Closest in ranking (minimize rank difference)
+      Priority 1: Point difference ≤ threshold (Round 2: 8 points)
+                  Filter out partners with too large point difference
+      Priority 2: Among valid partners, minimize ranking difference
+      Priority 3: Among equal rank differences, minimize partner count
     
     Create pair and mark both players as used
 
+Point Difference Thresholds:
+- Round 2-3: 8 points (early rounds, tight pairing)
+- Round 4-5: 12 points (mid rounds, moderate pairing)
+- Round 6+: 16 points (late rounds, allow tier formation)
+
 Example pairs (Round 2):
-Pair 1: Player 5 (R1) + Player 9 (R3)   [partnerCount=0, rankDiff=2]
-Pair 2: Player 12 (R2) + Player 1 (R4)  [partnerCount=0, rankDiff=2]
-Pair 3: Player 14 (R5) + Player 2 (R6)  [partnerCount=0, rankDiff=1]
-Pair 4: Player 8 (R7) + Player 11 (R8)  [partnerCount=0, rankDiff=1]
-Pair 5: Player 4 (R9) + Player 6 (R10)  [partnerCount=0, rankDiff=1]
-Pair 6: Player 13 (R11) + Player 10 (R12) [partnerCount=0, rankDiff=1]
+Pair 1: Player 5 (R1, 18pts) + Player 12 (R2, 18pts) [0pt diff ✅]
+Pair 2: Player 9 (R3, 18pts) + Player 1 (R4, 16pts)  [2pt diff ✅]
+Pair 3: Player 14 (R5, 16pts) + Player 2 (R6, 14pts) [2pt diff ✅]
+Pair 4: Player 8 (R7, 12pts) + Player 11 (R8, 12pts) [0pt diff ✅]
+Pair 5: Player 4 (R9, 10pts) + Player 6 (R10, 10pts) [0pt diff ✅]
+Pair 6: Player 13 (R11, 8pts) + Player 10 (R12, 8pts) [0pt diff ✅]
+
+NOTE: Top players (18pts) NOT paired with bottom players (6-8pts) due to point threshold!
 ```
 
-#### Step 5: Match Pairs to Games (Opponent-Aware)
+#### Step 5: Match Pairs to Games (Team Balance Priority)
 ```
-Match Generation Algorithm:
+Match Generation Algorithm (NEW):
 For each pair (in order):
   If pair not yet matched:
+    Calculate combined points for current pair
     Find best opponent pair from remaining pairs:
-      Priority 1: Fewest total opponent encounters (all 4 players)
-      Priority 2: Closest in pair ranking (sequential)
+      Priority 1: Minimize combined points difference between teams
+                  Ensures competitive matches
+      Priority 2: Among similar combined points, minimize opponent history
+      Priority 3: Sequential (next pair in list)
     
     Create match and mark both pairs as used
 
 Example matches (Round 2):
-Match 1: Pair 1 vs Pair 2
-  Team 1: Player 5 (R1) & Player 9 (R3)
-  Team 2: Player 12 (R2) & Player 1 (R4)
-  [opponentCount=0 for all pairings, pairs are sequential]
+Match 1: Pair 1 (36pts combined) vs Pair 2 (34pts combined)
+  Team 1: Player 5 (18) & Player 12 (18) = 36pts
+  Team 2: Player 9 (18) & Player 1 (16) = 34pts
+  [2pt team difference ✅ Competitive!]
 
-Match 2: Pair 3 vs Pair 4
-  Team 1: Player 14 (R5) & Player 2 (R6)
-  Team 2: Player 8 (R7) & Player 11 (R8)
-  [opponentCount=0 for all pairings, pairs are sequential]
+Match 2: Pair 3 (30pts combined) vs Pair 4 (24pts combined)
+  Team 1: Player 14 (16) & Player 2 (14) = 30pts
+  Team 2: Player 8 (12) & Player 11 (12) = 24pts
+  [6pt team difference ✅ Reasonable balance]
 
-Match 3: Pair 5 vs Pair 6
-  Team 1: Player 4 (R9) & Player 6 (R10)
-  Team 2: Player 13 (R11) & Player 10 (R12)
-  [opponentCount=0 for all pairings, pairs are sequential]
+Match 3: Pair 5 (20pts combined) vs Pair 6 (16pts combined)
+  Team 1: Player 4 (10) & Player 6 (10) = 20pts
+  Team 2: Player 13 (8) & Player 10 (8) = 16pts
+  [4pt team difference ✅ Competitive!]
 ```
 
 #### Step 6: Assign Courts
@@ -317,36 +339,129 @@ Sequential or random assignment to Bane 1, 2, 3
 ### Result for Round 2 - MEXICANO:
 | Court | Team 1 | Team 2 | Break Players |
 |-------|--------|--------|---------------|
-| Bane 1 | Player 5 (R1) & Player 9 (R3) | Player 12 (R2) & Player 1 (R4) | Player 7 (R14) |
-| Bane 2 | Player 14 (R5) & Player 2 (R6) | Player 8 (R7) & Player 11 (R8) | Player 3 (R13) |
-| Bane 3 | Player 4 (R9) & Player 6 (R10) | Player 13 (R11) & Player 10 (R12) | |
+| Bane 1 | Player 5 (18) & Player 12 (18) | Player 9 (18) & Player 1 (16) | Player 7 (6) |
+| Bane 2 | Player 14 (16) & Player 2 (14) | Player 8 (12) & Player 11 (12) | Player 3 (6) |
+| Bane 3 | Player 4 (10) & Player 6 (10) | Player 13 (8) & Player 10 (8) | |
 
 ### Key Characteristics of Mexicano:
-- ✅ **Fair break distribution** - same pause fairness as Americano
-- ✅ **Point-based ranking** - players sorted by performance
-- ✅ **Partner rotation** - tracks history, avoids repetition
-- ✅ **Opponent variety** - tracks history, ensures diverse matchups
-- ✅ **Skill balancing** - similar-ranked players paired and matched
-- ✅ **Competitive balance** - teams with similar combined rankings face each other
+- ✅ **Fair break distribution** - same pause fairness as Americano and Social-Mexicano
+- ✅ **Point-based pairing** - players sorted by performance
+- ✅ **Competitive balance** - point-difference thresholds enforced
+- ✅ **Team balance** - teams matched by combined points
+- ✅ **Engaging matches** - similar-skilled players compete together
+- ✅ **Adaptive thresholds** - tighter early, looser late as tiers form
+- ⚠️ **Less social variety** - may play with/against same people if skill levels differ significantly
 
 ---
 
-## Round 3+: MEXICANO Continues Strategic Pairing
+## PART 3: SOCIAL-MEXICANO ALGORITHM (Meeting-Based Variety)
 
-Each subsequent round in Mexicano mode:
-1. Recalculates all player statistics (points, partners, opponents)
-2. Re-sorts players by current total points
-3. Applies fair break selection
-4. Generates optimal pairs avoiding previous partners
-5. Matches pairs avoiding previous opponents
-6. Creates balanced, competitive games
+The Social-Mexicano algorithm (formerly called "Mexicano") implements meeting-focused partner/opponent selection.
 
-**Mexicano Advantages:**
-- ✅ Players rotate through different partners
-- ✅ Players face variety of opponents
-- ✅ Similar-skilled players compete together
-- ✅ Games remain competitive throughout tournament
-- ✅ Strategic depth and engagement
+---
+
+## Round 2+: Regular Round Generation - SOCIAL-MEXICANO
+
+### Algorithm: `generateNextRound()` with Social-Mexicano Mode
+
+**Location:** `lib/services/tournament_service.dart` and `lib/services/social_mexicano_algorithm_service.dart`
+
+### Step-by-Step Process:
+
+#### Step 1: Calculate Player Statistics
+```
+For each player, calculate from all previous rounds:
+- Total points scored
+- Games played
+- Partner history: Map<Player, int> (times played together)
+- Opponent history: Map<Player, int> (times faced)
+- Pause rounds: List<int> (which rounds sat out)
+
+Example after Round 1:
+Player 5:  totalPoints=18, gamesPlayed=1, partners={Player 12: 1}, opponents={Player 3: 1, Player 7: 1}
+Player 12: totalPoints=18, gamesPlayed=1, partners={Player 5: 1}, opponents={Player 3: 1, Player 7: 1}
+Player 3:  totalPoints=6,  gamesPlayed=1, partners={Player 7: 1}, opponents={Player 5: 1, Player 12: 1}
+Player 7:  totalPoints=6,  gamesPlayed=1, partners={Player 3: 1}, opponents={Player 5: 1, Player 12: 1}
+...
+```
+
+#### Step 2: Sort Players by Total Points (Descending)
+```
+Sorted ranking after Round 1 (example):
+1. Player 5  (18 points)
+2. Player 12 (18 points)
+3. Player 9  (18 points)
+4. Player 1  (16 points)
+5. Player 14 (16 points)
+6. Player 2  (14 points)
+7. Player 8  (12 points)
+8. Player 11 (12 points)
+9. Player 4  (10 points)
+10. Player 6 (10 points)
+#### Step 1: Calculate Player Statistics
+Same as Mexicano - track all player stats including partner/opponent history.
+
+#### Step 2: Sort Players by Total Points (Descending)
+Same as Mexicano - create ranking based on performance.
+
+#### Step 3: Select Break Players (Same Fairness Logic)
+Same as Mexicano and Americano.
+
+#### Step 4: Generate Optimal Pairs (History-Aware, NO Point Constraints)
+```
+Active players (12 total): Ranks 1-6, 8-12 (excluding ranks 13-14)
+[Player 5, Player 12, Player 9, Player 1, Player 14, Player 2,
+ Player 8, Player 11, Player 4, Player 6, Player 13, Player 10]
+
+Pair Generation Algorithm (ORIGINAL):
+For each player (in ranking order):
+  If player not yet paired:
+    Find best partner from remaining players:
+      Priority 1: Fewest times played together (partner history)
+      Priority 2: Closest in ranking (minimize rank difference)
+    
+    Create pair and mark both players as used
+
+Example pairs (Round 2) - PROBLEM SCENARIO:
+Player 5 (R1, 18pts) has never partnered with Player 13 (R11, 8pts)
+Player 5 HAS partnered with Player 12 (R2, 18pts) in Round 1
+
+Social-Mexicano chooses: Player 5 + Player 13 [10pt diff ⚠️ Unbalanced!]
+Instead of: Player 5 + Player 12 [0pt diff ✅ Balanced]
+
+This is the CORE PROBLEM addressed by the new Mexicano algorithm!
+```
+
+#### Step 5: Match Pairs to Games (Opponent History Priority)
+```
+Match Generation Algorithm (ORIGINAL):
+For each pair (in order):
+  If pair not yet matched:
+    Find best opponent pair from remaining pairs:
+      Priority 1: Fewest total opponent encounters (all 4 players)
+      Priority 2: Sequential (next pair in list)
+    
+    Create match and mark both pairs as used
+
+Focus is on meeting variety, NOT competitive balance.
+```
+
+### Key Characteristics of Social-Mexicano:
+- ✅ **Fair break distribution** - same pause fairness as other formats
+- ✅ **Point-based ranking** - players sorted by performance
+- ✅ **Partner rotation** - tracks history, avoids repetition (PRIORITY 1)
+- ✅ **Opponent variety** - tracks history, ensures diverse matchups
+- ✅ **Maximum social mixing** - everyone plays with/against different people
+- ❌ **Can be unbalanced** - top + bottom players paired if they haven't met
+- ❌ **Frustrating for competitive players** - skill gaps can be too large
+
+---
+
+## Round 3+: Both Algorithms Continue Their Strategies
+
+Each subsequent round:
+- **Mexicano**: Recalculates stats, enforces point thresholds, creates balanced matches
+- **Social-Mexicano**: Recalculates stats, maximizes meeting variety, may create unbalanced matches
 
 ---
 

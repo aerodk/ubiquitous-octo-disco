@@ -140,8 +140,25 @@ class _TournamentSettingsWidgetState extends State<TournamentSettingsWidget> {
         const SizedBox(height: 12),
         RadioListTile<TournamentFormat>(
           title: const Text('Mexicano (Anbefalet)'),
-          subtitle: const Text('Strategisk parring baseret på point og historik. Sikrer partner-rotation og modstander-variation.'),
+          subtitle: const Text('Konkurrencedygtig balance baseret på point-forskel. Spillere med lignende point spiller sammen for lige kampe.'),
           value: TournamentFormat.mexicano,
+          groupValue: _currentSettings.format,
+          onChanged: widget.enabled
+              ? (value) {
+                  if (value != null) {
+                    _updateSettings(_currentSettings.copyWith(
+                      format: value,
+                    ));
+                  }
+                }
+              : null,
+          dense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 0),
+        ),
+        RadioListTile<TournamentFormat>(
+          title: const Text('Social-Mexicano'),
+          subtitle: const Text('Maksimal social variation, undgår gentagelse. Sikrer partner-rotation og modstander-variation, men kampe kan være ubalancerede.'),
+          value: TournamentFormat.socialMexicano,
           groupValue: _currentSettings.format,
           onChanged: widget.enabled
               ? (value) {

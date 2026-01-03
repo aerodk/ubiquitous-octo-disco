@@ -5,9 +5,11 @@ import '../models/round.dart';
 import '../models/player_standing.dart';
 import '../models/tournament_settings.dart';
 import 'mexicano_algorithm_service.dart';
+import 'social_mexicano_algorithm_service.dart';
 
 class TournamentService {
   final MexicanoAlgorithmService _mexicanoService = MexicanoAlgorithmService();
+  final SocialMexicanoAlgorithmService _socialMexicanoService = SocialMexicanoAlgorithmService();
   /// Assigns courts to matches based on the lane assignment strategy
   /// Sequential: Best players on first lanes (default)
   /// Random: Randomize lane assignments
@@ -163,6 +165,15 @@ class TournamentService {
         laneStrategy: laneStrategy,
         previousRounds: previousRounds,
       );
+    } else if (format == TournamentFormat.socialMexicano) {
+      return _generateNextRoundSocialMexicano(
+        players,
+        courts,
+        standings,
+        roundNumber,
+        laneStrategy: laneStrategy,
+        previousRounds: previousRounds,
+      );
     } else {
       return _generateNextRoundAmericano(
         players,
@@ -242,7 +253,7 @@ class TournamentService {
     );
   }
 
-  /// Generate next round using Mexicano format (strategic pairing)
+  /// Generate next round using Mexicano format (point-based competitive pairing)
   Round _generateNextRoundMexicano(
     List<Player> players,
     List<Court> courts,
@@ -275,14 +286,73 @@ class TournamentService {
     // Sort active players by points (highest first)
     final sortedPlayers = _mexicanoService.sortPlayersByPoints(activePlayers, playerStats);
 
-    // Generate optimal pairs (minimize partner repetition, prefer similar rankings)
-    final pairs = _mexicanoService.generateOptimalPairs(sortedPlayers, playerStats);
+    // Generate optimal pairs (point-difference constraints, minimize partner repetition)
+    final pairs = _mexicanoService.generateOptimalPairs(sortedPlayers, playerStats, roundNumber);
 
-    // Match pairs to create games (minimize opponent repetition)
+    // Match pairs to create games (balance combined team points)
     final tempMatches = _mexicanoService.matchPairsToGames(pairs, courts, playerStats);
 
     // Apply lane assignment strategy with reasoning
-    const pairingDescription = 'Mexicano: Spillere sorteres efter point og parres strategisk.\n'
+    const pairingDescription = 'Mexicano: Konkurrencedygtig balance baseret på point-forskel.\n'
+        'Partner-valg prioriterer: 1) Point-forskel indenfor grænse, 2) Tæt på i rangering.\n'
+        'Modstander-valg prioriterer: Lige stærke hold (kombinerede point).';
+    
+    final matches = _assignCourtsToMatches(
+      tempMatches,
+      courts,
+      laneStrategy,
+      roundType: 'regular',
+      pairingDescription: pairingDescription,
+    );
+
+    return Round(
+      roundNumber: roundNumber,
+      matches: matches,
+      playersOnBreak: playersOnBreak,
+    );
+  }
+
+  /// Generate next round using Social-Mexicano format (meeting-based variety pairing)
+  Round _generateNextRoundSocialMexicano(
+    List<Player> players,
+    List<Court> courts,
+    List<PlayerStanding> standings,
+    int roundNumber, {
+    LaneAssignmentStrategy laneStrategy = LaneAssignmentStrategy.sequential,
+    List<Round> previousRounds = const [],
+  }) {
+    final totalPlayers = players.length;
+    final overflowCount = _computeOverflowCount(totalPlayers, courts.length);
+
+    // Select players for break using pause fairness logic
+    final playersOnBreak = <Player>[];
+    if (overflowCount > 0) {
+      playersOnBreak.addAll(_selectBreakPlayersWithFairness(
+        players,
+        standings,
+        overflowCount,
+      ));
+    }
+
+    // Get active players (those not on break)
+    final activePlayers = players
+        .where((p) => !playersOnBreak.any((bp) => bp.id == p.id))
+        .toList();
+
+    // Calculate player statistics from previous rounds
+    final playerStats = _socialMexicanoService.calculatePlayerStats(players, previousRounds);
+
+    // Sort active players by points (highest first)
+    final sortedPlayers = _socialMexicanoService.sortPlayersByPoints(activePlayers, playerStats);
+
+    // Generate optimal pairs (minimize partner repetition, prefer similar rankings)
+    final pairs = _socialMexicanoService.generateOptimalPairs(sortedPlayers, playerStats);
+
+    // Match pairs to create games (minimize opponent repetition)
+    final tempMatches = _socialMexicanoService.matchPairsToGames(pairs, courts, playerStats);
+
+    // Apply lane assignment strategy with reasoning
+    const pairingDescription = 'Social-Mexicano: Maksimal social variation, undgår gentagelse.\n'
         'Partner-valg prioriterer: 1) Mindst gange spillet sammen, 2) Tæt på i rangering.\n'
         'Modstander-valg prioriterer: Mindst gange mødt hinanden.';
     

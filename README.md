@@ -1,10 +1,10 @@
-# Padel Tournament App - Americano/Mexicano Format
+# Padel Tournament App - Americano/Mexicano/Social-Mexicano Format
 
 🌐 **Live Demo:** [https://aerodk.github.io/ubiquitous-octo-disco/](https://aerodk.github.io/ubiquitous-octo-disco/)
 
 > **Note:** If the live demo shows this README instead of the app, see [GitHub Pages Setup Guide](GITHUB_PAGES_SETUP.md) for configuration instructions.
 
-A Flutter mobile application that helps organize and run Padel tournaments in Americano/Mexicano format.
+A Flutter mobile application that helps organize and run Padel tournaments in Americano, Mexicano, and Social-Mexicano formats.
 
 ## Latest Features - Version 8.0: Firebase Cloud Storage ☁️
 
@@ -26,6 +26,27 @@ A Flutter mobile application that helps organize and run Padel tournaments in Am
 4. **Update**: Make changes and save again with the same codes
 
 See [Firebase Setup Guide](docs/FIREBASE_SETUP.md) for deployment configuration.
+
+## Tournament Formats
+
+The app supports three tournament formats for different play styles:
+
+### 🏆 Mexicano (Recommended - Competitive)
+**Point-based competitive pairing** - Creates balanced, competitive matches by prioritizing players with similar skill levels (point totals). Players with large point differences won't be paired together, ensuring fair and engaging games throughout the tournament.
+
+**Best for:** Competitive tournaments where match balance is important.
+
+### 👥 Social-Mexicano (Social Variety)
+**Meeting-based variety pairing** - Maximizes social interaction by ensuring all players get to play with and against different people. Prioritizes avoiding partner/opponent repetition, though matches may be unbalanced if top and bottom players meet.
+
+**Best for:** Social events where meeting variety matters more than competitive balance.
+
+### 🎲 Americano (Random)
+**Random pairing** - Simple, unpredictable matchups using random shuffling. Quick and easy, but may repeat partners and opponents.
+
+**Best for:** Casual play and equal opportunity for all.
+
+See [Algorithm Comparison](docs/MEXICANO_ALGORITHM_COMPARISON.md) for detailed technical documentation.
 
 ## Version 1.0 - MVP Implementation
 
