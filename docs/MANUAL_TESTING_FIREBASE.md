@@ -22,7 +22,7 @@ This guide provides step-by-step instructions for manually testing the Firebase 
 4. Click "Generer Første Runde"
 5. In RoundDisplayScreen, click the cloud upload icon (☁️) in the AppBar
 6. In the SaveTournamentDialog:
-   - Verify default tournament name is "Padel Turnering"
+   - Verify default tournament name includes current date (e.g., "Padel turnering 03-01-2026")
    - Change name if desired (e.g., "Test Tournament 1")
    - Click "Generer Kode"
 7. Wait for loading to complete

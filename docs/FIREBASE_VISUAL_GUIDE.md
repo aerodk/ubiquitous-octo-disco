@@ -76,7 +76,7 @@ This guide provides a visual walkthrough of the Firebase cloud storage feature i
 │  Gem Turnering i Cloud              │
 ├─────────────────────────────────────┤
 │  Turnerings Navn:                   │
-│  [Padel Turnering____________]      │
+│  [Padel turnering 03-01-2026___]    │
 │                                     │
 │  [Annuller]  [Generer Kode]        │
 └─────────────────────────────────────┘

@@ -67,7 +67,7 @@ Future<void> _saveToCloud() async {
 
   // Create tournament with empty rounds list
   final tournament = Tournament(
-    name: 'Padel Turnering',
+    name: Constants.getDefaultTournamentName(), // e.g., "Padel turnering 03-01-2026"
     players: _players,
     courts: courts,
     rounds: [], // Empty - tournament not started

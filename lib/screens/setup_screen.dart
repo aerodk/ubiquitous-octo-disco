@@ -202,7 +202,7 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
 
     // Create tournament with empty rounds list
     final tournament = Tournament(
-      name: Constants.defaultTournamentName,
+      name: Constants.getDefaultTournamentName(),
       players: _players,
       courts: courts,
       rounds: [], // Empty rounds - tournament not started yet
@@ -248,7 +248,7 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
 
       // Create tournament
       final tournament = Tournament(
-        name: Constants.defaultTournamentName,
+        name: Constants.getDefaultTournamentName(),
         players: _players,
         courts: courts,
         rounds: [firstRound],
@@ -415,7 +415,7 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
 
     // Create tournament
     final tournament = Tournament(
-      name: Constants.defaultTournamentName,
+      name: Constants.getDefaultTournamentName(),
       players: _players,
       courts: courts,
       rounds: [firstRound],

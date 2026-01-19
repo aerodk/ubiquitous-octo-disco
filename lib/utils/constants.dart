@@ -15,7 +15,13 @@ class Constants {
 
   // Default names
   static String getDefaultCourtName(int index) => 'Bane ${index + 1}';
-  static const String defaultTournamentName = 'Padel Turnering';
+  static String getDefaultTournamentName() {
+    final now = DateTime.now();
+    final year = now.year;
+    final month = now.month.toString().padLeft(2, '0');
+    final day = now.day.toString().padLeft(2, '0');
+    return 'Padel turnering $day-$month-$year';
+  }
 
   // Player standing constants
   static const int noLossesSentinel = 999; // Used to represent no losses in smallestLossMargin
