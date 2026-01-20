@@ -73,16 +73,18 @@
 1. Generate view-only share link (Test 1)
 2. Open link in new browser window/incognito
 3. Verify tournament loads
-4. Check for "Kun Visning" indicator in title
-5. Try to click on a score to edit
-6. Verify score dialog does NOT open
-7. Check that round generation buttons are hidden
-8. Verify cloud save button is hidden
-9. Verify leaderboard is accessible
-10. Verify export functionality works
+4. Verify app opens to **LeaderboardScreen (standings)** by default
+5. Check for "Kun Visning" indicator in title
+6. Verify leaderboard displays correctly
+7. Try to click on a score to edit
+8. Verify score dialog does NOT open
+9. Check that round generation buttons are hidden
+10. Verify cloud save button is hidden
+11. Verify export functionality works
 
 **Expected Result:**
 - Tournament data visible
+- **Opens to LeaderboardScreen (standings) by default**
 - "Kun Visning" shown in AppBar
 - All editing functions disabled
 - Viewing functions still work
@@ -96,11 +98,13 @@
 1. Generate share link with passcode (Test 2)
 2. Open link in new browser window
 3. Verify tournament loads WITHOUT asking for passcode
-4. Verify still in read-only mode
-5. Verify "Kun Visning" indicator shown
+4. Verify app opens to **LeaderboardScreen (standings)** by default
+5. Verify still in read-only mode
+6. Verify "Kun Visning" indicator shown
 
 **Expected Result:**
 - Automatic loading without passcode prompt
+- **Opens to LeaderboardScreen (standings) by default**
 - Read-only mode enforced
 - All data visible
 
