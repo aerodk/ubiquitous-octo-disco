@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'screens/setup_screen.dart';
 import 'screens/round_display_screen.dart';
+import 'screens/leaderboard_screen.dart';
 import 'screens/tournament_completion_screen.dart';
 import 'services/persistence_service.dart';
 import 'services/share_service.dart';
@@ -104,14 +105,14 @@ class _AppInitializerState extends State<AppInitializer> {
       if (!mounted) return;
 
       // Navigate to appropriate screen based on completion state
+      // For shared links, show standings (leaderboard) as the default screen
       final destination = tournament.isCompleted
           ? TournamentCompletionScreen(
               tournament: tournament,
               isReadOnly: true,
             )
-          : RoundDisplayScreen(
+          : LeaderboardScreen(
               tournament: tournament,
-              enableCloud: false, // Disable cloud sync for shared links
               isReadOnly: true,
             );
 

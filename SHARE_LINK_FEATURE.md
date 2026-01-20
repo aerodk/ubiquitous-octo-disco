@@ -82,6 +82,7 @@ When tournaments are accessed via share links without passcode, they open in rea
    - With passcode: Loads in read-only mode (no verification needed)
 
 3. **View Tournament**
+   - Shared links open to the LeaderboardScreen (standings) by default
    - All data is viewable
    - Clear "Kun Visning" indicator shown
    - Edit/save functions disabled
@@ -95,11 +96,15 @@ The app initializer checks for tournament info in the URL on startup:
 1. Parse URL using ShareService
 2. If tournament found:
    - Load from Firebase (read-only or with passcode)
-   - Navigate to appropriate screen
+   - Navigate to LeaderboardScreen (standings) for active tournaments
+   - Navigate to TournamentCompletionScreen for completed tournaments
 3. If no tournament:
    - Check for saved local tournament
    - Navigate to SetupScreen if none
 ```
+
+**Default Screen for Shared Links:**
+When accessing a tournament via a shared link (view mode), the app shows the **LeaderboardScreen** (standings) as the default view for active tournaments. This allows viewers to immediately see the current tournament standings.
 
 ### Firebase Integration
 Added `loadTournamentReadOnly()` method to FirebaseService:
