@@ -136,7 +136,7 @@ void main() {
       expect(find.text('6'), findsOneWidget);
     });
 
-    testWidgets('should display edit button', (WidgetTester tester) async {
+    testWidgets('should display info button', (WidgetTester tester) async {
       final match = Match(
         court: Court(id: '1', name: 'Bane 1'),
         team1: Team(
@@ -157,7 +157,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.edit), findsOneWidget);
+      expect(find.byIcon(Icons.info_outline), findsOneWidget);
       expect(find.byIcon(Icons.sports_tennis), findsOneWidget);
     });
 
@@ -183,12 +183,10 @@ void main() {
         ),
       );
 
-      // Find the team 1 score display and tap it
-      final team1ScoreDisplays = find.byType(GestureDetector);
-      expect(team1ScoreDisplays, findsAtLeast(1));
-      
-      // Tap the first score display (should be team 1)
-      await tester.tap(team1ScoreDisplays.first);
+      // Find and tap on team 1 score display area
+      // Tap on the score display text (--) for team 1
+      final team1ScoreText = find.text('--').first;
+      await tester.tap(team1ScoreText);
       await tester.pumpAndSettle();
 
       // Verify dialog opened with team 1 active
@@ -218,9 +216,9 @@ void main() {
         ),
       );
 
-      // Tap the team 1 score display
-      final team1ScoreDisplays = find.byType(GestureDetector);
-      await tester.tap(team1ScoreDisplays.first);
+      // Tap on team 1 score display area (tap on the score text)
+      final team1ScoreText = find.text('--').first;
+      await tester.tap(team1ScoreText);
       await tester.pumpAndSettle();
 
       // Verify dialog is open
