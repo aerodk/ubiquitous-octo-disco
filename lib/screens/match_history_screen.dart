@@ -194,6 +194,12 @@ class _MatchHistoryScreenState extends State<MatchHistoryScreen> {
     final double fontScale = _isDesktopMode ? Constants.desktopModeFontScale : 1.0;
     final double sizeScale = _isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
 
+    // Safety check - should never be null since we filter by isCompleted
+    // but add defensive check for safety
+    if (match.team1Score == null || match.team2Score == null) {
+      return const SizedBox.shrink();
+    }
+    
     final team1Score = match.team1Score!;
     final team2Score = match.team2Score!;
     final team1Won = team1Score > team2Score;
