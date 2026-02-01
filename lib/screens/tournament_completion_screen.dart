@@ -518,9 +518,21 @@ class _TournamentCompletionScreenState
     // Make podium significantly larger
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    // Increase scale factor for larger podiums or desktop mode
+    
+    // Calculate base scale factor based on screen dimensions
     // Reduce scale for smaller screens to ensure all 3 places fit
-    final baseScaleFactor = screenWidth > 600 ? 2.5 : (screenHeight < 700 ? 1.2 : 1.5);
+    double baseScaleFactor;
+    if (screenWidth > 600) {
+      // Large screens (tablets/desktop)
+      baseScaleFactor = 2.5;
+    } else if (screenHeight < 700) {
+      // Small mobile screens - use smaller scale to fit all 3 places
+      baseScaleFactor = 1.2;
+    } else {
+      // Medium mobile screens
+      baseScaleFactor = 1.5;
+    }
+    
     final scaleFactor = _isDesktopMode 
       ? baseScaleFactor * Constants.desktopModeScaleFactor 
       : baseScaleFactor;
