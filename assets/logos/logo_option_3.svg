@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Comic-style Action Scene - Dynamic Padel Players - Vibrant Colors -->
+  <defs>
+    <linearGradient id="courtGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4ECDC4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#44A08D;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="player1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF6B6B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E63946;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="player2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4ECDC4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2EC4B6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Court background -->
+  <rect x="50" y="100" width="412" height="320" rx="20" fill="url(#courtGrad)" stroke="#2D5F5D" stroke-width="5"/>
+  
+  <!-- Court lines -->
+  <line x1="256" y1="100" x2="256" y2="420" stroke="#FFFFFF" stroke-width="4" opacity="0.6"/>
+  <line x1="50" y1="260" x2="462" y2="260" stroke="#FFFFFF" stroke-width="4" opacity="0.6"/>
+  
+  <!-- Net -->
+  <rect x="246" y="240" width="20" height="50" fill="#FFD700" stroke="#DAA520" stroke-width="2"/>
+  <line x1="70" y1="250" x2="442" y2="250" stroke="#FFFFFF" stroke-width="3"/>
+  <g stroke="#FFFFFF" stroke-width="1" opacity="0.5">
+    <line x1="100" y1="240" x2="100" y2="260"/>
+    <line x1="140" y1="240" x2="140" y2="260"/>
+    <line x1="180" y1="240" x2="180" y2="260"/>
+    <line x1="220" y1="240" x2="220" y2="260"/>
+    <line x1="290" y1="240" x2="290" y2="260"/>
+    <line x1="330" y1="240" x2="330" y2="260"/>
+    <line x1="370" y1="240" x2="370" y2="260"/>
+    <line x1="410" y1="240" x2="410" y2="260"/>
+  </g>
+  
+  <!-- Player 1 (Left side - jumping) -->
+  <g transform="translate(140, 180)">
+    <!-- Body -->
+    <ellipse cx="0" cy="0" rx="25" ry="35" fill="url(#player1)" stroke="#2D2D2D" stroke-width="3"/>
+    <!-- Head -->
+    <circle cx="0" cy="-45" r="22" fill="#FFD4A3" stroke="#2D2D2D" stroke-width="3"/>
+    <!-- Happy face -->
+    <circle cx="-7" cy="-48" r="3" fill="#2D2D2D"/>
+    <circle cx="7" cy="-48" r="3" fill="#2D2D2D"/>
+    <path d="M -8 -38 Q 0 -32 8 -38" fill="none" stroke="#2D2D2D" stroke-width="2"/>
+    <!-- Arms -->
+    <line x1="-25" y1="-10" x2="-50" y2="-40" stroke="#FFD4A3" stroke-width="8" stroke-linecap="round"/>
+    <line x1="25" y1="-10" x2="50" y2="10" stroke="#FFD4A3" stroke-width="8" stroke-linecap="round"/>
+    <!-- Legs -->
+    <line x1="-10" y1="30" x2="-25" y2="60" stroke="#2E4057" stroke-width="10" stroke-linecap="round"/>
+    <line x1="10" y1="30" x2="20" y2="65" stroke="#2E4057" stroke-width="10" stroke-linecap="round"/>
+    <!-- Racket in hand -->
+    <ellipse cx="-65" cy="-45" rx="18" ry="24" fill="#FFD700" stroke="#B8860B" stroke-width="3" transform="rotate(-30 -65 -45)"/>
+    <rect x="-70" y="-30" width="10" height="25" rx="2" fill="#4A4A4A"/>
+  </g>
+  
+  <!-- Player 2 (Right side - reaching) -->
+  <g transform="translate(360, 320)">
+    <!-- Body -->
+    <ellipse cx="0" cy="0" rx="25" ry="35" fill="url(#player2)" stroke="#2D2D2D" stroke-width="3"/>
+    <!-- Head -->
+    <circle cx="0" cy="-45" r="22" fill="#FFD4A3" stroke="#2D2D2D" stroke-width="3"/>
+    <!-- Focused face -->
+    <circle cx="-7" cy="-48" r="3" fill="#2D2D2D"/>
+    <circle cx="7" cy="-48" r="3" fill="#2D2D2D"/>
+    <line x1="-8" y1="-38" x2="8" y2="-38" stroke="#2D2D2D" stroke-width="2"/>
+    <!-- Arms -->
+    <line x1="-25" y1="-10" x2="-45" y2="5" stroke="#FFD4A3" stroke-width="8" stroke-linecap="round"/>
+    <line x1="25" y1="-10" x2="70" y2="-35" stroke="#FFD4A3" stroke-width="8" stroke-linecap="round"/>
+    <!-- Legs -->
+    <line x1="-10" y1="30" x2="-20" y2="65" stroke="#2E4057" stroke-width="10" stroke-linecap="round"/>
+    <line x1="10" y1="30" x2="30" y2="60" stroke="#2E4057" stroke-width="10" stroke-linecap="round"/>
+    <!-- Racket in hand -->
+    <ellipse cx="85" cy="-40" rx="18" ry="24" fill="#FF6B35" stroke="#D63600" stroke-width="3" transform="rotate(30 85 -40)"/>
+    <rect x="83" y="-25" width="10" height="25" rx="2" fill="#4A4A4A"/>
+  </g>
+  
+  <!-- Ball in action with motion blur -->
+  <g transform="translate(256, 200)">
+    <!-- Motion trail -->
+    <circle cx="-15" cy="-5" r="20" fill="#FFD700" opacity="0.2"/>
+    <circle cx="-8" cy="-3" r="22" fill="#FFD700" opacity="0.3"/>
+    <!-- Main ball -->
+    <circle cx="0" cy="0" r="24" fill="#FFD700" stroke="#DAA520" stroke-width="3"/>
+    <circle cx="-6" cy="-6" r="8" fill="#FFFFFF" opacity="0.6"/>
+  </g>
+  
+  <!-- Comic action words -->
+  <g>
+    <!-- POW! -->
+    <text x="100" y="140" font-family="Arial Black, sans-serif" font-size="32" font-weight="bold" fill="#FFFFFF" stroke="#E63946" stroke-width="3" transform="rotate(-15 100 140)">POW!</text>
+    <text x="100" y="140" font-family="Arial Black, sans-serif" font-size="32" font-weight="bold" fill="#FFD700" transform="rotate(-15 100 140)">POW!</text>
+    
+    <!-- SMASH! -->
+    <text x="370" y="370" font-family="Arial Black, sans-serif" font-size="28" font-weight="bold" fill="#FFFFFF" stroke="#2EC4B6" stroke-width="3" transform="rotate(10 370 370)">SMASH!</text>
+    <text x="370" y="370" font-family="Arial Black, sans-serif" font-size="28" font-weight="bold" fill="#FF6B35" transform="rotate(10 370 370)">SMASH!</text>
+  </g>
+  
+  <!-- Title at top -->
+  <text x="256" y="60" font-family="Arial Black, sans-serif" font-size="48" font-weight="bold" text-anchor="middle" fill="#E63946" stroke="#2D2D2D" stroke-width="4">PADEL!</text>
+  <text x="256" y="60" font-family="Arial Black, sans-serif" font-size="48" font-weight="bold" text-anchor="middle" fill="#FFD700">PADEL!</text>
+  
+  <!-- Speed lines for action effect -->
+  <g stroke="#FFFFFF" stroke-width="3" opacity="0.3" stroke-linecap="round">
+    <line x1="80" y1="150" x2="110" y2="155"/>
+    <line x1="75" y1="170" x2="105" y2="178"/>
+    <line x1="420" y1="350" x2="450" y2="345"/>
+    <line x1="415" y1="330" x2="445" y2="322"/>
+  </g>
+</svg>
