@@ -50,6 +50,55 @@ void main() {
           throwsArgumentError,
         );
       });
+
+      test('should generate link with view parameter (standings)', () {
+        final link = shareService.generateShareLink(
+          tournamentCode: '12345678',
+          view: 'standings',
+        );
+
+        expect(link, contains('/#/tournament/12345678?view=standings'));
+      });
+
+      test('should generate link with view parameter (history)', () {
+        final link = shareService.generateShareLink(
+          tournamentCode: '12345678',
+          view: 'history',
+        );
+
+        expect(link, contains('/#/tournament/12345678?view=history'));
+      });
+
+      test('should generate link with both passcode and view parameter', () {
+        final link = shareService.generateShareLink(
+          tournamentCode: '12345678',
+          includePasscode: true,
+          passcode: '123456',
+          view: 'history',
+        );
+
+        expect(link, contains('/#/tournament/12345678?'));
+        expect(link, contains('p=123456'));
+        expect(link, contains('view=history'));
+      });
+
+      test('should not include view parameter when null', () {
+        final link = shareService.generateShareLink(
+          tournamentCode: '12345678',
+          view: null,
+        );
+
+        expect(link, isNot(contains('view=')));
+      });
+
+      test('should not include view parameter when empty', () {
+        final link = shareService.generateShareLink(
+          tournamentCode: '12345678',
+          view: '',
+        );
+
+        expect(link, isNot(contains('view=')));
+      });
     });
 
     group('parseTournamentFromUrl', () {
@@ -164,6 +213,46 @@ void main() {
 
         expect(result, isNotNull);
         expect(result!['passcode'], equals('000001'));
+      });
+
+      test('should parse view parameter from URL (standings)', () {
+        final uri = Uri.parse('https://example.com/#/tournament/12345678?view=standings');
+        final result = shareService.parseTournamentFromUrl(uri);
+
+        expect(result, isNotNull);
+        expect(result!['view'], equals('standings'));
+      });
+
+      test('should parse view parameter from URL (history)', () {
+        final uri = Uri.parse('https://example.com/#/tournament/12345678?view=history');
+        final result = shareService.parseTournamentFromUrl(uri);
+
+        expect(result, isNotNull);
+        expect(result!['view'], equals('history'));
+      });
+
+      test('should parse both passcode and view parameter from URL', () {
+        final uri = Uri.parse('https://example.com/#/tournament/12345678?p=123456&view=history');
+        final result = shareService.parseTournamentFromUrl(uri);
+
+        expect(result, isNotNull);
+        expect(result!['passcode'], equals('123456'));
+        expect(result['view'], equals('history'));
+      });
+
+      test('should return null for invalid view parameter', () {
+        final uri = Uri.parse('https://example.com/#/tournament/12345678?view=invalid');
+        final result = shareService.parseTournamentFromUrl(uri);
+
+        expect(result, isNull);
+      });
+
+      test('should handle URL without view parameter', () {
+        final uri = Uri.parse('https://example.com/#/tournament/12345678');
+        final result = shareService.parseTournamentFromUrl(uri);
+
+        expect(result, isNotNull);
+        expect(result!['view'], isNull);
       });
     });
   });
