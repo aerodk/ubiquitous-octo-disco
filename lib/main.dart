@@ -5,6 +5,7 @@ import 'screens/setup_screen.dart';
 import 'screens/round_display_screen.dart';
 import 'screens/leaderboard_screen.dart';
 import 'screens/tournament_completion_screen.dart';
+import 'screens/match_history_screen.dart';
 import 'services/persistence_service.dart';
 import 'services/share_service.dart';
 import 'services/firebase_service.dart';
@@ -79,6 +80,7 @@ class _AppInitializerState extends State<AppInitializer> {
   Future<void> _loadTournamentFromUrl(Map<String, dynamic> tournamentInfo) async {
     final code = tournamentInfo['code'] as String;
     final passcode = tournamentInfo['passcode'] as String?;
+    final view = tournamentInfo['view'] as String?;
 
     try {
       // Show loading indicator
@@ -104,17 +106,30 @@ class _AppInitializerState extends State<AppInitializer> {
 
       if (!mounted) return;
 
-      // Navigate to appropriate screen based on completion state
-      // For shared links, show standings (leaderboard) as the default screen
-      final destination = tournament.isCompleted
-          ? TournamentCompletionScreen(
-              tournament: tournament,
-              isReadOnly: true,
-            )
-          : LeaderboardScreen(
-              tournament: tournament,
-              isReadOnly: true,
-            );
+      // Navigate to appropriate screen based on completion state and view parameter
+      Widget destination;
+      
+      if (tournament.isCompleted) {
+        // Completed tournaments always go to completion screen
+        destination = TournamentCompletionScreen(
+          tournament: tournament,
+          isReadOnly: true,
+        );
+      } else {
+        // For active tournaments, respect the view parameter
+        if (view == 'history') {
+          destination = MatchHistoryScreen(
+            tournament: tournament,
+            isReadOnly: true,
+          );
+        } else {
+          // Default to leaderboard (standings)
+          destination = LeaderboardScreen(
+            tournament: tournament,
+            isReadOnly: true,
+          );
+        }
+      }
 
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => destination),

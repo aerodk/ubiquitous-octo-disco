@@ -26,16 +26,19 @@ class ShareService {
   /// - tournamentCode: The 8-digit tournament code
   /// - includePasscode: Whether to include the passcode in the URL
   /// - passcode: The 6-digit passcode (required if includePasscode is true)
+  /// - view: Optional view parameter ('standings' or 'history')
   /// 
   /// Returns a complete URL that can be shared
   /// 
   /// Examples:
   /// - With passcode: https://example.com/#/tournament/12345678?p=123456
   /// - Without passcode: https://example.com/#/tournament/12345678
+  /// - With view parameter: https://example.com/#/tournament/12345678?view=history
   String generateShareLink({
     required String tournamentCode,
     bool includePasscode = false,
     String? passcode,
+    String? view,
   }) {
     if (includePasscode && (passcode == null || passcode.isEmpty)) {
       throw ArgumentError('Passcode is required when includePasscode is true');
@@ -47,8 +50,18 @@ class ShareService {
     // Use hash routing for Flutter web
     buffer.write('/#/tournament/$tournamentCode');
     
+    // Build query parameters
+    final params = <String, String>{};
     if (includePasscode && passcode != null) {
-      buffer.write('?p=$passcode');
+      params['p'] = passcode;
+    }
+    if (view != null && view.isNotEmpty) {
+      params['view'] = view;
+    }
+    
+    if (params.isNotEmpty) {
+      buffer.write('?');
+      buffer.write(params.entries.map((e) => '${e.key}=${e.value}').join('&'));
     }
     
     return buffer.toString();
@@ -60,6 +73,7 @@ class ShareService {
   /// - 'code': The tournament code (String)
   /// - 'passcode': The passcode if provided (String?)
   /// - 'isReadOnly': Whether the link is read-only (bool)
+  /// - 'view': The view parameter if provided (String?) - 'standings' or 'history'
   /// 
   /// Returns null if no tournament information is found in the URL
   Map<String, dynamic>? parseTournamentFromUrl(Uri uri) {
@@ -95,11 +109,20 @@ class ShareService {
       return null;
     }
     
+    // Extract view parameter
+    final view = fragmentUri.queryParameters['view'];
+    
+    // Validate view parameter if provided (only 'standings' or 'history')
+    if (view != null && view != 'standings' && view != 'history') {
+      return null;
+    }
+    
     return {
       'code': tournamentCode,
       'passcode': passcode,
       // Read-only if no passcode is provided
       'isReadOnly': passcode == null,
+      'view': view,
     };
   }
 
