@@ -517,14 +517,16 @@ class _TournamentCompletionScreenState
 
     // Make podium significantly larger
     final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
     // Increase scale factor for larger podiums or desktop mode
-    final baseScaleFactor = screenWidth > 600 ? 2.5 : 1.8;
+    // Reduce scale for smaller screens to ensure all 3 places fit
+    final baseScaleFactor = screenWidth > 600 ? 2.5 : (screenHeight < 700 ? 1.2 : 1.5);
     final scaleFactor = _isDesktopMode 
       ? baseScaleFactor * Constants.desktopModeScaleFactor 
       : baseScaleFactor;
     // Leave extra headroom for medal/name so columns do not overflow the bottom
     final firstPlaceHeight = 180.0 * scaleFactor;
-    final podiumHeight = firstPlaceHeight + (120.0 * scaleFactor); // More vertical space
+    final podiumHeight = firstPlaceHeight + (100.0 * scaleFactor); // Reduced vertical space for mobile
     final secondPlaceHeight = 140.0 * scaleFactor;
     final thirdPlaceHeight = 120.0 * scaleFactor;
 
