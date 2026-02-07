@@ -6,6 +6,7 @@ import '../services/standings_service.dart';
 import '../services/display_mode_service.dart';
 import '../widgets/export_dialog.dart';
 import '../utils/constants.dart';
+import 'match_history_screen.dart';
 
 /// F-007: Live Leaderboard
 /// Displays live tournament standings with detailed player statistics.
@@ -61,6 +62,17 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     });
   }
 
+  void _navigateToMatchHistory() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => MatchHistoryScreen(
+          tournament: widget.tournament,
+          isReadOnly: widget.isReadOnly,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final standings = _standingsService.calculateStandings(widget.tournament);
@@ -77,6 +89,14 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             tooltip: _isDesktopMode ? 'Skift til mobil visning' : 'Skift til desktop visning',
             onPressed: _toggleDisplayMode,
           ),
+          // Toggle to match history (only in read-only mode)
+          if (widget.isReadOnly && hasMatches) ...[
+            IconButton(
+              icon: const Icon(Icons.history),
+              tooltip: 'Vis Kamp Historik',
+              onPressed: _navigateToMatchHistory,
+            ),
+          ],
           // Toggle compact/detailed view
           if (hasMatches) ...[
             IconButton(

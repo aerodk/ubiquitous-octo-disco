@@ -25,12 +25,14 @@ class ShareTournamentDialog extends StatefulWidget {
 class _ShareTournamentDialogState extends State<ShareTournamentDialog> {
   final ShareService _shareService = ShareService();
   bool _includePasscode = false;
+  String _selectedView = 'standings'; // 'standings' or 'history'
 
   String get _shareLink {
     return _shareService.generateShareLink(
       tournamentCode: widget.tournamentCode,
       includePasscode: _includePasscode,
       passcode: widget.passcode,
+      view: _selectedView,
     );
   }
 
@@ -68,6 +70,46 @@ class _ShareTournamentDialogState extends State<ShareTournamentDialog> {
               'Vælg hvordan du vil dele turneringen:',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
+            const SizedBox(height: 16),
+            
+            // View selection
+            const Text(
+              'Start visning:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: ChoiceChip(
+                    label: const Text('Stillinger'),
+                    selected: _selectedView == 'standings',
+                    onSelected: (selected) {
+                      if (selected) {
+                        setState(() {
+                          _selectedView = 'standings';
+                        });
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ChoiceChip(
+                    label: const Text('Kamp Historik'),
+                    selected: _selectedView == 'history',
+                    onSelected: (selected) {
+                      if (selected) {
+                        setState(() {
+                          _selectedView = 'history';
+                        });
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
+            
             const SizedBox(height: 16),
             
             // Option 1: View-only (no passcode)
