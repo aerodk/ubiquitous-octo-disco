@@ -1,0 +1,150 @@
+name: Build Android Release APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: 'patch'
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Get current version
+        id: get_version
+        run: |
+          CURRENT_VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $CURRENT_VERSION"
+
+      - name: Calculate new version
+        id: calc_version
+        run: |
+          CURRENT="${{ steps.get_version.outputs.current_version }}"
+          BUMP="${{ github.event.inputs.version_bump }}"
+          
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+          
+          if [ "$BUMP" = "major" ]; then
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+          elif [ "$BUMP" = "minor" ]; then
+            MINOR=$((MINOR + 1))
+            PATCH=0
+          else
+            PATCH=$((PATCH + 1))
+          fi
+          
+          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION"
+
+      - name: Get current build number
+        id: get_build
+        run: |
+          BUILD_NUMBER=$(grep '^version:' pubspec.yaml | sed 's/.*+//')
+          NEW_BUILD=$((BUILD_NUMBER + 1))
+          echo "new_build=$NEW_BUILD" >> $GITHUB_OUTPUT
+          echo "New build number: $NEW_BUILD"
+
+      - name: Update version in pubspec.yaml
+        run: |
+          NEW_VERSION="${{ steps.calc_version.outputs.new_version }}"
+          NEW_BUILD="${{ steps.get_build.outputs.new_build }}"
+          sed -i "s/^version:.*/version: $NEW_VERSION+$NEW_BUILD/" pubspec.yaml
+          echo "Updated pubspec.yaml to version $NEW_VERSION+$NEW_BUILD"
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Build Android APK
+        run: flutter build apk --release
+
+      - name: Rename APK
+        run: |
+          NEW_VERSION="${{ steps.calc_version.outputs.new_version }}"
+          NEW_BUILD="${{ steps.get_build.outputs.new_build }}"
+          cd build/app/outputs/flutter-apk
+          mv app-release.apk star-cano-v$NEW_VERSION-build$NEW_BUILD.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: star-cano-v${{ steps.calc_version.outputs.new_version }}
+          path: build/app/outputs/flutter-apk/star-cano-v${{ steps.calc_version.outputs.new_version }}-build${{ steps.get_build.outputs.new_build }}.apk
+          retention-days: 90
+
+      - name: Create Git tag
+        run: |
+          NEW_VERSION="${{ steps.calc_version.outputs.new_version }}"
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag -a "v$NEW_VERSION" -m "Release version $NEW_VERSION"
+          git push origin "v$NEW_VERSION"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.calc_version.outputs.new_version }}
+          name: Star Cano v${{ steps.calc_version.outputs.new_version }}
+          body: |
+            ## Star Cano v${{ steps.calc_version.outputs.new_version }}
+            
+            ### Build Information
+            - Version: ${{ steps.calc_version.outputs.new_version }}
+            - Build Number: ${{ steps.get_build.outputs.new_build }}
+            - Version Bump: ${{ github.event.inputs.version_bump }}
+            
+            ### Installation
+            Download the APK file below and install it on your Android device.
+            
+            **Note:** You may need to enable "Install from unknown sources" in your device settings.
+            
+            ### Changes
+            This is a ${{ github.event.inputs.version_bump }} release.
+          files: build/app/outputs/flutter-apk/star-cano-v${{ steps.calc_version.outputs.new_version }}-build${{ steps.get_build.outputs.new_build }}.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit version bump
+        run: |
+          NEW_VERSION="${{ steps.calc_version.outputs.new_version }}"
+          NEW_BUILD="${{ steps.get_build.outputs.new_build }}"
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add pubspec.yaml
+          git commit -m "chore: bump version to $NEW_VERSION+$NEW_BUILD [skip ci]"
+          git push origin HEAD:main
