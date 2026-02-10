@@ -13,6 +13,7 @@ import '../widgets/load_tournament_dialog.dart';
 import '../widgets/save_tournament_dialog.dart';
 import 'round_display_screen.dart';
 import 'tournament_completion_screen.dart';
+import 'math_practice_screen.dart';
 
 class SetupScreen extends StatefulWidget {
   const SetupScreen({super.key});
@@ -460,6 +461,18 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         automaticallyImplyLeading: false, // Remove back button
         actions: [
+          IconButton(
+            icon: const Icon(Icons.calculate),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const MathPracticeScreen(),
+                ),
+              );
+            },
+            tooltip: 'Matematik Øvelser',
+          ),
           IconButton(
             icon: const Icon(Icons.cloud_download),
             onPressed: _loadFromCloud,
