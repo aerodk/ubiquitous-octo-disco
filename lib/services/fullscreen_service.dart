@@ -32,27 +32,33 @@ class FullscreenService {
   Future<void> exitFullscreen() => _exitFullscreen();
 
   Future<void> _enterFullscreen() async {
-    _isFullscreen = true;
     if (kIsWeb) {
       await enterBrowserFullscreen();
     } else {
       await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     }
+    _isFullscreen = true;
   }
 
   Future<void> _exitFullscreen() async {
-    _isFullscreen = false;
     if (kIsWeb) {
       await exitBrowserFullscreen();
     } else {
       await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     }
+    _isFullscreen = false;
   }
 
   /// Restore the default system UI when the service is no longer needed.
+  /// Called from [State.dispose], so must be synchronous (fire-and-forget).
   void dispose() {
     if (_isFullscreen) {
-      _exitFullscreen();
+      _isFullscreen = false;
+      if (kIsWeb) {
+        exitBrowserFullscreen();
+      } else {
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      }
     }
   }
 }

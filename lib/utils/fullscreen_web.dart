@@ -6,18 +6,22 @@
 import 'dart:html' as html;
 
 Future<void> enterBrowserFullscreen() async {
-  final elem = html.document.documentElement;
-  if (elem != null) {
-    elem.requestFullscreen();
+  try {
+    final elem = html.document.documentElement;
+    if (elem != null) {
+      elem.requestFullscreen();
+    }
+  } catch (_) {
+    // Browser may deny fullscreen if not triggered by a user gesture.
   }
 }
 
 Future<void> exitBrowserFullscreen() async {
-  if (html.document.fullscreenElement != null) {
-    html.document.exitFullscreen();
+  try {
+    if (html.document.fullscreenElement != null) {
+      html.document.exitFullscreen();
+    }
+  } catch (_) {
+    // Ignore errors when exiting fullscreen.
   }
-}
-
-bool isBrowserFullscreen() {
-  return html.document.fullscreenElement != null;
 }
