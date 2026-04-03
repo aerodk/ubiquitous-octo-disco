@@ -4,6 +4,7 @@ import '../models/player.dart';
 import '../models/player_standing.dart';
 import '../services/standings_service.dart';
 import '../services/display_mode_service.dart';
+import '../services/fullscreen_service.dart';
 import '../widgets/export_dialog.dart';
 import '../utils/constants.dart';
 import 'match_history_screen.dart';
@@ -35,12 +36,16 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   // Service is stateless and can be shared
   static final StandingsService _standingsService = StandingsService();
   final DisplayModeService _displayModeService = DisplayModeService();
+  final FullscreenService _fullscreenService = FullscreenService();
   
   // Toggle for compact/detailed view
   bool _isCompactView = true;
   
   // Display mode (mobile/desktop)
   bool _isDesktopMode = false;
+
+  // Fullscreen mode
+  bool _isFullscreen = false;
 
   @override
   void initState() {
@@ -60,6 +65,20 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     setState(() {
       _isDesktopMode = newMode;
     });
+  }
+
+  Future<void> _toggleFullscreen() async {
+    final newState = await _fullscreenService.toggleFullscreen();
+    if (!mounted) return;
+    setState(() {
+      _isFullscreen = newState;
+    });
+  }
+
+  @override
+  void dispose() {
+    _fullscreenService.dispose();
+    super.dispose();
   }
 
   void _navigateToMatchHistory() {
@@ -88,6 +107,12 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             icon: Icon(_isDesktopMode ? Icons.desktop_windows : Icons.phone_android),
             tooltip: _isDesktopMode ? 'Skift til mobil visning' : 'Skift til desktop visning',
             onPressed: _toggleDisplayMode,
+          ),
+          // Fullscreen toggle
+          IconButton(
+            icon: Icon(_isFullscreen ? Icons.fullscreen_exit : Icons.fullscreen),
+            tooltip: _isFullscreen ? 'Afslut fuldskærm' : 'Fuldskærm',
+            onPressed: _toggleFullscreen,
           ),
           // Toggle to match history (only in read-only mode)
           if (widget.isReadOnly && hasMatches) ...[

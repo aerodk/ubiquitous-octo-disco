@@ -7,6 +7,7 @@ import '../models/player_standing.dart';
 import '../services/standings_service.dart';
 import '../services/persistence_service.dart';
 import '../services/display_mode_service.dart';
+import '../services/fullscreen_service.dart';
 import '../widgets/export_dialog.dart';
 import '../widgets/save_tournament_dialog.dart';
 import '../widgets/share_tournament_dialog.dart';
@@ -38,6 +39,7 @@ class _TournamentCompletionScreenState
   final PersistenceService _persistenceService = PersistenceService();
   final FirebaseService _firebaseService = FirebaseService();
   final DisplayModeService _displayModeService = DisplayModeService();
+  final FullscreenService _fullscreenService = FullscreenService();
   late List<PlayerStanding> _standings;
   late AnimationController _confettiController;
   
@@ -56,6 +58,9 @@ class _TournamentCompletionScreenState
   
   // Display mode (mobile/desktop)
   bool _isDesktopMode = false;
+
+  // Fullscreen mode
+  bool _isFullscreen = false;
 
   @override
   void initState() {
@@ -103,6 +108,14 @@ class _TournamentCompletionScreenState
     });
   }
 
+  Future<void> _toggleFullscreen() async {
+    final newState = await _fullscreenService.toggleFullscreen();
+    if (!mounted) return;
+    setState(() {
+      _isFullscreen = newState;
+    });
+  }
+
   Future<void> _persistCompletion() async {
     try {
       await _persistenceService.saveTournament(widget.tournament);
@@ -124,6 +137,7 @@ class _TournamentCompletionScreenState
 
   @override
   void dispose() {
+    _fullscreenService.dispose();
     _confettiController.dispose();
     for (final controller in _medalAnimations.values) {
       controller.dispose();
@@ -270,6 +284,12 @@ class _TournamentCompletionScreenState
             icon: Icon(_isDesktopMode ? Icons.desktop_windows : Icons.phone_android),
             tooltip: _isDesktopMode ? 'Skift til mobil visning' : 'Skift til desktop visning',
             onPressed: _toggleDisplayMode,
+          ),
+          // Fullscreen toggle
+          IconButton(
+            icon: Icon(_isFullscreen ? Icons.fullscreen_exit : Icons.fullscreen),
+            tooltip: _isFullscreen ? 'Afslut fuldskærm' : 'Fuldskærm',
+            onPressed: _toggleFullscreen,
           ),
           // Toggle compact/detailed view
           IconButton(

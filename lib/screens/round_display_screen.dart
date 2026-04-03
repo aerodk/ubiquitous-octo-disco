@@ -6,6 +6,7 @@ import '../models/court.dart';
 import '../services/persistence_service.dart';
 import '../services/standings_service.dart';
 import '../services/display_mode_service.dart';
+import '../services/fullscreen_service.dart';
 import '../widgets/match_card.dart';
 import '../widgets/court_visualization/bench_section.dart';
 import '../widgets/save_tournament_dialog.dart';
@@ -43,6 +44,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   final StandingsService _standingsService = StandingsService();
   FirebaseService? _firebaseService;
   final DisplayModeService _displayModeService = DisplayModeService();
+  final FullscreenService _fullscreenService = FullscreenService();
   late Tournament _tournament;
   
   // Track cloud storage codes
@@ -55,6 +57,9 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   // Display mode (mobile/desktop)
   bool _isDesktopMode = false;
   double _zoomFactor = DisplayModeService.defaultZoomFactor;
+
+  // Fullscreen mode
+  bool _isFullscreen = false;
 
   @override
   void initState() {
@@ -93,6 +98,20 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     setState(() {
       _zoomFactor = clamped;
     });
+  }
+
+  Future<void> _toggleFullscreen() async {
+    final newState = await _fullscreenService.toggleFullscreen();
+    if (!mounted) return;
+    setState(() {
+      _isFullscreen = newState;
+    });
+  }
+
+  @override
+  void dispose() {
+    _fullscreenService.dispose();
+    super.dispose();
   }
 
   /// Sync the current tournament to cloud if codes are known
@@ -864,6 +883,22 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
 
             const Divider(),
 
+            // Fullscreen Toggle
+            ListTile(
+              leading: Icon(
+                _isFullscreen ? Icons.fullscreen_exit : Icons.fullscreen,
+                color: Colors.blue,
+              ),
+              title: const Text('Fuldskærm'),
+              subtitle: Text(_isFullscreen ? 'Til' : 'Fra'),
+              onTap: () {
+                Navigator.pop(context);
+                _toggleFullscreen();
+              },
+            ),
+
+            const Divider(),
+
             // Zoom Controls
             ListTile(
               leading: const Icon(Icons.zoom_out_map, color: Colors.blue),
@@ -1106,6 +1141,14 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                 );
               },
               tooltip: 'Vis stillinger',
+            ),
+            // Fullscreen toggle button
+            IconButton(
+              icon: Icon(
+                _isFullscreen ? Icons.fullscreen_exit : Icons.fullscreen,
+              ),
+              onPressed: _toggleFullscreen,
+              tooltip: _isFullscreen ? 'Afslut fuldskærm' : 'Fuldskærm',
             ),
           ],
         ),
