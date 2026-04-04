@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
@@ -15,8 +16,20 @@ import '../firebase_options.dart';
 /// - Passcode-based authentication
 /// - Environment-based collection names (test vs production)
 class FirebaseService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final Random _random = Random.secure();
+
+  FirebaseFirestore get _firestore {
+    _ensureFirebaseInitialized();
+    return FirebaseFirestore.instance;
+  }
+
+  void _ensureFirebaseInitialized() {
+    if (Firebase.apps.isEmpty) {
+      throw Exception(
+        'Firebase er ikke initialiseret. Appen kører i lokal tilstand uden cloud.',
+      );
+    }
+  }
 
   /// Get collection name based on environment
   /// - Production: 'tournaments'
@@ -272,6 +285,13 @@ class FirebaseService {
   /// Returns true if Firebase is working, false otherwise
   Future<bool> isFirebaseAvailable() async {
     try {
+      if (Firebase.apps.isEmpty) {
+        if (kDebugMode) {
+          debugPrint('❌ Firebase app er ikke initialiseret (ingen default app).');
+        }
+        return false;
+      }
+
       final options = DefaultFirebaseOptions.currentPlatform;
       if (kDebugMode) {
         // Log Firebase configuration for debugging

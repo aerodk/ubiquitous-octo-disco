@@ -46,6 +46,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   final DisplayModeService _displayModeService = DisplayModeService();
   final FullscreenService _fullscreenService = FullscreenService();
   late Tournament _tournament;
+  bool _isCloudAvailable = false;
   
   // Track cloud storage codes
   String? _cloudCode;
@@ -69,8 +70,18 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     _cloudPasscode = widget.cloudPasscode;
     if (widget.enableCloud) {
       _firebaseService = FirebaseService();
+      _checkCloudAvailability();
     }
     _loadDisplayPreferences();
+  }
+
+  Future<void> _checkCloudAvailability() async {
+    if (_firebaseService == null) return;
+    final available = await _firebaseService!.isFirebaseAvailable();
+    if (!mounted) return;
+    setState(() {
+      _isCloudAvailable = available;
+    });
   }
 
   Future<void> _loadDisplayPreferences() async {
@@ -217,7 +228,17 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   }
 
   Future<void> _saveToCloud() async {
-    if (_firebaseService == null) return;
+    if (_firebaseService == null || !_isCloudAvailable) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cloud er ikke tilgængelig i denne build'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (context) => SaveTournamentDialog(
@@ -826,6 +847,17 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   }
 
   Future<void> _showShareDialog() async {
+    if (!_isCloudAvailable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cloud er ikke tilgængelig i denne build'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
     // Only allow sharing if tournament is saved to cloud
     if (_cloudCode == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -946,7 +978,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
             const Divider(),
 
             // Cloud Save (only if NOT already saved)
-            if (!widget.isReadOnly && widget.enableCloud && _cloudCode == null) ...[
+            if (!widget.isReadOnly && widget.enableCloud && _isCloudAvailable && _cloudCode == null) ...[
               ListTile(
                 leading: const Icon(Icons.cloud_upload, color: Colors.blue),
                 title: const Text('Gem i Cloud'),
@@ -959,7 +991,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
             ],
 
             // Cloud Update (only if already saved)
-            if (!widget.isReadOnly && widget.enableCloud && _cloudCode != null) ...[
+            if (!widget.isReadOnly && widget.enableCloud && _isCloudAvailable && _cloudCode != null) ...[
               ListTile(
                 leading: const Icon(Icons.cloud_upload_outlined, color: Colors.blue),
                 title: const Text('Opdater Cloud'),
@@ -973,7 +1005,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
             ],
 
             // Share (only if saved to cloud and not read-only)
-            if (_cloudCode != null && !widget.isReadOnly) ...[
+            if (_isCloudAvailable && _cloudCode != null && !widget.isReadOnly) ...[
               ListTile(
                 leading: const Icon(Icons.share, color: Colors.green),
                 title: const Text('Del Turnering'),

@@ -7,6 +7,7 @@ import '../models/tournament.dart';
 import '../models/tournament_settings.dart';
 import '../services/tournament_service.dart';
 import '../services/persistence_service.dart';
+import '../services/firebase_service.dart';
 import '../utils/constants.dart';
 import '../widgets/tournament_settings_widget.dart';
 import '../widgets/load_tournament_dialog.dart';
@@ -30,7 +31,9 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
   TournamentSettings _tournamentSettings = const TournamentSettings();
   final TournamentService _tournamentService = TournamentService();
   final PersistenceService _persistenceService = PersistenceService();
+  final FirebaseService _firebaseService = FirebaseService();
   bool _isLoading = true;
+  bool _isCloudAvailable = false;
   bool _isCourtCountAnimating = false;
   late AnimationController _animationController;
 
@@ -42,6 +45,15 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
       duration: const Duration(milliseconds: 600),
     );
     _loadSavedState();
+    _checkCloudAvailability();
+  }
+
+  Future<void> _checkCloudAvailability() async {
+    final available = await _firebaseService.isFirebaseAvailable();
+    if (!mounted) return;
+    setState(() {
+      _isCloudAvailable = available;
+    });
   }
 
   @override
@@ -143,6 +155,11 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
 
   /// Load tournament from Firebase Cloud
   Future<void> _loadFromCloud() async {
+    if (!_isCloudAvailable) {
+      _showError('Cloud er ikke tilgængelig i denne build');
+      return;
+    }
+
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (context) => const LoadTournamentDialog(),
@@ -185,6 +202,11 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
   /// Creates a tournament with the current players, courts, and settings
   /// but without any rounds (empty rounds list)
   Future<void> _saveToCloud() async {
+    if (!_isCloudAvailable) {
+      _showError('Cloud er ikke tilgængelig i denne build');
+      return;
+    }
+
     // Validation: Minimum players
     if (_players.length < Constants.minPlayers) {
       _showError(Constants.minPlayersError);
@@ -460,12 +482,13 @@ class _SetupScreenState extends State<SetupScreen> with SingleTickerProviderStat
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         automaticallyImplyLeading: false, // Remove back button
         actions: [
-          IconButton(
-            icon: const Icon(Icons.cloud_download),
-            onPressed: _loadFromCloud,
-            tooltip: 'Hent Turnering fra Cloud',
-          ),
-          if (_players.length >= Constants.minPlayers)
+          if (_isCloudAvailable)
+            IconButton(
+              icon: const Icon(Icons.cloud_download),
+              onPressed: _loadFromCloud,
+              tooltip: 'Hent Turnering fra Cloud',
+            ),
+          if (_isCloudAvailable && _players.length >= Constants.minPlayers)
             IconButton(
               icon: const Icon(Icons.cloud_upload),
               onPressed: _saveToCloud,

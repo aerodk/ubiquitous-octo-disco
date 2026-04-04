@@ -52,6 +52,7 @@ class _TournamentCompletionScreenState
   final Map<int, AnimationController> _medalAnimations = {};
   final Map<int, AnimationController> _celebrationAnimations = {};
   bool _showAllPositions = false;
+  bool _isCloudAvailable = false;
   
   // Toggle for compact/detailed view
   bool _isCompactView = true;
@@ -68,6 +69,7 @@ class _TournamentCompletionScreenState
     _standings = _standingsService.calculateStandings(widget.tournament);
     _cloudCode = widget.cloudCode;
     _cloudPasscode = widget.cloudPasscode;
+    _checkCloudAvailability();
     
     // Setup confetti animation
     _confettiController = AnimationController(
@@ -135,6 +137,14 @@ class _TournamentCompletionScreenState
     }
   }
 
+  Future<void> _checkCloudAvailability() async {
+    final available = await _firebaseService.isFirebaseAvailable();
+    if (!mounted) return;
+    setState(() {
+      _isCloudAvailable = available;
+    });
+  }
+
   @override
   void dispose() {
     _fullscreenService.dispose();
@@ -178,6 +188,17 @@ class _TournamentCompletionScreenState
   }
 
   Future<void> _saveToCloud() async {
+    if (!_isCloudAvailable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cloud er ikke tilgængelig i denne build'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (context) => SaveTournamentDialog(
@@ -196,6 +217,17 @@ class _TournamentCompletionScreenState
   }
 
   Future<void> _showShareDialog() async {
+    if (!_isCloudAvailable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cloud er ikke tilgængelig i denne build'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
     // Only allow sharing if tournament is saved to cloud
     if (_cloudCode == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -316,7 +348,7 @@ class _TournamentCompletionScreenState
             },
           ),
           // Share button (only if saved to cloud and not already read-only)
-          if (_cloudCode != null && !widget.isReadOnly)
+          if (_isCloudAvailable && _cloudCode != null && !widget.isReadOnly)
             IconButton(
               icon: const Icon(Icons.share),
               tooltip: 'Del turnering',
@@ -436,7 +468,7 @@ class _TournamentCompletionScreenState
                     children: [
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: _saveToCloud,
+                          onPressed: _isCloudAvailable ? _saveToCloud : null,
                           icon: Icon(
                             _cloudCode != null ? Icons.cloud_upload : Icons.cloud_upload_outlined,
                             color: Colors.white,
