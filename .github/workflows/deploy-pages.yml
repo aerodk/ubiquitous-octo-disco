@@ -10,6 +10,14 @@ on:
         description: 'Branch to deploy'
         required: false
         default: 'main'
+      build_target:
+        description: 'Build target'
+        required: true
+        default: 'pages'
+        type: choice
+        options:
+          - pages
+          - cloudflare
 
 permissions:
   contents: read
@@ -28,6 +36,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
         
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -38,7 +48,8 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
         
-      - name: Build Flutter web app
+      - name: Build Flutter web app for GitHub Pages
+        if: ${{ github.event.inputs.build_target == 'pages' }}
         env:
           FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
           FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
@@ -56,12 +67,60 @@ jobs:
             --dart-define=FIREBASE_MESSAGING_SENDER_ID="$FIREBASE_MESSAGING_SENDER_ID" \
             --dart-define=FIREBASE_APP_ID="$FIREBASE_APP_ID"
         
-      - name: Upload artifact
+      - name: Build Flutter web app for Cloudflare
+        if: ${{ github.event.inputs.build_target == 'cloudflare' }}
+        env:
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+          FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
+          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+        run: |
+          flutter build web --release \
+            --dart-define=FIREBASE_ENV=production \
+            --dart-define=FIREBASE_API_KEY="$FIREBASE_API_KEY" \
+            --dart-define=FIREBASE_AUTH_DOMAIN="$FIREBASE_AUTH_DOMAIN" \
+            --dart-define=FIREBASE_PROJECT_ID="$FIREBASE_PROJECT_ID" \
+            --dart-define=FIREBASE_STORAGE_BUCKET="$FIREBASE_STORAGE_BUCKET" \
+            --dart-define=FIREBASE_MESSAGING_SENDER_ID="$FIREBASE_MESSAGING_SENDER_ID" \
+            --dart-define=FIREBASE_APP_ID="$FIREBASE_APP_ID"
+
+      - name: Upload Pages artifact
+        if: ${{ github.event.inputs.build_target == 'pages' }}
         uses: actions/upload-pages-artifact@v3
         with:
           path: build/web
 
+      - name: Create Cloudflare ZIP artifact
+        if: ${{ github.event.inputs.build_target == 'cloudflare' }}
+        run: |
+          cd build/web
+          zip -r ../../cloudflare-web.zip .
+
+      - name: Upload Cloudflare ZIP artifact
+        if: ${{ github.event.inputs.build_target == 'cloudflare' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloudflare-web
+          path: cloudflare-web.zip
+
+      - name: Write run summary
+        run: |
+          echo "### Build summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Branch: ${{ github.event.inputs.branch }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Target: ${{ github.event.inputs.build_target }}" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ github.event.inputs.build_target }}" = "pages" ]; then
+            echo "- Artifact: github-pages (used directly by deploy job)" >> $GITHUB_STEP_SUMMARY
+            echo "- Next: Deployment runs in the deploy job" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- Artifact: cloudflare-web (cloudflare-web.zip)" >> $GITHUB_STEP_SUMMARY
+            echo "- Download path: Run page → Artifacts → cloudflare-web" >> $GITHUB_STEP_SUMMARY
+          fi
+
   deploy:
+    if: ${{ github.event.inputs.build_target == 'pages' }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
