@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:convert';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../models/player_standing.dart';
 import '../models/tournament.dart';
 import '../services/export_service.dart';
@@ -47,19 +50,8 @@ class _ExportDialogState extends State<ExportDialog> {
       );
       final mimeType = ExportService.getMimeType(_selectedFormat);
 
-      // Trigger download for web platform
-      _downloadFile(exportData, fileName, mimeType);
-
-      if (mounted) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Eksporteret til $fileName'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
+      // Trigger download/share for the appropriate platform
+      await _saveOrShareFile(exportData, fileName, mimeType);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -78,21 +70,26 @@ class _ExportDialogState extends State<ExportDialog> {
     }
   }
 
-  void _downloadFile(String content, String fileName, String mimeType) {
-    if (!kIsWeb) {
-      // For mobile platforms, this would need platform-specific implementation
-      // For now, show a message that export is only available on web
+  Future<void> _saveOrShareFile(
+      String content, String fileName, String mimeType) async {
+    if (kIsWeb) {
+      _downloadFileWeb(content, fileName, mimeType);
       if (mounted) {
+        Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Eksport er kun tilgængelig på web-versionen'),
-            backgroundColor: Colors.orange,
+          SnackBar(
+            content: Text('Eksporteret til $fileName'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
           ),
         );
       }
-      return;
+    } else {
+      await _shareFileMobile(content, fileName, mimeType);
     }
+  }
 
+  void _downloadFileWeb(String content, String fileName, String mimeType) {
     // Web-specific download implementation
     final bytes = utf8.encode(content);
     final blob = html.Blob([bytes], mimeType);
@@ -105,6 +102,35 @@ class _ExportDialogState extends State<ExportDialog> {
 
     // Clean up
     html.Url.revokeObjectUrl(url);
+  }
+
+  Future<void> _shareFileMobile(
+      String content, String fileName, String mimeType) async {
+    // Write content to a temporary file, then share using native share sheet.
+    // Strip any path separators from the fileName to prevent path traversal.
+    final safeFileName = fileName.replaceAll(RegExp(r'[/\\]'), '_');
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/$safeFileName');
+    await file.writeAsString(content, encoding: utf8);
+
+    final xFile = XFile(file.path, mimeType: mimeType, name: safeFileName);
+    final result = await Share.shareXFiles(
+      [xFile],
+      subject: safeFileName,
+    );
+
+    if (mounted) {
+      if (result.status == ShareResultStatus.success) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Eksporteret: $safeFileName'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -167,7 +193,9 @@ class _ExportDialogState extends State<ExportDialog> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Filen vil blive gemt i din downloads mappe',
+                    kIsWeb
+                        ? 'Filen vil blive gemt i din downloads mappe'
+                        : 'Filen vil blive delt via din enheds delelinje',
                     style: TextStyle(fontSize: 12, color: Colors.blue[900]),
                   ),
                 ),
