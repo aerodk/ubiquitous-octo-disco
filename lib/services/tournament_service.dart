@@ -588,9 +588,9 @@ class TournamentService {
     }
   }
 
-  /// Selects players to sit out using rolling pause prioritization
-  /// Prioritizes: 1) Most games played (in bottom half), 2) Lowest rank, 3) Fewest pauses
-  /// For the first break player, prioritizes players who haven't been on break yet
+  /// Selects players to sit out in final round with fairness prioritization
+  /// Prioritizes in bottom half: 1) Fewest pauses, 2) Most games played, 3) Lowest rank
+  /// This protects players with more oversiddelser / færre kampe from being benched again.
   List<Player> _selectBreakPlayers(
     List<PlayerStanding> standings,
     int count,
@@ -604,29 +604,19 @@ class TournamentService {
 
     final breakPlayers = <Player>[];
 
-    // Select the first break player from bottom half, prioritizing those who haven't been on break
+    // Select first break player from bottom half using fairness priority
     if (count > 0 && bottomHalf.isNotEmpty) {
-      // Start from the last (lowest-ranked) and work backwards to find someone who hasn't been on break
-      Player? firstBreakPlayer;
-      for (int i = bottomHalf.length - 1; i >= 0; i--) {
-        if (bottomHalf[i].pauseCount == 0) {
-          firstBreakPlayer = bottomHalf[i].player;
-          break;
-        }
-      }
-
-      // If all have been on break before, use the last (lowest-ranked) player
-      firstBreakPlayer ??= bottomHalf.last.player;
-
-      breakPlayers.add(firstBreakPlayer);
+      final bottomHalfSorted = List<PlayerStanding>.from(bottomHalf)
+        ..sort(_compareForFinalRoundBreakPriority);
+      breakPlayers.add(bottomHalfSorted.first.player);
     }
 
-    // Select remaining seats (if any) favoring bottom-half players with most games, then worst rank
+    // Select remaining seats (if any) using same fairness priority in bottom half
     if (breakPlayers.length < count) {
       final remainingBottom = bottomHalf
           .where((s) => !breakPlayers.any((p) => p.id == s.player.id))
           .toList()
-        ..sort(_compareForBreakPriority);
+        ..sort(_compareForFinalRoundBreakPriority);
 
       for (final s in remainingBottom) {
         if (breakPlayers.length >= count) break;
@@ -637,7 +627,7 @@ class TournamentService {
     // If we still need more players (edge case), take from top half using same priority
     if (breakPlayers.length < count) {
       final topHalfSorted = List<PlayerStanding>.from(topHalf)
-        ..sort(_compareForBreakPriority);
+        ..sort(_compareForFinalRoundBreakPriority);
 
       for (final s in topHalfSorted) {
         if (breakPlayers.length >= count) break;
@@ -648,20 +638,20 @@ class TournamentService {
     return breakPlayers;
   }
 
-  /// Compare two standings for break prioritization
-  /// Returns positive if 'a' should break before 'b'
-  /// Prioritizes: 1) Most games played, 2) Lowest rank, 3) Fewest pauses
-  int _compareForBreakPriority(PlayerStanding a, PlayerStanding b) {
-    // 1. Most games played first (descending)
+  /// Compare two standings for final-round break fairness
+  /// Returns negative if 'a' should break before 'b'
+  /// Prioritizes: 1) Fewest pauses, 2) Most games played, 3) Lowest rank
+  int _compareForFinalRoundBreakPriority(PlayerStanding a, PlayerStanding b) {
+    // 1. Fewest pauses first (ascending)
+    final pauseCompare = a.pauseCount.compareTo(b.pauseCount);
+    if (pauseCompare != 0) return pauseCompare;
+
+    // 2. Most games played (descending)
     final gamesCompare = b.matchesPlayed.compareTo(a.matchesPlayed);
     if (gamesCompare != 0) return gamesCompare;
 
-    // 2. Lowest rank (already in order, but higher rank value = lower position)
-    final rankCompare = b.rank.compareTo(a.rank);
-    if (rankCompare != 0) return rankCompare;
-
-    // 3. Fewest pauses (ascending)
-    return a.pauseCount.compareTo(b.pauseCount);
+    // 3. Lowest rank first (descending rank value = lower placement)
+    return b.rank.compareTo(a.rank);
   }
 
   /// Regenerates the current round with a player override
