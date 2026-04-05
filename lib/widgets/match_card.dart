@@ -16,6 +16,7 @@ class MatchCard extends StatefulWidget {
   final Function(Player)? onPlayerForceToPause;
   final bool isDesktopMode;
   final double zoomFactor;
+  final bool isCompactMode;
   final bool isReadOnly;
 
   const MatchCard({
@@ -26,6 +27,7 @@ class MatchCard extends StatefulWidget {
     this.onPlayerForceToPause,
     this.isDesktopMode = false,
     this.zoomFactor = 1.0,
+    this.isCompactMode = false,
     this.isReadOnly = false,
   });
 
@@ -67,12 +69,22 @@ class _MatchCardState extends State<MatchCard> {
 
   @override
   Widget build(BuildContext context) {
-    final double baseFontScale = widget.isDesktopMode ? Constants.desktopModeFontScale : 1.0;
-    final double baseSizeScale = widget.isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
-    final double fontScale = baseFontScale * widget.zoomFactor;
-    final double sizeScale = baseSizeScale * widget.zoomFactor;
-    final double cardPadding = (widget.isDesktopMode ? Constants.desktopModeCardPadding : Constants.mobileModeCardPadding) * widget.zoomFactor;
-    
+    final double baseFontScale =
+        widget.isDesktopMode ? Constants.desktopModeFontScale : 1.0;
+    final double baseSizeScale =
+        widget.isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
+    final double compactFontScale = widget.isCompactMode ? 0.82 : 1.0;
+    final double compactSizeScale = widget.isCompactMode ? 0.76 : 1.0;
+    final double fontScale =
+        baseFontScale * widget.zoomFactor * compactFontScale;
+    final double sizeScale =
+        baseSizeScale * widget.zoomFactor * compactSizeScale;
+    final double cardPadding = (widget.isDesktopMode
+            ? Constants.desktopModeCardPadding
+            : Constants.mobileModeCardPadding) *
+        widget.zoomFactor *
+        (widget.isCompactMode ? 0.68 : 1.0);
+
     return Card(
       margin: EdgeInsets.zero,
       elevation: 6,
@@ -84,35 +96,39 @@ class _MatchCardState extends State<MatchCard> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-          // Header Section - Court Name & Actions
-          Container(
-            padding: EdgeInsets.all(cardPadding),
-            decoration: BoxDecoration(
-              color: AppColors.courtHeader,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(13 * sizeScale)),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.sports_tennis, color: AppColors.textLight, size: 24 * sizeScale),
-                SizedBox(width: 8 * sizeScale),
-                Text(
-                  widget.match.court.name,
-                  style: TextStyle(
-                    color: AppColors.textLight,
-                    fontSize: 20 * fontScale,
-                    fontWeight: FontWeight.bold,
+            // Header Section - Court Name & Actions
+            Container(
+              padding: EdgeInsets.all(cardPadding),
+              decoration: BoxDecoration(
+                color: AppColors.courtHeader,
+                borderRadius:
+                    BorderRadius.vertical(top: Radius.circular(13 * sizeScale)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.sports_tennis,
+                      color: AppColors.textLight, size: 24 * sizeScale),
+                  SizedBox(width: 8 * sizeScale),
+                  Text(
+                    widget.match.court.name,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: AppColors.textLight,
+                      fontSize: 20 * fontScale,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: Icon(Icons.info_outline, color: AppColors.textLight, size: 24 * sizeScale),
-                  onPressed: _showMatchupReasoning,
-                  tooltip: 'Vis kamp begrundelse',
-                ),
-              ],
+                  const Spacer(),
+                  IconButton(
+                    icon: Icon(Icons.info_outline,
+                        color: AppColors.textLight, size: 24 * sizeScale),
+                    onPressed: _showMatchupReasoning,
+                    tooltip: 'Vis kamp begrundelse',
+                  ),
+                ],
+              ),
             ),
-          ),
-            
+
             // Court Body Layout - Three-Column Layout
             Flexible(
               child: Container(
@@ -126,64 +142,76 @@ class _MatchCardState extends State<MatchCard> {
                       AppColors.courtBackgroundDark,
                     ],
                   ),
-                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(13 * sizeScale)),
+                  borderRadius: BorderRadius.vertical(
+                      bottom: Radius.circular(13 * sizeScale)),
                 ),
                 child: IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Par 1 (Left side) - 40%
-                    Expanded(
-                      flex: 4,
-                      child: TeamSide(
-                        team: widget.match.team1,
-                        label: 'PAR 1',
-                        score: widget.match.team1Score,
-                        isDesktopMode: widget.isDesktopMode,
-                        zoomFactor: widget.zoomFactor,
-                        onPlayerLongPress: widget.onPlayerForceToPause != null && !widget.isReadOnly
-                            ? _showPlayerOptionsMenu
-                            : null,
-                        onScoreTap: widget.isReadOnly ? null : () => _showScoreInput(isTeam1: true),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Par 1 (Left side) - 40%
+                      Expanded(
+                        flex: 4,
+                        child: TeamSide(
+                          team: widget.match.team1,
+                          label: 'PAR 1',
+                          score: widget.match.team1Score,
+                          isDesktopMode: widget.isDesktopMode,
+                          zoomFactor: widget.zoomFactor,
+                          isCompactMode: widget.isCompactMode,
+                          onPlayerLongPress:
+                              widget.onPlayerForceToPause != null &&
+                                      !widget.isReadOnly
+                                  ? _showPlayerOptionsMenu
+                                  : null,
+                          onScoreTap: widget.isReadOnly
+                              ? null
+                              : () => _showScoreInput(isTeam1: true),
+                        ),
                       ),
-                    ),
-                    
-                    // Net (Center) - 20%
-                    Expanded(
-                      flex: 2,
-                      child: NetDivider(
-                        isDesktopMode: widget.isDesktopMode,
-                        zoomFactor: widget.zoomFactor,
+
+                      // Net (Center) - 20%
+                      Expanded(
+                        flex: 2,
+                        child: NetDivider(
+                          isDesktopMode: widget.isDesktopMode,
+                          zoomFactor: widget.zoomFactor,
+                          isCompactMode: widget.isCompactMode,
+                        ),
                       ),
-                    ),
-                    
-                    // Par 2 (Right side) - 40%
-                    Expanded(
-                      flex: 4,
-                      child: TeamSide(
-                        team: widget.match.team2,
-                        label: 'PAR 2',
-                        score: widget.match.team2Score,
-                        isDesktopMode: widget.isDesktopMode,
-                        zoomFactor: widget.zoomFactor,
-                        onPlayerLongPress: widget.onPlayerForceToPause != null && !widget.isReadOnly
-                            ? _showPlayerOptionsMenu
-                            : null,
-                        onScoreTap: widget.isReadOnly ? null : () => _showScoreInput(isTeam1: false),
+
+                      // Par 2 (Right side) - 40%
+                      Expanded(
+                        flex: 4,
+                        child: TeamSide(
+                          team: widget.match.team2,
+                          label: 'PAR 2',
+                          score: widget.match.team2Score,
+                          isDesktopMode: widget.isDesktopMode,
+                          zoomFactor: widget.zoomFactor,
+                          isCompactMode: widget.isCompactMode,
+                          onPlayerLongPress:
+                              widget.onPlayerForceToPause != null &&
+                                      !widget.isReadOnly
+                                  ? _showPlayerOptionsMenu
+                                  : null,
+                          onScoreTap: widget.isReadOnly
+                              ? null
+                              : () => _showScoreInput(isTeam1: false),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-            ],
-          ),
+          ],
         ),
-      );
-    }
-  
-    void _showPlayerOptionsMenu(Player player) {
+      ),
+    );
+  }
+
+  void _showPlayerOptionsMenu(Player player) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -265,11 +293,14 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final selectedTeam = widget.selectedTeamIsTeam1 ? widget.match.team1 : widget.match.team2;
+    final selectedTeam =
+        widget.selectedTeamIsTeam1 ? widget.match.team1 : widget.match.team2;
     final selectedTeamLabel = widget.selectedTeamIsTeam1 ? 'Par 1' : 'Par 2';
-    final selectedScore = widget.selectedTeamIsTeam1 ? _team1Score : _team2Score;
-    
-    final otherTeam = widget.selectedTeamIsTeam1 ? widget.match.team2 : widget.match.team1;
+    final selectedScore =
+        widget.selectedTeamIsTeam1 ? _team1Score : _team2Score;
+
+    final otherTeam =
+        widget.selectedTeamIsTeam1 ? widget.match.team2 : widget.match.team1;
     final otherTeamLabel = widget.selectedTeamIsTeam1 ? 'Par 2' : 'Par 1';
     final otherScore = widget.selectedTeamIsTeam1 ? _team2Score : _team1Score;
 
@@ -311,7 +342,8 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Icon(Icons.touch_app, size: 16, color: AppColors.courtHeader),
+                        const Icon(Icons.touch_app,
+                            size: 16, color: AppColors.courtHeader),
                         const SizedBox(width: 4),
                         const Text(
                           'Vælg score',
@@ -326,11 +358,13 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(Icons.person, size: 16, color: AppColors.playerIcon),
+                        const Icon(Icons.person,
+                            size: 16, color: AppColors.playerIcon),
                         const SizedBox(width: 4),
                         Text(selectedTeam.player1.name),
                         const Text(' & '),
-                        const Icon(Icons.person, size: 16, color: AppColors.playerIcon),
+                        const Icon(Icons.person,
+                            size: 16, color: AppColors.playerIcon),
                         const SizedBox(width: 4),
                         Text(selectedTeam.player2.name),
                       ],
@@ -338,7 +372,8 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
                     if (selectedScore != null) ...[
                       const SizedBox(height: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: AppColors.scoreEntered,
                           borderRadius: BorderRadius.circular(8),
@@ -369,8 +404,11 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
                   child: ElevatedButton(
                     onPressed: () => _selectScore(index),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isSelected ? AppColors.courtHeader : AppColors.scoreEmpty,
-                      foregroundColor: isSelected ? AppColors.textLight : AppColors.textDark,
+                      backgroundColor: isSelected
+                          ? AppColors.courtHeader
+                          : AppColors.scoreEmpty,
+                      foregroundColor:
+                          isSelected ? AppColors.textLight : AppColors.textDark,
                       padding: EdgeInsets.zero,
                       elevation: isSelected ? 4 : 1,
                     ),
@@ -387,7 +425,8 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
               color: AppColors.scoreEmpty.withOpacity(0.5),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: AppColors.courtBorder.withOpacity(0.3), width: 2),
+                side: BorderSide(
+                    color: AppColors.courtBorder.withOpacity(0.3), width: 2),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(12),
@@ -405,7 +444,8 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Icon(Icons.calculate, size: 16, color: AppColors.teamLabel),
+                        const Icon(Icons.calculate,
+                            size: 16, color: AppColors.teamLabel),
                         const SizedBox(width: 4),
                         const Text(
                           'Automatisk',
@@ -420,11 +460,13 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(Icons.person, size: 16, color: AppColors.playerIcon),
+                        const Icon(Icons.person,
+                            size: 16, color: AppColors.playerIcon),
                         const SizedBox(width: 4),
                         Text(otherTeam.player1.name),
                         const Text(' & '),
-                        const Icon(Icons.person, size: 16, color: AppColors.playerIcon),
+                        const Icon(Icons.person,
+                            size: 16, color: AppColors.playerIcon),
                         const SizedBox(width: 4),
                         Text(otherTeam.player2.name),
                       ],
@@ -432,7 +474,8 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
                     if (otherScore != null) ...[
                       const SizedBox(height: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: AppColors.teamLabel.withOpacity(0.3),
                           borderRadius: BorderRadius.circular(8),
@@ -465,8 +508,8 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
 
   void _closeWithScores() {
     Navigator.pop(context, {
-                    'team1Score': _team1Score,
-                    'team2Score': _team2Score,
-                  });
+      'team1Score': _team1Score,
+      'team2Score': _team2Score,
+    });
   }
 }

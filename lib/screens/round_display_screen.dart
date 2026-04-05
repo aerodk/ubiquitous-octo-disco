@@ -24,6 +24,9 @@ class RoundDisplayScreen extends StatefulWidget {
   final String? cloudPasscode;
   final bool enableCloud;
   final bool isReadOnly;
+  final bool? initialDesktopMode;
+  final double? initialZoomFactor;
+  final bool? initialCompactLayout;
 
   const RoundDisplayScreen({
     super.key,
@@ -32,6 +35,9 @@ class RoundDisplayScreen extends StatefulWidget {
     this.cloudPasscode,
     this.enableCloud = true,
     this.isReadOnly = false,
+    this.initialDesktopMode,
+    this.initialZoomFactor,
+    this.initialCompactLayout,
   });
 
   @override
@@ -58,6 +64,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   // Display mode (mobile/desktop)
   bool _isDesktopMode = false;
   double _zoomFactor = DisplayModeService.defaultZoomFactor;
+  bool _isCompactLayout = false;
 
   // Fullscreen mode
   bool _isFullscreen = false;
@@ -68,6 +75,9 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     _tournament = widget.tournament;
     _cloudCode = widget.cloudCode;
     _cloudPasscode = widget.cloudPasscode;
+    _isDesktopMode = widget.initialDesktopMode ?? _isDesktopMode;
+    _zoomFactor = widget.initialZoomFactor ?? _zoomFactor;
+    _isCompactLayout = widget.initialCompactLayout ?? _isCompactLayout;
     if (widget.enableCloud) {
       _firebaseService = FirebaseService();
       _checkCloudAvailability();
@@ -87,10 +97,12 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   Future<void> _loadDisplayPreferences() async {
     final isDesktop = await _displayModeService.isDesktopMode();
     final zoom = await _displayModeService.getZoomFactor();
+    final isCompact = await _displayModeService.isCompactLayout();
     if (!mounted) return;
     setState(() {
-      _isDesktopMode = isDesktop;
-      _zoomFactor = zoom;
+      _isDesktopMode = widget.initialDesktopMode ?? isDesktop;
+      _zoomFactor = widget.initialZoomFactor ?? zoom;
+      _isCompactLayout = widget.initialCompactLayout ?? isCompact;
     });
   }
 
@@ -111,11 +123,87 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     });
   }
 
+  Future<void> _setZoom(double zoom) async {
+    final clamped = await _displayModeService.setZoomFactor(zoom);
+    if (!mounted) return;
+    setState(() {
+      _zoomFactor = clamped;
+    });
+  }
+
+  Future<void> _showZoomDialog() async {
+    double tempZoom = _zoomFactor;
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Juster zoom'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Zoom: ${(tempZoom * 100).toStringAsFixed(0)}%'),
+                  Slider(
+                    value: tempZoom,
+                    min: DisplayModeService.minZoomFactor,
+                    max: DisplayModeService.maxZoomFactor,
+                    divisions: 14,
+                    label: '${(tempZoom * 100).toStringAsFixed(0)}%',
+                    onChanged: (value) {
+                      setDialogState(() {
+                        tempZoom = value;
+                      });
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () async {
+                    await _setZoom(DisplayModeService.defaultZoomFactor);
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: const Text('Nulstil'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Annuller'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    await _setZoom(tempZoom);
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: const Text('Anvend'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _toggleFullscreen() async {
     final newState = await _fullscreenService.toggleFullscreen();
     if (!mounted) return;
     setState(() {
       _isFullscreen = newState;
+    });
+  }
+
+  Future<void> _toggleCompactLayout() async {
+    final updated = await _displayModeService.toggleCompactLayout();
+    if (!mounted) return;
+    setState(() {
+      _isCompactLayout = updated;
     });
   }
 
@@ -288,6 +376,11 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
           tournament: updatedTournament,
           cloudCode: _cloudCode,
           cloudPasscode: _cloudPasscode,
+          enableCloud: widget.enableCloud,
+          isReadOnly: widget.isReadOnly,
+          initialDesktopMode: _isDesktopMode,
+          initialZoomFactor: _zoomFactor,
+          initialCompactLayout: _isCompactLayout,
         ),
       ),
     );
@@ -360,6 +453,11 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
           tournament: updatedTournament,
           cloudCode: _cloudCode,
           cloudPasscode: _cloudPasscode,
+          enableCloud: widget.enableCloud,
+          isReadOnly: widget.isReadOnly,
+          initialDesktopMode: _isDesktopMode,
+          initialZoomFactor: _zoomFactor,
+          initialCompactLayout: _isCompactLayout,
         ),
       ),
     );
@@ -478,6 +576,11 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
             tournament: updatedTournament,
             cloudCode: _cloudCode,
             cloudPasscode: _cloudPasscode,
+            enableCloud: widget.enableCloud,
+            isReadOnly: widget.isReadOnly,
+            initialDesktopMode: _isDesktopMode,
+            initialZoomFactor: _zoomFactor,
+            initialCompactLayout: _isCompactLayout,
           ),
         ),
       );
@@ -988,6 +1091,32 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                               : null,
                     ),
 
+                    ListTile(
+                      leading: const Icon(Icons.tune, color: Colors.blue),
+                      title: const Text('Juster Zoom...'),
+                      subtitle:
+                          Text('${(_zoomFactor * 100).toStringAsFixed(0)}%'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showZoomDialog();
+                      },
+                    ),
+
+                    ListTile(
+                      leading: Icon(
+                        _isCompactLayout
+                            ? Icons.view_agenda
+                            : Icons.view_compact,
+                        color: Colors.blue,
+                      ),
+                      title: const Text('Kompakt banevisning'),
+                      subtitle: Text(_isCompactLayout ? 'Til' : 'Fra'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _toggleCompactLayout();
+                      },
+                    ),
+
                     const Divider(),
 
                     // Leaderboard
@@ -1228,6 +1357,20 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
               },
               tooltip: 'Vis stillinger',
             ),
+            IconButton(
+              icon: const Icon(Icons.zoom_in_map),
+              onPressed: _showZoomDialog,
+              tooltip: 'Juster zoom',
+            ),
+            IconButton(
+              icon: Icon(
+                _isCompactLayout ? Icons.view_agenda : Icons.view_compact,
+              ),
+              onPressed: _toggleCompactLayout,
+              tooltip: _isCompactLayout
+                  ? 'Slå kompakt visning fra'
+                  : 'Slå kompakt visning til',
+            ),
             // Fullscreen toggle button
             IconButton(
               icon: Icon(
@@ -1249,10 +1392,15 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                           ? Constants.desktopModeScaleFactor
                           : 1.0) *
                       _zoomFactor;
-                  final effectiveWidth = constraints.maxWidth * sizeScale;
+                  final compactWidthBoost = _isCompactLayout ? 1.2 : 1.0;
+                  final effectiveWidth =
+                      constraints.maxWidth * sizeScale * compactWidthBoost;
 
                   final int crossAxisCount;
-                  if (effectiveWidth >= 1200) {
+                  if (effectiveWidth >= 1600) {
+                    crossAxisCount =
+                        4; // 4 columns in very wide compact layouts
+                  } else if (effectiveWidth >= 1200) {
                     crossAxisCount = 3; // 3 columns on extra large screens
                   } else if (effectiveWidth >= 800) {
                     crossAxisCount = 2; // 2 columns on large screens
@@ -1260,14 +1408,17 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                     crossAxisCount = 1; // 1 column on small screens
                   }
 
+                  final compactDensity = _isCompactLayout ? 0.78 : 1.0;
                   final double cardPadding = (_isDesktopMode
                           ? Constants.desktopModeCardPadding
                           : Constants.mobileModeCardPadding) *
-                      _zoomFactor;
+                      _zoomFactor *
+                      compactDensity;
                   final double cardSpacing =
-                      (_isDesktopMode ? 24 : 16) * _zoomFactor;
-                  final double cardHeight =
-                      (_isDesktopMode ? 400 : 300) * _zoomFactor;
+                      (_isDesktopMode ? 24 : 16) * _zoomFactor * compactDensity;
+                  final double cardHeight = (_isDesktopMode ? 400 : 300) *
+                      _zoomFactor *
+                      compactDensity;
 
                   return SingleChildScrollView(
                     child: Padding(
@@ -1297,6 +1448,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                                       _tournament.settings.pointsPerMatch,
                                   isDesktopMode: _isDesktopMode,
                                   zoomFactor: _zoomFactor,
+                                  isCompactMode: _isCompactLayout,
                                   isReadOnly: widget.isReadOnly,
                                   onScoreChanged: widget.isReadOnly
                                       ? null

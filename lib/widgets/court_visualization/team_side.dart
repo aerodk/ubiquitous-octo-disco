@@ -16,6 +16,7 @@ class TeamSide extends StatelessWidget {
   final VoidCallback? onScoreTap;
   final bool isDesktopMode;
   final double zoomFactor;
+  final bool isCompactMode;
 
   const TeamSide({
     super.key,
@@ -26,15 +27,20 @@ class TeamSide extends StatelessWidget {
     this.onScoreTap,
     this.isDesktopMode = false,
     this.zoomFactor = 1.0,
+    this.isCompactMode = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final double baseFontScale = isDesktopMode ? Constants.desktopModeFontScale : 1.0;
-    final double baseSizeScale = isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
-    final double fontScale = baseFontScale * zoomFactor;
-    final double sizeScale = baseSizeScale * zoomFactor;
-    
+    final double baseFontScale =
+        isDesktopMode ? Constants.desktopModeFontScale : 1.0;
+    final double baseSizeScale =
+        isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
+    final double compactFontScale = isCompactMode ? 0.84 : 1.0;
+    final double compactSizeScale = isCompactMode ? 0.78 : 1.0;
+    final double fontScale = baseFontScale * zoomFactor * compactFontScale;
+    final double sizeScale = baseSizeScale * zoomFactor * compactSizeScale;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -62,6 +68,7 @@ class TeamSide extends StatelessWidget {
                 player: team.player1,
                 isDesktopMode: isDesktopMode,
                 zoomFactor: zoomFactor,
+                isCompactMode: isCompactMode,
                 onLongPress: onPlayerLongPress != null
                     ? () => onPlayerLongPress!(team.player1)
                     : null,
@@ -72,6 +79,7 @@ class TeamSide extends StatelessWidget {
                 player: team.player2,
                 isDesktopMode: isDesktopMode,
                 zoomFactor: zoomFactor,
+                isCompactMode: isCompactMode,
                 onLongPress: onPlayerLongPress != null
                     ? () => onPlayerLongPress!(team.player2)
                     : null,
@@ -82,6 +90,7 @@ class TeamSide extends StatelessWidget {
                 score: score,
                 isDesktopMode: isDesktopMode,
                 zoomFactor: zoomFactor,
+                isCompactMode: isCompactMode,
               ),
             ],
           ),
