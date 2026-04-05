@@ -128,7 +128,7 @@ class PlayerMarker extends StatelessWidget {
         border: Border.all(color: AppColors.playerBorder, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.1),
+            color: Colors.blue.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),

@@ -123,7 +123,7 @@ class MatchupReasoningDialog extends StatelessWidget {
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: color.withOpacity(0.3), width: 1),
+        side: BorderSide(color: color.withValues(alpha: 0.3), width: 1),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -161,7 +161,7 @@ class MatchupReasoningDialog extends StatelessWidget {
       color: Colors.amber[50],
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: Colors.amber.withOpacity(0.3), width: 1),
+        side: BorderSide(color: Colors.amber.withValues(alpha: 0.3), width: 1),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),

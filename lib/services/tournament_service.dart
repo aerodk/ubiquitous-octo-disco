@@ -9,7 +9,9 @@ import 'social_mexicano_algorithm_service.dart';
 
 class TournamentService {
   final MexicanoAlgorithmService _mexicanoService = MexicanoAlgorithmService();
-  final SocialMexicanoAlgorithmService _socialMexicanoService = SocialMexicanoAlgorithmService();
+  final SocialMexicanoAlgorithmService _socialMexicanoService =
+      SocialMexicanoAlgorithmService();
+
   /// Assigns courts to matches based on the lane assignment strategy
   /// Sequential: Best players on first lanes (default)
   /// Random: Randomize lane assignments
@@ -25,11 +27,12 @@ class TournamentService {
     if (matches.isEmpty || courts.isEmpty) return matches;
 
     final assignedMatches = <Match>[];
-    
-    final laneAssignmentDescription = strategy == LaneAssignmentStrategy.sequential
+
+    final laneAssignmentDescription = strategy ==
+            LaneAssignmentStrategy.sequential
         ? 'Baner tildeles sekventielt: De bedste spillere på de første baner.'
         : 'Baner tildeles tilfældigt for at sikre variation.';
-    
+
     switch (strategy) {
       case LaneAssignmentStrategy.sequential:
         // Sequential: assign courts in order (first match → first court, etc.)
@@ -38,7 +41,8 @@ class TournamentService {
           final reasoning = MatchupReasoning(
             roundType: roundType,
             pairingMethod: pairingDescription,
-            laneAssignment: '$laneAssignmentDescription\nDenne kamp er placeret på ${courts[courtIndex].name} (kamp #${i + 1}).',
+            laneAssignment:
+                '$laneAssignmentDescription\nDenne kamp er placeret på ${courts[courtIndex].name} (kamp #${i + 1}).',
             playerMetadata: playerMetadataByMatchId?[matches[i].id],
           );
           assignedMatches.add(Match(
@@ -52,7 +56,7 @@ class TournamentService {
           ));
         }
         break;
-        
+
       case LaneAssignmentStrategy.random:
         // Random: shuffle courts and assign randomly
         final shuffledCourts = List<Court>.from(courts)..shuffle();
@@ -61,7 +65,8 @@ class TournamentService {
           final reasoning = MatchupReasoning(
             roundType: roundType,
             pairingMethod: pairingDescription,
-            laneAssignment: '$laneAssignmentDescription\nDenne kamp er placeret på ${shuffledCourts[courtIndex].name}.',
+            laneAssignment:
+                '$laneAssignmentDescription\nDenne kamp er placeret på ${shuffledCourts[courtIndex].name}.',
             playerMetadata: playerMetadataByMatchId?[matches[i].id],
           );
           assignedMatches.add(Match(
@@ -76,7 +81,7 @@ class TournamentService {
         }
         break;
     }
-    
+
     return assignedMatches;
   }
 
@@ -93,8 +98,8 @@ class TournamentService {
 
     int playerIndex = 0;
     // Create temporary matches without court assignments
-    while (playerIndex + 3 < shuffledPlayers.length && 
-           tempMatches.length < courts.length) {
+    while (playerIndex + 3 < shuffledPlayers.length &&
+        tempMatches.length < courts.length) {
       final match = Match(
         court: courts[0], // Temporary court assignment
         team1: Team(
@@ -116,7 +121,8 @@ class TournamentService {
       playerIndex++;
     }
 
-    const pairingDescription = 'Første runde: Spillere blandes tilfældigt og grupperes i hold af 4. '
+    const pairingDescription =
+        'Første runde: Spillere blandes tilfældigt og grupperes i hold af 4. '
         'Dette sikrer retfærdig og uforudsigelig start på turneringen.';
 
     // Apply lane assignment strategy with reasoning
@@ -138,7 +144,8 @@ class TournamentService {
   /// Beregn hvor mange spillere der skal på pause ud fra banekapacitet og hele hold (4)
   int _computeOverflowCount(int totalPlayers, int courtCount) {
     final capacity = courtCount * 4;
-    final playableByCount = (totalPlayers ~/ 4) * 4; // nærmeste nedre multiplum af 4
+    final playableByCount =
+        (totalPlayers ~/ 4) * 4; // nærmeste nedre multiplum af 4
     final playable = capacity < playableByCount ? capacity : playableByCount;
     return totalPlayers - playable;
   }
@@ -217,8 +224,8 @@ class TournamentService {
     // Generate temporary matches without court assignments
     final tempMatches = <Match>[];
     int playerIndex = 0;
-    while (playerIndex + 3 < activePlayers.length && 
-           tempMatches.length < courts.length) {
+    while (playerIndex + 3 < activePlayers.length &&
+        tempMatches.length < courts.length) {
       final match = Match(
         court: courts[0], // Temporary court assignment
         team1: Team(
@@ -235,9 +242,10 @@ class TournamentService {
     }
 
     // Apply lane assignment strategy with reasoning
-    const pairingDescription = 'Americano: Spillere blandes tilfældigt efter at have valgt dem der skal holde pause. '
+    const pairingDescription =
+        'Americano: Spillere blandes tilfældigt efter at have valgt dem der skal holde pause. '
         'Pause-valg baseres på retfærdighed: Færrest pauser → Flest kampe spillet.';
-    
+
     final matches = _assignCourtsToMatches(
       tempMatches,
       courts,
@@ -281,22 +289,27 @@ class TournamentService {
         .toList();
 
     // Calculate player statistics from previous rounds
-    final playerStats = _mexicanoService.calculatePlayerStats(players, previousRounds);
+    final playerStats =
+        _mexicanoService.calculatePlayerStats(players, previousRounds);
 
     // Sort active players by points (highest first)
-    final sortedPlayers = _mexicanoService.sortPlayersByPoints(activePlayers, playerStats);
+    final sortedPlayers =
+        _mexicanoService.sortPlayersByPoints(activePlayers, playerStats);
 
     // Generate optimal pairs (point-difference constraints, minimize partner repetition)
-    final pairs = _mexicanoService.generateOptimalPairs(sortedPlayers, playerStats, roundNumber);
+    final pairs = _mexicanoService.generateOptimalPairs(
+        sortedPlayers, playerStats, roundNumber);
 
     // Match pairs to create games (balance combined team points)
-    final tempMatches = _mexicanoService.matchPairsToGames(pairs, courts, playerStats);
+    final tempMatches =
+        _mexicanoService.matchPairsToGames(pairs, courts, playerStats);
 
     // Apply lane assignment strategy with reasoning
-    const pairingDescription = 'Mexicano: Konkurrencedygtig balance baseret på point-forskel.\n'
+    const pairingDescription =
+        'Mexicano: Konkurrencedygtig balance baseret på point-forskel.\n'
         'Partner-valg prioriterer: 1) Point-forskel indenfor grænse, 2) Tæt på i rangering.\n'
         'Modstander-valg prioriterer: Lige stærke hold (kombinerede point).';
-    
+
     final matches = _assignCourtsToMatches(
       tempMatches,
       courts,
@@ -340,22 +353,27 @@ class TournamentService {
         .toList();
 
     // Calculate player statistics from previous rounds
-    final playerStats = _socialMexicanoService.calculatePlayerStats(players, previousRounds);
+    final playerStats =
+        _socialMexicanoService.calculatePlayerStats(players, previousRounds);
 
     // Sort active players by points (highest first)
-    final sortedPlayers = _socialMexicanoService.sortPlayersByPoints(activePlayers, playerStats);
+    final sortedPlayers =
+        _socialMexicanoService.sortPlayersByPoints(activePlayers, playerStats);
 
     // Generate optimal pairs (minimize partner repetition, prefer similar rankings)
-    final pairs = _socialMexicanoService.generateOptimalPairs(sortedPlayers, playerStats);
+    final pairs =
+        _socialMexicanoService.generateOptimalPairs(sortedPlayers, playerStats);
 
     // Match pairs to create games (minimize opponent repetition)
-    final tempMatches = _socialMexicanoService.matchPairsToGames(pairs, courts, playerStats);
+    final tempMatches =
+        _socialMexicanoService.matchPairsToGames(pairs, courts, playerStats);
 
     // Apply lane assignment strategy with reasoning
-    const pairingDescription = 'Social-Mexicano: Maksimal social variation, undgår gentagelse.\n'
+    const pairingDescription =
+        'Social-Mexicano: Maksimal social variation, undgår gentagelse.\n'
         'Partner-valg prioriterer: 1) Mindst gange spillet sammen, 2) Tæt på i rangering.\n'
         'Modstander-valg prioriterer: Mindst gange mødt hinanden.';
-    
+
     final matches = _assignCourtsToMatches(
       tempMatches,
       courts,
@@ -380,7 +398,7 @@ class TournamentService {
   ) {
     // Create a map for easy lookup
     final standingsMap = {for (var s in standings) s.player.id: s};
-    
+
     // Create a list of players with their standings for sorting
     final playersWithStandings = allPlayers
         .map((p) => standingsMap[p.id])
@@ -392,10 +410,7 @@ class TournamentService {
     playersWithStandings.sort(_compareForPauseFairness);
 
     // Select the first 'count' players
-    return playersWithStandings
-        .take(count)
-        .map((s) => s.player)
-        .toList();
+    return playersWithStandings.take(count).map((s) => s.player).toList();
   }
 
   /// Compare two standings for pause fairness
@@ -406,7 +421,7 @@ class TournamentService {
     final pauseCompare = a.pauseCount.compareTo(b.pauseCount);
     if (pauseCompare != 0) return pauseCompare;
 
-    // 2. Most games played (descending) - among those with same pause count, 
+    // 2. Most games played (descending) - among those with same pause count,
     //    prioritize those who have played more
     final gamesCompare = b.matchesPlayed.compareTo(a.matchesPlayed);
     if (gamesCompare != 0) return gamesCompare;
@@ -438,14 +453,15 @@ class TournamentService {
     // Select players who will sit out using rolling pause system
     final playersOnBreak = <Player>[];
     if (overflowCount > 0) {
-      playersOnBreak.addAll(_selectBreakPlayers(rankedStandings, overflowCount));
+      playersOnBreak
+          .addAll(_selectBreakPlayers(rankedStandings, overflowCount));
     }
 
     // Get active players (those not on break) with their standings
     final activeStandings = rankedStandings
         .where((s) => !playersOnBreak.any((p) => p.id == s.player.id))
         .toList();
-    
+
     final activePlayers = activeStandings.map((s) => s.player).toList();
 
     // Create a map from player ID to ranking for metadata
@@ -465,13 +481,13 @@ class TournamentService {
           strategy,
         );
         tempMatches.add(match);
-        
+
         // Create metadata for this match showing player rankings
         final p1 = match.team1.player1;
         final p2 = match.team1.player2;
         final p3 = match.team2.player1;
         final p4 = match.team2.player2;
-        
+
         playerMetadataByMatchId[match.id] = {
           p1.name: 'Rang ${playerRankMap[p1.id]}',
           p2.name: 'Rang ${playerRankMap[p2.id]}',
@@ -533,7 +549,7 @@ class TournamentService {
         return Match(
           court: court,
           team1: Team(
-            player1: players[startIndex],     // R1, R5, R9, ...
+            player1: players[startIndex], // R1, R5, R9, ...
             player2: players[startIndex + 2], // R3, R7, R11, ...
           ),
           team2: Team(
@@ -547,7 +563,7 @@ class TournamentService {
         return Match(
           court: court,
           team1: Team(
-            player1: players[startIndex],     // R1, R5, R9, ...
+            player1: players[startIndex], // R1, R5, R9, ...
             player2: players[startIndex + 1], // R2, R6, R10, ...
           ),
           team2: Team(
@@ -561,7 +577,7 @@ class TournamentService {
         return Match(
           court: court,
           team1: Team(
-            player1: players[startIndex],     // R1, R5, R9, ...
+            player1: players[startIndex], // R1, R5, R9, ...
             player2: players[startIndex + 3], // R4, R8, R12, ...
           ),
           team2: Team(
@@ -598,12 +614,10 @@ class TournamentService {
           break;
         }
       }
-      
+
       // If all have been on break before, use the last (lowest-ranked) player
-      if (firstBreakPlayer == null) {
-        firstBreakPlayer = bottomHalf.last.player;
-      }
-      
+      firstBreakPlayer ??= bottomHalf.last.player;
+
       breakPlayers.add(firstBreakPlayer);
     }
 
@@ -673,7 +687,7 @@ class TournamentService {
       if (currentRound.playersOnBreak.any((p) => p.id == overridePlayer.id)) {
         return null; // Player is already on break
       }
-      
+
       // Can force to break if:
       // 1. No one on break yet (transitioning from 0→1), OR
       // 2. Someone on break (swap is OK as long as total doesn't increase beyond max)
@@ -688,80 +702,84 @@ class TournamentService {
       }
       // If no one on break, allow the transition from 0→1
     }
-    
+
     // Create new lists for the override
     List<Player> newPlayersOnBreak;
     List<Player> newActivePlayers;
-    
+
     if (forceToActive) {
       // Remove player from break, add to active
       newPlayersOnBreak = currentRound.playersOnBreak
           .where((p) => p.id != overridePlayer.id)
           .toList();
-      
+
       // Get all currently active players
       final currentlyActive = allPlayers
           .where((p) => !currentRound.playersOnBreak.any((bp) => bp.id == p.id))
           .toList();
-      
+
       // Add the override player to active
       currentlyActive.add(overridePlayer);
-      
+
       // If we now have too many active players, move someone else to break
       final playersNeeded = (currentlyActive.length ~/ 4) * 4;
       final overflowCount = currentlyActive.length - playersNeeded;
-      
+
       if (overflowCount > 0) {
         // Select someone to go on break using fairness logic if standings available
         if (standings != null) {
           // Get standings for only the active players (excluding override player)
           final candidatesStandings = standings
-              .where((s) => currentlyActive.any((p) => p.id == s.player.id) && 
-                           s.player.id != overridePlayer.id)
+              .where((s) =>
+                  currentlyActive.any((p) => p.id == s.player.id) &&
+                  s.player.id != overridePlayer.id)
               .toList();
-          
+
           // Use fairness logic to select who should take the break
           final toBreak = _selectBreakPlayersWithFairness(
             candidatesStandings.map((s) => s.player).toList(),
             candidatesStandings,
             overflowCount,
           );
-          
+
           newPlayersOnBreak.addAll(toBreak);
         } else {
           // Fallback to random selection if no standings provided
           final candidatesForBreak = currentlyActive
               .where((p) => p.id != overridePlayer.id)
-              .toList()..shuffle();
-          
+              .toList()
+            ..shuffle();
+
           newPlayersOnBreak.addAll(candidatesForBreak.take(overflowCount));
         }
-        
+
         newActivePlayers = currentlyActive
             .where((p) => !newPlayersOnBreak.any((bp) => bp.id == p.id))
-            .toList()..shuffle();
+            .toList()
+          ..shuffle();
       } else {
         newActivePlayers = currentlyActive..shuffle();
       }
     } else {
       // Force player to break - swap with someone on break if possible to maintain structure
       newPlayersOnBreak = [...currentRound.playersOnBreak];
-      
+
       // If there are players on break, swap the forced player with one of them
       if (newPlayersOnBreak.isNotEmpty) {
         // Select someone to swap with using fairness logic if available
         Player playerToReturn;
-        
+
         if (standings != null) {
           // Get standings for players on break
           final breakStandings = standings
               .where((s) => newPlayersOnBreak.any((p) => p.id == s.player.id))
               .toList();
-          
+
           if (breakStandings.isNotEmpty) {
             // Sort to find who has been on break the most (fairness)
             breakStandings.sort(_compareForPauseFairness);
-            playerToReturn = breakStandings.last.player; // Last in list has most pauses
+            playerToReturn =
+                breakStandings.last.player; // Last in list has most pauses
           } else {
             // Fallback to random
             newPlayersOnBreak.shuffle();
@@ -772,29 +790,31 @@ class TournamentService {
           newPlayersOnBreak.shuffle();
           playerToReturn = newPlayersOnBreak.first;
         }
-        
+
         // Perform the swap
         newPlayersOnBreak.remove(playerToReturn);
         newPlayersOnBreak.add(overridePlayer);
-        
+
         // Active players include everyone except new break list
         newActivePlayers = allPlayers
             .where((p) => !newPlayersOnBreak.any((bp) => bp.id == p.id))
-            .toList()..shuffle();
+            .toList()
+          ..shuffle();
       } else {
         // No one currently on break, so just add the override player to break
         newPlayersOnBreak.add(overridePlayer);
         newActivePlayers = allPlayers
             .where((p) => !newPlayersOnBreak.any((bp) => bp.id == p.id))
-            .toList()..shuffle();
+            .toList()
+          ..shuffle();
       }
     }
-    
+
     // Generate new temporary matches from active players
     final tempMatches = <Match>[];
     int playerIndex = 0;
-    while (playerIndex + 3 < newActivePlayers.length && 
-           tempMatches.length < courts.length) {
+    while (playerIndex + 3 < newActivePlayers.length &&
+        tempMatches.length < courts.length) {
       final match = Match(
         court: courts[0], // Temporary court
         team1: Team(
@@ -809,13 +829,13 @@ class TournamentService {
       tempMatches.add(match);
       playerIndex += 4;
     }
-    
+
     // Apply lane assignment strategy with reasoning
     final roundType = currentRound.isFinalRound ? 'final' : 'regular';
     final pairingDescription = currentRound.isFinalRound
         ? 'Sidste runde med manuel ændring: En spiller blev tvunget til at ${forceToActive ? "holde pause" : "spille"}.'
         : 'Normal runde med manuel ændring: En spiller blev tvunget til at ${forceToActive ? "holde pause" : "spille"}.';
-    
+
     final matches = _assignCourtsToMatches(
       tempMatches,
       courts,
@@ -823,7 +843,7 @@ class TournamentService {
       roundType: roundType,
       pairingDescription: pairingDescription,
     );
-    
+
     // Create new round with updated assignments
     return Round(
       roundNumber: currentRound.roundNumber,

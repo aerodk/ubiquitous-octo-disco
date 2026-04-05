@@ -1,13 +1,12 @@
-// Web implementation of browser fullscreen API using dart:html.
+// Web implementation of browser fullscreen API using package:web.
 // Used via conditional import:
 //   import 'fullscreen_stub.dart' if (dart.library.html) 'fullscreen_web.dart';
 
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
+import 'package:web/web.dart' as web;
 
 Future<void> enterBrowserFullscreen() async {
   try {
-    final elem = html.document.documentElement;
+    final elem = web.document.documentElement;
     if (elem != null) {
       elem.requestFullscreen();
     }
@@ -18,8 +17,8 @@ Future<void> enterBrowserFullscreen() async {
 
 Future<void> exitBrowserFullscreen() async {
   try {
-    if (html.document.fullscreenElement != null) {
-      html.document.exitFullscreen();
+    if (web.document.fullscreenElement != null) {
+      web.document.exitFullscreen();
     }
   } catch (_) {
     // Ignore errors when exiting fullscreen.

@@ -205,8 +205,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                     width: 40 * sizeScale,
                     height: 40 * sizeScale,
                     decoration: BoxDecoration(
-                      color: isTop3
-                          ? Colors.white.withOpacity(0.3)
+                        color: isTop3
+                          ? Colors.white.withValues(alpha: 0.3)
                           : Colors.grey[300],
                       shape: BoxShape.circle,
                     ),
@@ -637,7 +637,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8 * sizeScale, vertical: 4 * sizeScale),
       decoration: BoxDecoration(
-        color: isTop3 ? Colors.white.withOpacity(0.2) : indicatorColor.withOpacity(0.1),
+        color: isTop3
+          ? Colors.white.withValues(alpha: 0.2)
+          : indicatorColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12 * sizeScale),
         border: Border.all(
           color: indicatorColor,

@@ -9,8 +9,7 @@ import '../models/tournament.dart';
 import '../services/export_service.dart';
 
 // Conditional import for web vs non-web platforms
-import '../utils/html_stub.dart'
-    if (dart.library.html) 'dart:html' as html;
+import '../utils/html_stub.dart' if (dart.library.html) 'dart:html' as html;
 
 /// Reusable widget to display export options and handle export operations
 class ExportDialog extends StatefulWidget {
@@ -155,24 +154,31 @@ class _ExportDialogState extends State<ExportDialog> {
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-          ...availableFormats.map((format) => RadioListTile<ExportFormat>(
-                title: Text(format.displayName),
-                subtitle: Text(
-                  format.description,
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                ),
-                value: format,
-                groupValue: _selectedFormat,
-                onChanged: _isExporting
-                    ? null
-                    : (value) {
-                        if (value != null) {
-                          setState(() {
-                            _selectedFormat = value;
-                          });
-                        }
-                      },
-              )),
+          RadioGroup<ExportFormat>(
+            groupValue: _selectedFormat,
+            onChanged: (value) {
+              if (_isExporting || value == null) {
+                return;
+              }
+              setState(() {
+                _selectedFormat = value;
+              });
+            },
+            child: Column(
+              children: availableFormats
+                  .map(
+                    (format) => RadioListTile<ExportFormat>(
+                      title: Text(format.displayName),
+                      subtitle: Text(
+                        format.description,
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                      value: format,
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(12),
@@ -290,7 +296,7 @@ class FutureExportOptionsDialog extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: color, size: 24),
