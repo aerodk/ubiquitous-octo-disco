@@ -97,10 +97,9 @@ void main() {
 
       // At least one round should have different first player
       // (very unlikely all 5 rounds would have the same shuffle)
-      final firstPlayers = rounds
-          .map((r) => r.matches[0].team1.player1.id)
-          .toSet();
-      
+      final firstPlayers =
+          rounds.map((r) => r.matches[0].team1.player1.id).toSet();
+
       // We expect some variation in shuffling
       expect(firstPlayers.length, greaterThan(1));
     });
@@ -113,13 +112,14 @@ void main() {
       service = TournamentService();
     });
 
-    test('should generate final round with 12 players (perfect divisibility)', () {
+    test('should generate final round with 12 players (perfect divisibility)',
+        () {
       // Test scenario from SPECIFICATION_V4.md
       final players = List.generate(
         12,
         (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
       );
-      
+
       final standings = List.generate(
         12,
         (i) => PlayerStanding(
@@ -176,13 +176,13 @@ void main() {
       expect(match3.court.id, '3');
     });
 
-    test('should handle 13 players with 1 sitting out from bottom half', () {
+    test('should protect bottom player with fewer matches in final round', () {
       // Test scenario from SPECIFICATION_V4.md
       final players = List.generate(
         13,
         (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
       );
-      
+
       final standings = List.generate(
         13,
         (i) => PlayerStanding(
@@ -210,18 +210,20 @@ void main() {
       expect(round.matches.length, 3);
       expect(round.playersOnBreak.length, 1);
 
-      // R13 should sit out (bottom half, fewest games)
-      expect(round.playersOnBreak[0].id, '13');
+      // R13 should be protected (fewest games), so R12 sits out instead
+      expect(round.playersOnBreak[0].id, '12');
 
       // Verify matches include R1-R12 only
-      final allMatchPlayers = round.matches.expand((m) => [
-        m.team1.player1.id,
-        m.team1.player2.id,
-        m.team2.player1.id,
-        m.team2.player2.id,
-      ]).toSet();
+      final allMatchPlayers = round.matches
+          .expand((m) => [
+                m.team1.player1.id,
+                m.team1.player2.id,
+                m.team2.player1.id,
+                m.team2.player2.id,
+              ])
+          .toSet();
 
-      expect(allMatchPlayers.contains('13'), false);
+      expect(allMatchPlayers.contains('13'), true);
       expect(allMatchPlayers.length, 12);
     });
 
@@ -230,7 +232,7 @@ void main() {
         14,
         (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
       );
-      
+
       final standings = List.generate(
         14,
         (i) => PlayerStanding(
@@ -264,12 +266,12 @@ void main() {
       expect(breakPlayerIds.contains('14'), true);
     });
 
-    test('should prioritize most games played in bottom half', () {
+    test('should prioritize fewest pauses, then most games in final round', () {
       final players = List.generate(
         10,
         (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
       );
-      
+
       // Setup: Top half (R1-R5) protected
       // Bottom half (R6-R10): R6-R8 have 5 games, R9-R10 have 4 games
       final standings = List.generate(
@@ -299,12 +301,102 @@ void main() {
       expect(round.playersOnBreak.length, 2);
 
       final breakPlayerIds = round.playersOnBreak.map((p) => p.id).toList();
-      
-      // R8 should sit out (most games in bottom half, lowest rank among those with 5 games)
+
+      // R8 should sit out first (most games in bottom half, lowest rank among those with 5 games)
       expect(breakPlayerIds.contains('8'), true);
-      
-      // R10 should sit out (lowest rank in bottom half with 4 games)
-      expect(breakPlayerIds.contains('10'), true);
+
+      // Next sit-out is R7 (still among players with most games)
+      expect(breakPlayerIds.contains('7'), true);
+    });
+
+    test(
+        'should keep lowest-ranked active when they have fewer matches and more pauses',
+        () {
+      final players = List.generate(
+        5,
+        (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
+      );
+
+      // Simulates case where last-ranked player has one fewer match and one extra pause.
+      final standings = [
+        PlayerStanding(
+          player: players[0],
+          totalPoints: 30,
+          wins: 2,
+          losses: 0,
+          matchesPlayed: 2,
+          biggestWinMargin: 8,
+          smallestLossMargin: 3,
+          headToHeadPoints: {},
+          rank: 1,
+          pauseCount: 0,
+        ),
+        PlayerStanding(
+          player: players[1],
+          totalPoints: 28,
+          wins: 2,
+          losses: 0,
+          matchesPlayed: 2,
+          biggestWinMargin: 8,
+          smallestLossMargin: 3,
+          headToHeadPoints: {},
+          rank: 2,
+          pauseCount: 0,
+        ),
+        PlayerStanding(
+          player: players[2],
+          totalPoints: 26,
+          wins: 1,
+          losses: 1,
+          matchesPlayed: 2,
+          biggestWinMargin: 6,
+          smallestLossMargin: 4,
+          headToHeadPoints: {},
+          rank: 3,
+          pauseCount: 0,
+        ),
+        PlayerStanding(
+          player: players[3],
+          totalPoints: 24,
+          wins: 1,
+          losses: 1,
+          matchesPlayed: 2,
+          biggestWinMargin: 6,
+          smallestLossMargin: 4,
+          headToHeadPoints: {},
+          rank: 4,
+          pauseCount: 0,
+        ),
+        PlayerStanding(
+          player: players[4],
+          totalPoints: 22,
+          wins: 0,
+          losses: 1,
+          matchesPlayed: 1,
+          biggestWinMargin: 0,
+          smallestLossMargin: 5,
+          headToHeadPoints: {},
+          rank: 5,
+          pauseCount: 1,
+        ),
+      ];
+
+      final courts = [Court(id: '1', name: 'Bane 1')];
+
+      final round = service.generateFinalRound(courts, standings, 4);
+
+      expect(round.playersOnBreak.length, 1);
+      expect(round.playersOnBreak[0].id, '4');
+
+      final activeIds = round.matches
+          .expand((m) => [
+                m.team1.player1.id,
+                m.team1.player2.id,
+                m.team2.player1.id,
+                m.team2.player2.id,
+              ])
+          .toSet();
+      expect(activeIds.contains('5'), true);
     });
 
     test('should protect top half from sitting out', () {
@@ -312,7 +404,7 @@ void main() {
         13,
         (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
       );
-      
+
       // All players have equal games
       final standings = List.generate(
         13,
@@ -343,7 +435,7 @@ void main() {
       // Break player should be from bottom half (R7-R13)
       final breakPlayerId = int.parse(round.playersOnBreak[0].id);
       expect(breakPlayerId, greaterThanOrEqualTo(7));
-      
+
       // R13 should sit out (lowest rank in bottom half)
       expect(round.playersOnBreak[0].id, '13');
     });
@@ -353,7 +445,7 @@ void main() {
         13,
         (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
       );
-      
+
       // All equal except pause counts
       final standings = List.generate(
         13,
@@ -389,7 +481,7 @@ void main() {
         13,
         (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
       );
-      
+
       final standings = List.generate(
         13,
         (i) => PlayerStanding(
@@ -402,7 +494,8 @@ void main() {
           smallestLossMargin: 5,
           headToHeadPoints: {},
           rank: i + 1,
-          pauseCount: i == 12 ? 1 : 0, // R13 has been on break once, others have not
+          pauseCount:
+              i == 12 ? 1 : 0, // R13 has been on break once, others have not
         ),
       );
 
@@ -415,19 +508,21 @@ void main() {
       final round = service.generateFinalRound(courts, standings, 4);
 
       expect(round.playersOnBreak.length, 1);
-      
+
       // R12 should sit out (lowest rank who has not been on break yet)
       // even though R13 is lower ranked, R13 has already been on break
       expect(round.playersOnBreak[0].id, '12');
     });
 
-    test('should select lowest ranked when all bottom players have been on break', () {
+    test(
+        'should select lowest ranked when all bottom players have been on break',
+        () {
       // Test scenario: All bottom half players have been on break
       final players = List.generate(
         13,
         (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
       );
-      
+
       final standings = List.generate(
         13,
         (i) => PlayerStanding(
@@ -440,7 +535,8 @@ void main() {
           smallestLossMargin: 5,
           headToHeadPoints: {},
           rank: i + 1,
-          pauseCount: i >= 6 ? 1 : 0, // Bottom half (R7-R13) have all been on break
+          pauseCount:
+              i >= 6 ? 1 : 0, // Bottom half (R7-R13) have all been on break
         ),
       );
 
@@ -453,7 +549,7 @@ void main() {
       final round = service.generateFinalRound(courts, standings, 4);
 
       expect(round.playersOnBreak.length, 1);
-      
+
       // R13 should sit out (lowest rank, since all bottom half have been on break)
       expect(round.playersOnBreak[0].id, '13');
     });
@@ -464,7 +560,7 @@ void main() {
         13,
         (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
       );
-      
+
       final standings = List.generate(
         13,
         (i) => PlayerStanding(
@@ -477,7 +573,8 @@ void main() {
           smallestLossMargin: 5,
           headToHeadPoints: {},
           rank: i + 1,
-          pauseCount: (i == 11 || i == 12) ? 1 : 0, // R12 and R13 have been on break
+          pauseCount:
+              (i == 11 || i == 12) ? 1 : 0, // R12 and R13 have been on break
         ),
       );
 
@@ -490,7 +587,7 @@ void main() {
       final round = service.generateFinalRound(courts, standings, 4);
 
       expect(round.playersOnBreak.length, 1);
-      
+
       // R11 should sit out (lowest rank who has not been on break yet)
       expect(round.playersOnBreak[0].id, '11');
     });
@@ -509,7 +606,7 @@ void main() {
         12,
         (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
       );
-      
+
       return List.generate(
         12,
         (i) => PlayerStanding(
@@ -528,10 +625,10 @@ void main() {
     }
 
     List<Court> createCourts() => [
-      Court(id: '1', name: 'Bane 1'),
-      Court(id: '2', name: 'Bane 2'),
-      Court(id: '3', name: 'Bane 3'),
-    ];
+          Court(id: '1', name: 'Bane 1'),
+          Court(id: '2', name: 'Bane 2'),
+          Court(id: '3', name: 'Bane 3'),
+        ];
 
     test('should use balanced strategy by default (R1+R3 vs R2+R4)', () {
       final standings = create12RankedPlayers();
@@ -643,7 +740,7 @@ void main() {
         13,
         (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
       );
-      
+
       final standings = List.generate(
         13,
         (i) => PlayerStanding(
@@ -672,17 +769,20 @@ void main() {
 
         expect(round.matches.length, 3, reason: 'Failed for $strategy');
         expect(round.playersOnBreak.length, 1, reason: 'Failed for $strategy');
-        
+
         // Verify all 12 active players are in matches
-        final allMatchPlayers = round.matches.expand((m) => [
-          m.team1.player1.id,
-          m.team1.player2.id,
-          m.team2.player1.id,
-          m.team2.player2.id,
-        ]).toSet();
-        
+        final allMatchPlayers = round.matches
+            .expand((m) => [
+                  m.team1.player1.id,
+                  m.team1.player2.id,
+                  m.team2.player1.id,
+                  m.team2.player2.id,
+                ])
+            .toSet();
+
         expect(allMatchPlayers.length, 12, reason: 'Failed for $strategy');
-        expect(allMatchPlayers.contains('13'), false, reason: 'Failed for $strategy');
+        expect(allMatchPlayers.contains('13'), false,
+            reason: 'Failed for $strategy');
       }
     });
 
@@ -892,7 +992,8 @@ void main() {
 
       // 2 players should sit out, and neither should be from players 1-2
       expect(round.playersOnBreak.length, 2);
-      final breakPlayerIds = round.playersOnBreak.map((p) => int.parse(p.id)).toList();
+      final breakPlayerIds =
+          round.playersOnBreak.map((p) => int.parse(p.id)).toList();
       expect(breakPlayerIds.every((id) => id >= 3), true);
     });
 
@@ -939,7 +1040,7 @@ void main() {
       // Generate initial round
       final initialRound = service.generateFirstRound(players, courts);
       expect(initialRound.playersOnBreak.length, 1);
-      
+
       final playerOnBreak = initialRound.playersOnBreak[0];
 
       // Force player from break to active
@@ -952,17 +1053,20 @@ void main() {
       );
 
       expect(newRound, isNotNull);
-      expect(newRound!.playersOnBreak.any((p) => p.id == playerOnBreak.id), false);
+      expect(
+          newRound!.playersOnBreak.any((p) => p.id == playerOnBreak.id), false);
       expect(newRound.matches.length, 2);
-      
+
       // Verify the override player is now in a match
-      final allMatchPlayers = newRound.matches.expand((m) => [
-        m.team1.player1,
-        m.team1.player2,
-        m.team2.player1,
-        m.team2.player2,
-      ]).toList();
-      
+      final allMatchPlayers = newRound.matches
+          .expand((m) => [
+                m.team1.player1,
+                m.team1.player2,
+                m.team2.player1,
+                m.team2.player2,
+              ])
+          .toList();
+
       expect(allMatchPlayers.any((p) => p.id == playerOnBreak.id), true);
     });
 
@@ -979,7 +1083,7 @@ void main() {
 
       // Generate initial round
       final initialRound = service.generateFirstRound(players, courts);
-      
+
       // Get a player who is currently active (in a match)
       final activePlayer = initialRound.matches[0].team1.player1;
 
@@ -993,17 +1097,20 @@ void main() {
       );
 
       expect(newRound, isNotNull);
-      expect(newRound!.playersOnBreak.any((p) => p.id == activePlayer.id), true);
+      expect(
+          newRound!.playersOnBreak.any((p) => p.id == activePlayer.id), true);
       expect(newRound.matches.length, 2);
-      
+
       // Verify the override player is NOT in any match
-      final allMatchPlayers = newRound.matches.expand((m) => [
-        m.team1.player1,
-        m.team1.player2,
-        m.team2.player1,
-        m.team2.player2,
-      ]).toList();
-      
+      final allMatchPlayers = newRound.matches
+          .expand((m) => [
+                m.team1.player1,
+                m.team1.player2,
+                m.team2.player1,
+                m.team2.player2,
+              ])
+          .toList();
+
       expect(allMatchPlayers.any((p) => p.id == activePlayer.id), false);
     });
 
@@ -1181,7 +1288,8 @@ void main() {
       expect(newRound, isNotNull);
       // Still 2 on pause, but different players
       expect(newRound!.playersOnBreak.length, 2);
-      expect(newRound.playersOnBreak.any((p) => p.id == playerOnBreak.id), false);
+      expect(
+          newRound.playersOnBreak.any((p) => p.id == playerOnBreak.id), false);
       expect(newRound.matches.length, 2);
     });
   });
@@ -1193,7 +1301,8 @@ void main() {
       service = TournamentService();
     });
 
-    test('should assign courts sequentially when using sequential strategy', () {
+    test('should assign courts sequentially when using sequential strategy',
+        () {
       final players = List.generate(
         16,
         (i) => Player(id: '${i + 1}', name: 'Player ${i + 1}'),
@@ -1213,7 +1322,7 @@ void main() {
       );
 
       expect(round.matches.length, 4);
-      
+
       // With sequential strategy, courts should be assigned in order
       expect(round.matches[0].court.id, '1');
       expect(round.matches[1].court.id, '2');
@@ -1235,13 +1344,13 @@ void main() {
       ];
 
       // Generate multiple rounds to test randomness
-      final rounds = List.generate(10, (_) => 
-        service.generateFirstRound(
-          players,
-          courts,
-          laneStrategy: LaneAssignmentStrategy.random,
-        )
-      );
+      final rounds = List.generate(
+          10,
+          (_) => service.generateFirstRound(
+                players,
+                courts,
+                laneStrategy: LaneAssignmentStrategy.random,
+              ));
 
       // Expect at least some variation in court assignments across rounds
       final firstMatchCourts = rounds.map((r) => r.matches[0].court.id).toSet();
@@ -1266,17 +1375,19 @@ void main() {
       ];
 
       // Create fake standings
-      final standings = players.map((p) => PlayerStanding(
-        player: p,
-        totalPoints: 0,
-        matchesPlayed: 0,
-        wins: 0,
-        losses: 0,
-        biggestWinMargin: 0,
-        smallestLossMargin: 999,
-        headToHeadPoints: {},
-        rank: 1,
-      )).toList();
+      final standings = players
+          .map((p) => PlayerStanding(
+                player: p,
+                totalPoints: 0,
+                matchesPlayed: 0,
+                wins: 0,
+                losses: 0,
+                biggestWinMargin: 0,
+                smallestLossMargin: 999,
+                headToHeadPoints: {},
+                rank: 1,
+              ))
+          .toList();
 
       final round = service.generateNextRound(
         players,
@@ -1287,7 +1398,7 @@ void main() {
       );
 
       expect(round.matches.length, 3);
-      
+
       // With sequential strategy, courts should be assigned in order
       expect(round.matches[0].court.id, '1');
       expect(round.matches[1].court.id, '2');
@@ -1332,7 +1443,7 @@ void main() {
 
       expect(round.matches.length, 3);
       expect(round.isFinalRound, true);
-      
+
       // With sequential strategy, courts should be assigned in order
       expect(round.matches[0].court.id, '1');
       expect(round.matches[1].court.id, '2');
@@ -1359,17 +1470,19 @@ void main() {
       final playerOnBreak = initialRound.playersOnBreak[0];
 
       // Create fake standings
-      final standings = players.map((p) => PlayerStanding(
-        player: p,
-        totalPoints: 0,
-        matchesPlayed: 0,
-        wins: 0,
-        losses: 0,
-        biggestWinMargin: 0,
-        smallestLossMargin: 999,
-        headToHeadPoints: {},
-        rank: 1,
-      )).toList();
+      final standings = players
+          .map((p) => PlayerStanding(
+                player: p,
+                totalPoints: 0,
+                matchesPlayed: 0,
+                wins: 0,
+                losses: 0,
+                biggestWinMargin: 0,
+                smallestLossMargin: 999,
+                headToHeadPoints: {},
+                rank: 1,
+              ))
+          .toList();
 
       final newRound = service.regenerateRoundWithOverride(
         currentRound: initialRound,
@@ -1383,7 +1496,7 @@ void main() {
 
       expect(newRound, isNotNull);
       expect(newRound!.matches.length, 2);
-      
+
       // With sequential strategy, courts should be assigned in order
       expect(newRound.matches[0].court.id, '1');
       expect(newRound.matches[1].court.id, '2');
