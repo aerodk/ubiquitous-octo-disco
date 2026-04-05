@@ -29,7 +29,7 @@ class BenchPlayerChip extends StatelessWidget {
           border: Border.all(color: AppColors.benchChipBorder, width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: Colors.orange.withOpacity(0.1),
+              color: Colors.orange.withValues(alpha: 0.1),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -91,7 +91,7 @@ class BenchPlayerChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: indicatorColor.withOpacity(0.1),
+        color: indicatorColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: indicatorColor,

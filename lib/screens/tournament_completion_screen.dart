@@ -713,7 +713,7 @@ class _TournamentCompletionScreenState extends State<TournamentCompletionScreen>
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.amber.withOpacity(0.3),
+                        Colors.amber.withValues(alpha: 0.3),
                         Colors.transparent,
                       ],
                     ),
@@ -881,7 +881,7 @@ class _TournamentCompletionScreenState extends State<TournamentCompletionScreen>
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
+                        color: Colors.black.withValues(alpha: 0.3),
                         blurRadius: 8 * scaleFactor,
                         offset: Offset(0, 4 * scaleFactor),
                       ),
@@ -977,12 +977,12 @@ class _TournamentCompletionScreenState extends State<TournamentCompletionScreen>
                       end: Alignment.bottomCenter,
                       colors: [
                         color,
-                        color.withOpacity(0.7),
+                        color.withValues(alpha: 0.7),
                       ],
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
+                        color: Colors.black.withValues(alpha: 0.3),
                         blurRadius: 10 * scaleFactor,
                         offset: Offset(0, 5 * scaleFactor),
                       ),
@@ -998,7 +998,7 @@ class _TournamentCompletionScreenState extends State<TournamentCompletionScreen>
                       fontWeight: FontWeight.bold,
                       shadows: [
                         Shadow(
-                          color: Colors.black.withOpacity(0.5),
+                          color: Colors.black.withValues(alpha: 0.5),
                           blurRadius: 4 * scaleFactor,
                           offset: Offset(2 * scaleFactor, 2 * scaleFactor),
                         ),
@@ -1021,7 +1021,7 @@ class _TournamentCompletionScreenState extends State<TournamentCompletionScreen>
                 ),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.95),
+                    color: color.withValues(alpha: 0.95),
                     borderRadius: BorderRadius.circular(8 * scaleFactor),
                   ),
                   child: Center(
@@ -1250,7 +1250,7 @@ class _TournamentCompletionScreenState extends State<TournamentCompletionScreen>
                             height: 40 * sizeScale,
                             decoration: BoxDecoration(
                               color: isTop3
-                                  ? Colors.white.withOpacity(0.3)
+                                  ? Colors.white.withValues(alpha: 0.3)
                                   : Colors.grey[300],
                               shape: BoxShape.circle,
                             ),
@@ -1629,7 +1629,7 @@ class _CelebrationPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = color.withOpacity((1 - animationValue) * 0.8)
+      ..color = color.withValues(alpha: (1 - animationValue) * 0.8)
       ..style = PaintingStyle.fill;
 
     final random = 42; // Fixed seed for consistent particle positions

@@ -217,7 +217,9 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   Future<void> _syncToCloudIfConfigured(Tournament tournament) async {
     if (_firebaseService == null ||
         _cloudCode == null ||
-        _cloudPasscode == null) return;
+        _cloudPasscode == null) {
+      return;
+    }
 
     final isAvailable = await _firebaseService!.isFirebaseAvailable();
     if (!isAvailable) return;
@@ -251,17 +253,25 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
 
   bool get _canStartFinalRound {
     // Must have at least the configured minimum completed rounds
-    if (_tournament.completedRounds < _tournament.settings.minRoundsBeforeFinal)
+    if (_tournament.completedRounds <
+        _tournament.settings.minRoundsBeforeFinal) {
       return false;
+    }
 
     // Current round must be completed
-    if (!_currentRound.isCompleted) return false;
+    if (!_currentRound.isCompleted) {
+      return false;
+    }
 
     // Cannot start if already in final round
-    if (_currentRound.isFinalRound) return false;
+    if (_currentRound.isFinalRound) {
+      return false;
+    }
 
     // Tournament must not be completed
-    if (_tournament.isCompleted) return false;
+    if (_tournament.isCompleted) {
+      return false;
+    }
 
     return true;
   }
@@ -306,15 +316,20 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       ),
     );
 
-    if (confirmed == true && mounted) {
-      await _persistenceService.clearTournament();
-
-      // Navigate to setup screen
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const SetupScreen()),
-        (route) => false,
-      );
+    if (confirmed != true) {
+      return;
     }
+
+    await _persistenceService.clearTournament();
+    if (!mounted) {
+      return;
+    }
+
+    // Navigate to setup screen
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const SetupScreen()),
+      (route) => false,
+    );
   }
 
   Future<void> _saveToCloud() async {
@@ -446,6 +461,10 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
 
     await _syncToCloudIfConfigured(updatedTournament);
 
+    if (!mounted) {
+      return;
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -466,15 +485,18 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   /// Check if the rounds in two tournaments are identical (same scores)
   /// Used to determine if we can safely restore a round from history
   bool _roundsAreIdentical(Tournament history, Tournament current) {
-    if (history.rounds.length < current.rounds.length) return false;
+    if (history.rounds.length < current.rounds.length) {
+      return false;
+    }
 
     // Check that all existing rounds have identical scores
     for (int i = 0; i < current.rounds.length; i++) {
       final historyRound = history.rounds[i];
       final currentRound = current.rounds[i];
 
-      if (historyRound.matches.length != currentRound.matches.length)
+      if (historyRound.matches.length != currentRound.matches.length) {
         return false;
+      }
 
       for (int j = 0; j < currentRound.matches.length; j++) {
         final historyMatch = historyRound.matches[j];

@@ -422,11 +422,11 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
             const SizedBox(height: 16),
             // Other Team (Auto-calculated, read-only)
             Card(
-              color: AppColors.scoreEmpty.withOpacity(0.5),
+              color: AppColors.scoreEmpty.withValues(alpha: 0.5),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
                 side: BorderSide(
-                    color: AppColors.courtBorder.withOpacity(0.3), width: 2),
+                  color: AppColors.courtBorder.withValues(alpha: 0.3), width: 2),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(12),
@@ -439,7 +439,7 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
                           otherTeamLabel,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: AppColors.teamLabel.withOpacity(0.7),
+                            color: AppColors.teamLabel.withValues(alpha: 0.7),
                             fontSize: 14,
                           ),
                         ),
@@ -477,7 +477,7 @@ class _ScoreInputDialogState extends State<ScoreInputDialog> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: AppColors.teamLabel.withOpacity(0.3),
+                          color: AppColors.teamLabel.withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(

@@ -16,7 +16,8 @@ class TournamentSettingsWidget extends StatefulWidget {
   });
 
   @override
-  State<TournamentSettingsWidget> createState() => _TournamentSettingsWidgetState();
+  State<TournamentSettingsWidget> createState() =>
+      _TournamentSettingsWidgetState();
 }
 
 class _TournamentSettingsWidgetState extends State<TournamentSettingsWidget> {
@@ -92,24 +93,24 @@ class _TournamentSettingsWidgetState extends State<TournamentSettingsWidget> {
               children: [
                 // Tournament Format Setting
                 _buildTournamentFormatSection(theme),
-                
+
                 const Divider(height: 32),
-                
+
                 // Points Per Match Setting
                 _buildPointsPerMatchSection(theme),
-                
+
                 const Divider(height: 32),
-                
+
                 // Pause Points Setting
                 _buildPausePointsSection(theme),
-                
+
                 const Divider(height: 32),
-                
+
                 // Lane Assignment Strategy Setting
                 _buildLaneAssignmentSection(theme),
-                
+
                 const Divider(height: 32),
-                
+
                 // Pairing Strategy Setting
                 _buildPairingStrategySection(theme),
               ],
@@ -138,56 +139,44 @@ class _TournamentSettingsWidgetState extends State<TournamentSettingsWidget> {
           ),
         ),
         const SizedBox(height: 12),
-        RadioListTile<TournamentFormat>(
-          title: const Text('Mexicano (Anbefalet)'),
-          subtitle: const Text('Konkurrencedygtig balance baseret på point-forskel. Spillere med lignende point spiller sammen for lige kampe.'),
-          value: TournamentFormat.mexicano,
+        RadioGroup<TournamentFormat>(
           groupValue: _currentSettings.format,
-          onChanged: widget.enabled
-              ? (value) {
-                  if (value != null) {
-                    _updateSettings(_currentSettings.copyWith(
-                      format: value,
-                    ));
-                  }
-                }
-              : null,
-          dense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 0),
-        ),
-        RadioListTile<TournamentFormat>(
-          title: const Text('Social-Mexicano'),
-          subtitle: const Text('Maksimal social variation, undgår gentagelse. Sikrer partner-rotation og modstander-variation, men kampe kan være ubalancerede.'),
-          value: TournamentFormat.socialMexicano,
-          groupValue: _currentSettings.format,
-          onChanged: widget.enabled
-              ? (value) {
-                  if (value != null) {
-                    _updateSettings(_currentSettings.copyWith(
-                      format: value,
-                    ));
-                  }
-                }
-              : null,
-          dense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 0),
-        ),
-        RadioListTile<TournamentFormat>(
-          title: const Text('Americano'),
-          subtitle: const Text('Tilfældig parring. Simpel og uforudsigelig, men kan gentage partnere og modstandere.'),
-          value: TournamentFormat.americano,
-          groupValue: _currentSettings.format,
-          onChanged: widget.enabled
-              ? (value) {
-                  if (value != null) {
-                    _updateSettings(_currentSettings.copyWith(
-                      format: value,
-                    ));
-                  }
-                }
-              : null,
-          dense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 0),
+          onChanged: (value) {
+            if (!widget.enabled || value == null) {
+              return;
+            }
+            _updateSettings(_currentSettings.copyWith(
+              format: value,
+            ));
+          },
+          child: const Column(
+            children: [
+              RadioListTile<TournamentFormat>(
+                title: Text('Mexicano (Anbefalet)'),
+                subtitle: Text(
+                    'Konkurrencedygtig balance baseret på point-forskel. Spillere med lignende point spiller sammen for lige kampe.'),
+                value: TournamentFormat.mexicano,
+                dense: true,
+                contentPadding: EdgeInsets.symmetric(horizontal: 0),
+              ),
+              RadioListTile<TournamentFormat>(
+                title: Text('Social-Mexicano'),
+                subtitle: Text(
+                    'Maksimal social variation, undgår gentagelse. Sikrer partner-rotation og modstander-variation, men kampe kan være ubalancerede.'),
+                value: TournamentFormat.socialMexicano,
+                dense: true,
+                contentPadding: EdgeInsets.symmetric(horizontal: 0),
+              ),
+              RadioListTile<TournamentFormat>(
+                title: Text('Americano'),
+                subtitle: Text(
+                    'Tilfældig parring. Simpel og uforudsigelig, men kan gentage partnere og modstandere.'),
+                value: TournamentFormat.americano,
+                dense: true,
+                contentPadding: EdgeInsets.symmetric(horizontal: 0),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -212,10 +201,11 @@ class _TournamentSettingsWidgetState extends State<TournamentSettingsWidget> {
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<int>(
-          value: _currentSettings.pointsPerMatch,
+          initialValue: _currentSettings.pointsPerMatch,
           decoration: InputDecoration(
             border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             suffixIcon: const Icon(Icons.sports_score),
             enabled: widget.enabled,
           ),
@@ -258,10 +248,11 @@ class _TournamentSettingsWidgetState extends State<TournamentSettingsWidget> {
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<int>(
-          value: _currentSettings.pausePointsAwarded,
+          initialValue: _currentSettings.pausePointsAwarded,
           decoration: InputDecoration(
             border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             suffixIcon: const Icon(Icons.timer_off),
             enabled: widget.enabled,
           ),
@@ -307,24 +298,27 @@ class _TournamentSettingsWidgetState extends State<TournamentSettingsWidget> {
           ),
         ),
         const SizedBox(height: 12),
-        ...PairingStrategy.values.map((strategy) {
-          return RadioListTile<PairingStrategy>(
-            title: Text(_getStrategyTitle(strategy)),
-            subtitle: Text(_getStrategySubtitle(strategy)),
-            value: strategy,
-            groupValue: _currentSettings.finalRoundStrategy,
-            onChanged: widget.enabled
-                ? (value) {
-                    if (value != null) {
-                      _updateSettings(_currentSettings.copyWith(
-                        finalRoundStrategy: value,
-                      ));
-                    }
-                  }
-                : null,
-            contentPadding: EdgeInsets.zero,
-          );
-        }),
+        RadioGroup<PairingStrategy>(
+          groupValue: _currentSettings.finalRoundStrategy,
+          onChanged: (value) {
+            if (!widget.enabled || value == null) {
+              return;
+            }
+            _updateSettings(_currentSettings.copyWith(
+              finalRoundStrategy: value,
+            ));
+          },
+          child: Column(
+            children: PairingStrategy.values.map((strategy) {
+              return RadioListTile<PairingStrategy>(
+                title: Text(_getStrategyTitle(strategy)),
+                subtitle: Text(_getStrategySubtitle(strategy)),
+                value: strategy,
+                contentPadding: EdgeInsets.zero,
+              );
+            }).toList(),
+          ),
+        ),
       ],
     );
   }
@@ -347,24 +341,27 @@ class _TournamentSettingsWidgetState extends State<TournamentSettingsWidget> {
           ),
         ),
         const SizedBox(height: 12),
-        ...LaneAssignmentStrategy.values.map((strategy) {
-          return RadioListTile<LaneAssignmentStrategy>(
-            title: Text(_getLaneStrategyTitle(strategy)),
-            subtitle: Text(_getLaneStrategySubtitle(strategy)),
-            value: strategy,
-            groupValue: _currentSettings.laneAssignmentStrategy,
-            onChanged: widget.enabled
-                ? (value) {
-                    if (value != null) {
-                      _updateSettings(_currentSettings.copyWith(
-                        laneAssignmentStrategy: value,
-                      ));
-                    }
-                  }
-                : null,
-            contentPadding: EdgeInsets.zero,
-          );
-        }),
+        RadioGroup<LaneAssignmentStrategy>(
+          groupValue: _currentSettings.laneAssignmentStrategy,
+          onChanged: (value) {
+            if (!widget.enabled || value == null) {
+              return;
+            }
+            _updateSettings(_currentSettings.copyWith(
+              laneAssignmentStrategy: value,
+            ));
+          },
+          child: Column(
+            children: LaneAssignmentStrategy.values.map((strategy) {
+              return RadioListTile<LaneAssignmentStrategy>(
+                title: Text(_getLaneStrategyTitle(strategy)),
+                subtitle: Text(_getLaneStrategySubtitle(strategy)),
+                value: strategy,
+                contentPadding: EdgeInsets.zero,
+              );
+            }).toList(),
+          ),
+        ),
       ],
     );
   }

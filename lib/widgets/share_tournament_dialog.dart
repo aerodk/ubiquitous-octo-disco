@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import '../services/share_service.dart';
 
 /// Dialog for sharing a tournament via a direct link
-/// 
+///
 /// This dialog allows users to:
 /// - Generate a shareable link with or without passcode
 /// - Copy the link to clipboard
@@ -51,7 +51,8 @@ class _ShareTournamentDialogState extends State<ShareTournamentDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final canIncludePasscode = widget.passcode != null && widget.passcode!.isNotEmpty;
+    final canIncludePasscode =
+        widget.passcode != null && widget.passcode!.isNotEmpty;
 
     return AlertDialog(
       title: const Row(
@@ -71,7 +72,7 @@ class _ShareTournamentDialogState extends State<ShareTournamentDialog> {
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            
+
             // View selection
             const Text(
               'Start visning:',
@@ -109,87 +110,96 @@ class _ShareTournamentDialogState extends State<ShareTournamentDialog> {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 16),
-            
-            // Option 1: View-only (no passcode)
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: !_includePasscode ? Colors.blue.shade400 : Colors.blue.shade200,
-                  width: !_includePasscode ? 2 : 1,
-                ),
-              ),
-              child: RadioListTile<bool>(
-                title: const Text(
-                  'Kun Visning',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: const Text(
-                  'Andre kan se turneringen, men ikke redigere eller indtaste resultater. Ingen adgangskode kræves.',
-                  style: TextStyle(fontSize: 12),
-                ),
-                value: false,
-                groupValue: _includePasscode,
-                onChanged: (value) {
-                  setState(() {
-                    _includePasscode = value ?? false;
-                  });
-                },
-                contentPadding: EdgeInsets.zero,
+
+            RadioGroup<bool>(
+              groupValue: _includePasscode,
+              onChanged: (value) {
+                if (value == null) {
+                  return;
+                }
+                if (value && !canIncludePasscode) {
+                  return;
+                }
+                setState(() {
+                  _includePasscode = value;
+                });
+              },
+              child: Column(
+                children: [
+                  // Option 1: View-only (no passcode)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: !_includePasscode
+                            ? Colors.blue.shade400
+                            : Colors.blue.shade200,
+                        width: !_includePasscode ? 2 : 1,
+                      ),
+                    ),
+                    child: const RadioListTile<bool>(
+                      title: Text(
+                        'Kun Visning',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        'Andre kan se turneringen, men ikke redigere eller indtaste resultater. Ingen adgangskode kræves.',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                      value: false,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Option 2: With passcode (still view-only but with passcode in URL)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: canIncludePasscode
+                          ? Colors.orange.shade50
+                          : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: _includePasscode && canIncludePasscode
+                            ? Colors.orange.shade400
+                            : Colors.grey.shade300,
+                        width: _includePasscode && canIncludePasscode ? 2 : 1,
+                      ),
+                    ),
+                    child: RadioListTile<bool>(
+                      title: Text(
+                        'Med Adgangskode (Kun Visning)',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: canIncludePasscode ? null : Colors.grey,
+                        ),
+                      ),
+                      subtitle: Text(
+                        canIncludePasscode
+                            ? 'Adgangskoden inkluderes i linket. Andre kan se turneringen uden at indtaste kode, men kan stadig ikke redigere.'
+                            : 'Ikke tilgængelig - turnering er ikke gemt med adgangskode',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: canIncludePasscode ? null : Colors.grey,
+                        ),
+                      ),
+                      value: true,
+                      enabled: canIncludePasscode,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                ],
               ),
             ),
-            
-            const SizedBox(height: 12),
-            
-            // Option 2: With passcode (still view-only but with passcode in URL)
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: canIncludePasscode ? Colors.orange.shade50 : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: _includePasscode && canIncludePasscode 
-                      ? Colors.orange.shade400 
-                      : Colors.grey.shade300,
-                  width: _includePasscode && canIncludePasscode ? 2 : 1,
-                ),
-              ),
-              child: RadioListTile<bool>(
-                title: Text(
-                  'Med Adgangskode (Kun Visning)',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: canIncludePasscode ? null : Colors.grey,
-                  ),
-                ),
-                subtitle: Text(
-                  canIncludePasscode
-                      ? 'Adgangskoden inkluderes i linket. Andre kan se turneringen uden at indtaste kode, men kan stadig ikke redigere.'
-                      : 'Ikke tilgængelig - turnering er ikke gemt med adgangskode',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: canIncludePasscode ? null : Colors.grey,
-                  ),
-                ),
-                value: true,
-                groupValue: _includePasscode,
-                onChanged: canIncludePasscode
-                    ? (value) {
-                        setState(() {
-                          _includePasscode = value ?? false;
-                        });
-                      }
-                    : null,
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Generated link display
             Container(
               padding: const EdgeInsets.all(12),
@@ -230,9 +240,9 @@ class _ShareTournamentDialogState extends State<ShareTournamentDialog> {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Information box
             Container(
               padding: const EdgeInsets.all(12),
@@ -244,12 +254,14 @@ class _ShareTournamentDialogState extends State<ShareTournamentDialog> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.info_outline, size: 20, color: Colors.blue.shade700),
+                  Icon(Icons.info_outline,
+                      size: 20, color: Colors.blue.shade700),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Delte links er kun til visning. For at redigere turneringen, skal andre bruge "Hent Turnering" med koden og adgangskoden.',
-                      style: TextStyle(fontSize: 12, color: Colors.blue.shade900),
+                      style:
+                          TextStyle(fontSize: 12, color: Colors.blue.shade900),
                     ),
                   ),
                 ],

@@ -45,7 +45,7 @@ class ScoreDisplay extends StatelessWidget {
         boxShadow: hasScore
             ? [
                 BoxShadow(
-                  color: Colors.green.withOpacity(0.3),
+                  color: Colors.green.withValues(alpha: 0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 3),
                 ),
