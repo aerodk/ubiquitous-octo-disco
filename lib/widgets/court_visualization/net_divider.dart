@@ -7,20 +7,26 @@ import '../../utils/constants.dart';
 class NetDivider extends StatelessWidget {
   final bool isDesktopMode;
   final double zoomFactor;
-  
+  final bool isCompactMode;
+
   const NetDivider({
     super.key,
     this.isDesktopMode = false,
     this.zoomFactor = 1.0,
+    this.isCompactMode = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final double baseFontScale = isDesktopMode ? Constants.desktopModeFontScale : 1.0;
-    final double baseSizeScale = isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
-    final double fontScale = baseFontScale * zoomFactor;
-    final double sizeScale = baseSizeScale * zoomFactor;
-    
+    final double baseFontScale =
+        isDesktopMode ? Constants.desktopModeFontScale : 1.0;
+    final double baseSizeScale =
+        isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
+    final double compactFontScale = isCompactMode ? 0.82 : 1.0;
+    final double compactSizeScale = isCompactMode ? 0.78 : 1.0;
+    final double fontScale = baseFontScale * zoomFactor * compactFontScale;
+    final double sizeScale = baseSizeScale * zoomFactor * compactSizeScale;
+
     return Column(
       children: [
         Expanded(
@@ -44,13 +50,15 @@ class NetDivider extends StatelessWidget {
         Padding(
           padding: EdgeInsets.symmetric(vertical: 8 * sizeScale),
           child: Container(
-            padding: EdgeInsets.all(6 * sizeScale),
+            padding: EdgeInsets.all((isCompactMode ? 4 : 6) * sizeScale),
             decoration: const BoxDecoration(
               color: AppColors.netAccent,
               shape: BoxShape.circle,
             ),
             child: Text(
-              'VS',
+              isCompactMode ? 'V' : 'VS',
+              maxLines: 1,
+              softWrap: false,
               style: TextStyle(
                 color: AppColors.textLight,
                 fontSize: 10 * fontScale,

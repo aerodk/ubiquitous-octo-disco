@@ -33,8 +33,8 @@ class TournamentCompletionScreen extends StatefulWidget {
       _TournamentCompletionScreenState();
 }
 
-class _TournamentCompletionScreenState
-    extends State<TournamentCompletionScreen> with TickerProviderStateMixin {
+class _TournamentCompletionScreenState extends State<TournamentCompletionScreen>
+    with TickerProviderStateMixin {
   final StandingsService _standingsService = StandingsService();
   final PersistenceService _persistenceService = PersistenceService();
   final FirebaseService _firebaseService = FirebaseService();
@@ -42,21 +42,21 @@ class _TournamentCompletionScreenState
   final FullscreenService _fullscreenService = FullscreenService();
   late List<PlayerStanding> _standings;
   late AnimationController _confettiController;
-  
+
   // Track cloud storage codes
   String? _cloudCode;
   String? _cloudPasscode;
-  
+
   // Track which positions have been revealed
   final Set<int> _revealedPositions = {};
   final Map<int, AnimationController> _medalAnimations = {};
   final Map<int, AnimationController> _celebrationAnimations = {};
   bool _showAllPositions = false;
   bool _isCloudAvailable = false;
-  
+
   // Toggle for compact/detailed view
   bool _isCompactView = true;
-  
+
   // Display mode (mobile/desktop)
   bool _isDesktopMode = false;
 
@@ -70,7 +70,7 @@ class _TournamentCompletionScreenState
     _cloudCode = widget.cloudCode;
     _cloudPasscode = widget.cloudPasscode;
     _checkCloudAvailability();
-    
+
     // Setup confetti animation
     _confettiController = AnimationController(
       duration: const Duration(seconds: 2),
@@ -82,7 +82,7 @@ class _TournamentCompletionScreenState
       _persistCompletion();
       _loadDisplayMode();
     });
-    
+
     // Setup medal animations for top 3
     for (int i = 1; i <= 3 && i <= _standings.length; i++) {
       _medalAnimations[i] = AnimationController(
@@ -95,7 +95,7 @@ class _TournamentCompletionScreenState
       );
     }
   }
-  
+
   Future<void> _loadDisplayMode() async {
     final isDesktop = await _displayModeService.isDesktopMode();
     setState(() {
@@ -162,7 +162,7 @@ class _TournamentCompletionScreenState
     final duration = DateTime.now().difference(widget.tournament.createdAt);
     final hours = duration.inHours;
     final minutes = duration.inMinutes.remainder(60);
-    
+
     if (hours > 0) {
       return '$hours t $minutes min';
     } else {
@@ -273,7 +273,7 @@ class _TournamentCompletionScreenState
 
     if (confirmed == true && mounted) {
       await _persistenceService.clearTournament();
-      
+
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const SetupScreen()),
@@ -283,8 +283,92 @@ class _TournamentCompletionScreenState
     }
   }
 
+  void _showCompletionActionMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(
+                  _isDesktopMode ? Icons.desktop_windows : Icons.phone_android,
+                ),
+                title: const Text('Display Mode'),
+                subtitle: Text(_isDesktopMode ? 'Desktop' : 'Mobile'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _toggleDisplayMode();
+                },
+              ),
+              ListTile(
+                leading: Icon(
+                    _isFullscreen ? Icons.fullscreen_exit : Icons.fullscreen),
+                title: const Text('Fuldskærm'),
+                subtitle: Text(_isFullscreen ? 'Til' : 'Fra'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _toggleFullscreen();
+                },
+              ),
+              ListTile(
+                leading:
+                    Icon(_isCompactView ? Icons.view_list : Icons.view_compact),
+                title: const Text('Visning af stilling'),
+                subtitle: Text(_isCompactView ? 'Kompakt' : 'Detaljeret'),
+                onTap: () {
+                  Navigator.pop(context);
+                  setState(() {
+                    _isCompactView = !_isCompactView;
+                  });
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.file_download),
+                title: const Text('Eksporter Resultater'),
+                onTap: () {
+                  Navigator.pop(context);
+                  showDialog(
+                    context: context,
+                    builder: (context) => ExportDialog(
+                      standings: _standings,
+                      tournament: widget.tournament,
+                    ),
+                  );
+                },
+              ),
+              if (_isCloudAvailable && _cloudCode != null && !widget.isReadOnly)
+                ListTile(
+                  leading: const Icon(Icons.share),
+                  title: const Text('Del turnering'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showShareDialog();
+                  },
+                ),
+              ListTile(
+                leading: const Icon(Icons.info_outline),
+                title: const Text('Fremtidige eksport muligheder'),
+                onTap: () {
+                  Navigator.pop(context);
+                  showDialog(
+                    context: context,
+                    builder: (context) => const FutureExportOptionsDialog(),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
     final totalMatches = widget.tournament.rounds
         .expand((r) => r.matches)
         .where((m) => m.isCompleted)
@@ -292,126 +376,205 @@ class _TournamentCompletionScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: [
-            const Text('Turnering afsluttet'),
-            if (widget.isReadOnly) ...[
-              const SizedBox(width: 8),
-              const Text(
-                '(Kun Visning)',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontStyle: FontStyle.italic,
-                  color: Colors.white70,
-                ),
-              ),
-            ],
-          ],
-        ),
-        backgroundColor: Colors.amber[700], 
+        title: isLandscape
+            ? Row(
+                children: [
+                  const Text('Turnering afsluttet'),
+                  if (widget.isReadOnly) ...[
+                    const SizedBox(width: 8),
+                    const Text(
+                      '(Kun Visning)',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontStyle: FontStyle.italic,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ],
+              )
+            : Text(widget.isReadOnly
+                ? 'Turnering afsluttet (Visning)'
+                : 'Turnering afsluttet'),
+        backgroundColor: Colors.amber[700],
         automaticallyImplyLeading: false,
-        actions: [
-          // Display mode toggle (mobile/desktop)
-          IconButton(
-            icon: Icon(_isDesktopMode ? Icons.desktop_windows : Icons.phone_android),
-            tooltip: _isDesktopMode ? 'Skift til mobil visning' : 'Skift til desktop visning',
-            onPressed: _toggleDisplayMode,
-          ),
-          // Fullscreen toggle
-          IconButton(
-            icon: Icon(_isFullscreen ? Icons.fullscreen_exit : Icons.fullscreen),
-            tooltip: _isFullscreen ? 'Afslut fuldskærm' : 'Fuldskærm',
-            onPressed: _toggleFullscreen,
-          ),
-          // Toggle compact/detailed view
-          IconButton(
-            icon: Icon(_isCompactView ? Icons.view_list : Icons.view_compact),
-            tooltip: _isCompactView ? 'Detailed View' : 'Compact View',
-            onPressed: () {
-              setState(() {
-                _isCompactView = !_isCompactView;
-              });
-            },
-          ),
-          // Export button
-          IconButton(
-            icon: const Icon(Icons.file_download),
-            tooltip: 'Eksporter Resultater',
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) => ExportDialog(
-                  standings: _standings,
-                  tournament: widget.tournament,
+        actions: isLandscape
+            ? [
+                // Display mode toggle (mobile/desktop)
+                IconButton(
+                  icon: Icon(_isDesktopMode
+                      ? Icons.desktop_windows
+                      : Icons.phone_android),
+                  tooltip: _isDesktopMode
+                      ? 'Skift til mobil visning'
+                      : 'Skift til desktop visning',
+                  onPressed: _toggleDisplayMode,
                 ),
-              );
-            },
-          ),
-          // Share button (only if saved to cloud and not already read-only)
-          if (_isCloudAvailable && _cloudCode != null && !widget.isReadOnly)
-            IconButton(
-              icon: const Icon(Icons.share),
-              tooltip: 'Del turnering',
-              onPressed: _showShareDialog,
-            ),
-          // Future options info button
-          IconButton(
-            icon: const Icon(Icons.info_outline),
-            tooltip: 'Se fremtidige eksport muligheder',
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) => const FutureExportOptionsDialog(),
-              );
-            },
-          ),
-        ],
+                // Fullscreen toggle
+                IconButton(
+                  icon: Icon(
+                      _isFullscreen ? Icons.fullscreen_exit : Icons.fullscreen),
+                  tooltip: _isFullscreen ? 'Afslut fuldskærm' : 'Fuldskærm',
+                  onPressed: _toggleFullscreen,
+                ),
+                // Toggle compact/detailed view
+                IconButton(
+                  icon: Icon(
+                      _isCompactView ? Icons.view_list : Icons.view_compact),
+                  tooltip: _isCompactView ? 'Detailed View' : 'Compact View',
+                  onPressed: () {
+                    setState(() {
+                      _isCompactView = !_isCompactView;
+                    });
+                  },
+                ),
+                // Export button
+                IconButton(
+                  icon: const Icon(Icons.file_download),
+                  tooltip: 'Eksporter Resultater',
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => ExportDialog(
+                        standings: _standings,
+                        tournament: widget.tournament,
+                      ),
+                    );
+                  },
+                ),
+                // Share button (only if saved to cloud and not already read-only)
+                if (_isCloudAvailable &&
+                    _cloudCode != null &&
+                    !widget.isReadOnly)
+                  IconButton(
+                    icon: const Icon(Icons.share),
+                    tooltip: 'Del turnering',
+                    onPressed: _showShareDialog,
+                  ),
+                // Future options info button
+                IconButton(
+                  icon: const Icon(Icons.info_outline),
+                  tooltip: 'Se fremtidige eksport muligheder',
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => const FutureExportOptionsDialog(),
+                    );
+                  },
+                ),
+              ]
+            : [
+                IconButton(
+                  icon: const Icon(Icons.more_vert),
+                  tooltip: 'Flere handlinger',
+                  onPressed: () => _showCompletionActionMenu(context),
+                ),
+              ],
       ),
       body: Stack(
         children: [
           // Main content
           SingleChildScrollView(
-            padding: EdgeInsets.all(_isDesktopMode 
-              ? Constants.desktopModeCardPadding 
-              : Constants.mobileModeCardPadding),
+            padding: EdgeInsets.all(_isDesktopMode
+                ? Constants.desktopModeCardPadding
+                : Constants.mobileModeCardPadding),
             child: Column(
               children: [
-                // Trophy icon with animation
-                FadeTransition(
-                  opacity: _confettiController,
-                  child: Icon(
-                    Icons.emoji_events,
-                    size: 80 * (_isDesktopMode ? Constants.desktopModeScaleFactor : 1.0),
-                    color: Colors.amber,
+                if (isLandscape)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      FadeTransition(
+                        opacity: _confettiController,
+                        child: Icon(
+                          Icons.emoji_events,
+                          size: 54 *
+                              (_isDesktopMode
+                                  ? Constants.desktopModeScaleFactor
+                                  : 1.0),
+                          color: Colors.amber,
+                        ),
+                      ),
+                      SizedBox(
+                          width: 12 *
+                              (_isDesktopMode
+                                  ? Constants.desktopModeScaleFactor
+                                  : 1.0)),
+                      Text(
+                        '🎉 Tillykke! 🎉',
+                        style: TextStyle(
+                          fontSize: 22 *
+                              (_isDesktopMode
+                                  ? Constants.desktopModeFontScale
+                                  : 1.0),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  )
+                else ...[
+                  FadeTransition(
+                    opacity: _confettiController,
+                    child: Icon(
+                      Icons.emoji_events,
+                      size: 80 *
+                          (_isDesktopMode
+                              ? Constants.desktopModeScaleFactor
+                              : 1.0),
+                      color: Colors.amber,
+                    ),
                   ),
-                ),
-                SizedBox(height: 8 * (_isDesktopMode ? Constants.desktopModeScaleFactor : 1.0)),
-                Text(
-                  '🎉 Tillykke! 🎉',
-                  style: TextStyle(
-                    fontSize: 24 * (_isDesktopMode ? Constants.desktopModeFontScale : 1.0),
-                    fontWeight: FontWeight.bold,
+                  SizedBox(
+                      height: 8 *
+                          (_isDesktopMode
+                              ? Constants.desktopModeScaleFactor
+                              : 1.0)),
+                  Text(
+                    '🎉 Tillykke! 🎉',
+                    style: TextStyle(
+                      fontSize: 24 *
+                          (_isDesktopMode
+                              ? Constants.desktopModeFontScale
+                              : 1.0),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                SizedBox(height: 24 * (_isDesktopMode ? Constants.desktopModeScaleFactor : 1.0)),
+                ],
+                SizedBox(
+                    height: isLandscape
+                        ? 12 *
+                            (_isDesktopMode
+                                ? Constants.desktopModeScaleFactor
+                                : 1.0)
+                        : 24 *
+                            (_isDesktopMode
+                                ? Constants.desktopModeScaleFactor
+                                : 1.0)),
 
                 // Podium (Top 3)
-                _buildPodium(),
-                SizedBox(height: 32 * (_isDesktopMode ? Constants.desktopModeScaleFactor : 1.0)),
+                _buildPodium(isLandscape: isLandscape),
+                SizedBox(
+                    height: 32 *
+                        (_isDesktopMode
+                            ? Constants.desktopModeScaleFactor
+                            : 1.0)),
 
                 // Tournament Statistics
                 Card(
                   child: Padding(
-                    padding: EdgeInsets.all(_isDesktopMode 
-                      ? Constants.desktopModeCardPadding 
-                      : Constants.mobileModeCardPadding),
+                    padding: EdgeInsets.all(_isDesktopMode
+                        ? Constants.desktopModeCardPadding
+                        : Constants.mobileModeCardPadding),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Turnerings Statistik',
                           style: TextStyle(
-                            fontSize: 18 * (_isDesktopMode ? Constants.desktopModeFontScale : 1.0),
+                            fontSize: 18 *
+                                (_isDesktopMode
+                                    ? Constants.desktopModeFontScale
+                                    : 1.0),
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -451,10 +614,11 @@ class _TournamentCompletionScreenState
                           ),
                         ),
                         const Divider(),
-                        ..._standings.asMap().entries.map((entry) => 
-                          _isCompactView 
-                            ? _buildLeaderboardTile(entry.value) 
-                            : _buildDetailedLeaderboardCard(entry.value, entry.key)),
+                        ..._standings.asMap().entries.map((entry) =>
+                            _isCompactView
+                                ? _buildLeaderboardTile(entry.value)
+                                : _buildDetailedLeaderboardCard(
+                                    entry.value, entry.key)),
                       ],
                     ),
                   ),
@@ -470,7 +634,9 @@ class _TournamentCompletionScreenState
                         child: ElevatedButton.icon(
                           onPressed: _isCloudAvailable ? _saveToCloud : null,
                           icon: Icon(
-                            _cloudCode != null ? Icons.cloud_upload : Icons.cloud_upload_outlined,
+                            _cloudCode != null
+                                ? Icons.cloud_upload
+                                : Icons.cloud_upload_outlined,
                             color: Colors.white,
                           ),
                           label: Text(
@@ -510,7 +676,7 @@ class _TournamentCompletionScreenState
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 12),
 
                   // Action buttons
@@ -560,9 +726,9 @@ class _TournamentCompletionScreenState
     );
   }
 
-  Widget _buildPodium() {
+  Widget _buildPodium({required bool isLandscape}) {
     final top3 = _standings.take(3).toList();
-    
+
     if (top3.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -570,11 +736,13 @@ class _TournamentCompletionScreenState
     // Make podium significantly larger
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    
+
     // Calculate base scale factor based on screen dimensions
     // Reduce scale for smaller screens to ensure all 3 places fit
     double baseScaleFactor;
-    if (screenWidth > 600) {
+    if (isLandscape) {
+      baseScaleFactor = 1.0;
+    } else if (screenWidth > 600) {
       // Large screens (tablets/desktop)
       baseScaleFactor = 2.5;
     } else if (screenHeight < 700) {
@@ -584,15 +752,28 @@ class _TournamentCompletionScreenState
       // Medium mobile screens
       baseScaleFactor = 1.5;
     }
-    
-    final scaleFactor = _isDesktopMode 
-      ? baseScaleFactor * Constants.desktopModeScaleFactor 
-      : baseScaleFactor;
+
+    final horizontalPadding = _isDesktopMode
+        ? Constants.desktopModeCardPadding
+        : Constants.mobileModeCardPadding;
+    final usableWidth =
+        (screenWidth - (horizontalPadding * 2)).clamp(220.0, screenWidth);
+
+    final scaleFactor = _isDesktopMode
+        ? baseScaleFactor * Constants.desktopModeScaleFactor
+        : baseScaleFactor;
     // Leave extra headroom for medal/name so columns do not overflow the bottom
-    final firstPlaceHeight = 180.0 * scaleFactor;
-    final podiumHeight = firstPlaceHeight + (100.0 * scaleFactor); // Reduced vertical space for mobile
-    final secondPlaceHeight = 140.0 * scaleFactor;
-    final thirdPlaceHeight = 120.0 * scaleFactor;
+    final firstPlaceHeight = (isLandscape ? 140.0 : 180.0) * scaleFactor;
+    final podiumHeight =
+        firstPlaceHeight + ((isLandscape ? 72.0 : 100.0) * scaleFactor);
+    final secondPlaceHeight = (isLandscape ? 115.0 : 140.0) * scaleFactor;
+    final thirdPlaceHeight = (isLandscape ? 98.0 : 120.0) * scaleFactor;
+    final spacing = (isLandscape ? 8 : 12) * scaleFactor;
+    final placeCount = top3.length;
+    final totalSpacing = spacing * (placeCount - 1);
+    final placeWidth = isLandscape
+        ? (78.0 * scaleFactor)
+        : ((usableWidth - totalSpacing) / placeCount).clamp(72.0, 140.0);
 
     return Column(
       children: [
@@ -603,31 +784,64 @@ class _TournamentCompletionScreenState
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               // 2nd place
-              if (top3.length > 1) _buildPodiumPlace(top3[1], 2, secondPlaceHeight, Colors.grey, scaleFactor),
-              SizedBox(width: 12 * scaleFactor),
+              if (top3.length > 1)
+                _buildPodiumPlace(
+                  top3[1],
+                  2,
+                  secondPlaceHeight,
+                  Colors.grey,
+                  scaleFactor,
+                  isLandscape,
+                  placeWidth,
+                ),
+              SizedBox(width: spacing),
               // 1st place
-              _buildPodiumPlace(top3[0], 1, firstPlaceHeight, Colors.amber, scaleFactor),
-              SizedBox(width: 12 * scaleFactor),
+              _buildPodiumPlace(
+                top3[0],
+                1,
+                firstPlaceHeight,
+                Colors.amber,
+                scaleFactor,
+                isLandscape,
+                placeWidth,
+              ),
+              SizedBox(width: spacing),
               // 3rd place
               if (top3.length > 2)
-                _buildPodiumPlace(top3[2], 3, thirdPlaceHeight, Colors.brown, scaleFactor),
+                _buildPodiumPlace(
+                  top3[2],
+                  3,
+                  thirdPlaceHeight,
+                  Colors.brown,
+                  scaleFactor,
+                  isLandscape,
+                  placeWidth,
+                ),
             ],
           ),
         ),
-        SizedBox(height: 24 * (_isDesktopMode ? Constants.desktopModeScaleFactor : 1.0)),
+        SizedBox(
+            height:
+                24 * (_isDesktopMode ? Constants.desktopModeScaleFactor : 1.0)),
         // Show All button for remaining positions
         if (_standings.length > 3 && !_showAllPositions)
           ElevatedButton.icon(
             onPressed: _revealAllPositions,
-            icon: Icon(Icons.visibility, size: 24 * (_isDesktopMode ? Constants.desktopModeFontScale : 1.0)),
+            icon: Icon(Icons.visibility,
+                size: 24 *
+                    (_isDesktopMode ? Constants.desktopModeFontScale : 1.0)),
             label: Text(
               'Vis Alle Placeringer',
-              style: TextStyle(fontSize: 16 * (_isDesktopMode ? Constants.desktopModeFontScale : 1.0)),
+              style: TextStyle(
+                  fontSize: 16 *
+                      (_isDesktopMode ? Constants.desktopModeFontScale : 1.0)),
             ),
             style: ElevatedButton.styleFrom(
               padding: EdgeInsets.symmetric(
-                horizontal: 24 * (_isDesktopMode ? Constants.desktopModeScaleFactor : 1.0),
-                vertical: 12 * (_isDesktopMode ? Constants.desktopModeScaleFactor : 1.0),
+                horizontal: 24 *
+                    (_isDesktopMode ? Constants.desktopModeScaleFactor : 1.0),
+                vertical: 12 *
+                    (_isDesktopMode ? Constants.desktopModeScaleFactor : 1.0),
               ),
             ),
           ),
@@ -641,142 +855,159 @@ class _TournamentCompletionScreenState
     double height,
     Color color,
     double scaleFactor,
+    bool isLandscape,
+    double placeWidth,
   ) {
     final isRevealed = _revealedPositions.contains(place);
     final medalController = _medalAnimations[place];
     final celebrationController = _celebrationAnimations[place];
-    
+
     return GestureDetector(
       onTap: () => _revealPodiumPlace(place),
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           // Main podium content
-          Column(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              // Medal or revealed content
-              Container(
-                padding: EdgeInsets.all(12 * scaleFactor), // Increased padding
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 8 * scaleFactor,
-                      offset: Offset(0, 4 * scaleFactor),
-                    ),
-                  ],
-                ),
-                child: Text(
-                  place == 1 ? '🥇' : place == 2 ? '🥈' : '🥉',
-                  style: TextStyle(fontSize: 36 * scaleFactor), // Significantly larger emoji
-                ),
-              ),
-              SizedBox(height: 8 * scaleFactor), // More spacing
-              // Player name and points (revealed or hidden)
-              SizedBox(
-                height: 50 * scaleFactor, // Increased height for larger text
-                child: Stack(
-                  children: [
-                    // Revealed content
-                    AnimatedOpacity(
-                      opacity: isRevealed ? 1.0 : 0.0,
-                      duration: const Duration(milliseconds: 500),
-                      child: Column(
-                        children: [
-                          Text(
-                            standing.player.name,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16 * scaleFactor, // Larger text
-                            ),
-                            textAlign: TextAlign.center,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          SizedBox(height: 2 * scaleFactor),
-                          Text(
-                            '${standing.totalPoints} pt',
-                            style: TextStyle(
-                              fontSize: 14 * scaleFactor, // Larger text
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Hidden placeholder
-                    if (!isRevealed)
-                      Column(
-                        children: [
-                          Text(
-                            '???',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16 * scaleFactor,
-                              color: Colors.grey[600],
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          SizedBox(height: 2 * scaleFactor),
-                          Text(
-                            '? pt',
-                            style: TextStyle(
-                              fontSize: 14 * scaleFactor, 
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                  ],
-                ),
-              ),
-              SizedBox(height: 8 * scaleFactor), // More spacing
-              Container(
-                width: 100 * scaleFactor, // Wider podium
-                height: height,
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(12 * scaleFactor),
-                  ),
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      color,
-                      color.withOpacity(0.7),
-                    ],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 10 * scaleFactor,
-                      offset: Offset(0, 5 * scaleFactor),
-                    ),
-                  ],
-                ),
-                alignment: Alignment.topCenter,
-                padding: EdgeInsets.all(12 * scaleFactor),
-                child: Text(
-                  '$place',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 48 * scaleFactor, // Larger place number
-                    fontWeight: FontWeight.bold,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black.withOpacity(0.5),
-                        blurRadius: 4 * scaleFactor,
-                        offset: Offset(2 * scaleFactor, 2 * scaleFactor),
+          SizedBox(
+            width: placeWidth,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                // Medal or revealed content
+                Container(
+                  padding: EdgeInsets.all((isLandscape ? 8 : 12) * scaleFactor),
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 8 * scaleFactor,
+                        offset: Offset(0, 4 * scaleFactor),
                       ),
                     ],
                   ),
+                  child: Text(
+                    place == 1
+                        ? '🥇'
+                        : place == 2
+                            ? '🥈'
+                            : '🥉',
+                    style: TextStyle(
+                      fontSize: (isLandscape ? 26 : 36) * scaleFactor,
+                    ),
+                  ),
                 ),
-              ),
-            ],
+                SizedBox(height: (isLandscape ? 4 : 8) * scaleFactor),
+                // Player name and points (revealed or hidden)
+                SizedBox(
+                  height: (isLandscape ? 36 : 50) * scaleFactor,
+                  child: Stack(
+                    children: [
+                      // Revealed content
+                      AnimatedOpacity(
+                        opacity: isRevealed ? 1.0 : 0.0,
+                        duration: const Duration(milliseconds: 500),
+                        child: Column(
+                          children: [
+                            Text(
+                              standing.player.name,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: (isLandscape ? 12 : 16) * scaleFactor,
+                              ),
+                              textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                              softWrap: false,
+                            ),
+                            SizedBox(
+                                height: (isLandscape ? 1 : 2) * scaleFactor),
+                            Text(
+                              '${standing.totalPoints} pt',
+                              style: TextStyle(
+                                fontSize: (isLandscape ? 11 : 14) * scaleFactor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Hidden placeholder
+                      if (!isRevealed)
+                        Column(
+                          children: [
+                            Text(
+                              '???',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: (isLandscape ? 12 : 16) * scaleFactor,
+                                color: Colors.grey[600],
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              softWrap: false,
+                            ),
+                            SizedBox(
+                                height: (isLandscape ? 1 : 2) * scaleFactor),
+                            Text(
+                              '? pt',
+                              style: TextStyle(
+                                fontSize: (isLandscape ? 11 : 14) * scaleFactor,
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: (isLandscape ? 4 : 8) * scaleFactor),
+                Container(
+                  width: placeWidth,
+                  height: height,
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(12 * scaleFactor),
+                    ),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        color,
+                        color.withOpacity(0.7),
+                      ],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 10 * scaleFactor,
+                        offset: Offset(0, 5 * scaleFactor),
+                      ),
+                    ],
+                  ),
+                  alignment: Alignment.topCenter,
+                  padding: EdgeInsets.all(12 * scaleFactor),
+                  child: Text(
+                    '$place',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 48 * scaleFactor, // Larger place number
+                      fontWeight: FontWeight.bold,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withOpacity(0.5),
+                          blurRadius: 4 * scaleFactor,
+                          offset: Offset(2 * scaleFactor, 2 * scaleFactor),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
           // Medal overlay that fades out when revealed
           if (!isRevealed && medalController != null)
@@ -795,7 +1026,11 @@ class _TournamentCompletionScreenState
                   ),
                   child: Center(
                     child: Text(
-                      place == 1 ? '🥇' : place == 2 ? '🥈' : '🥉',
+                      place == 1
+                          ? '🥇'
+                          : place == 2
+                              ? '🥈'
+                              : '🥉',
                       style: TextStyle(fontSize: 48 * scaleFactor),
                     ),
                   ),
@@ -809,7 +1044,7 @@ class _TournamentCompletionScreenState
                 child: AnimatedBuilder(
                   animation: celebrationController,
                   builder: (context, child) {
-                    if (!celebrationController.isAnimating && 
+                    if (!celebrationController.isAnimating &&
                         celebrationController.value == 0) {
                       return const SizedBox.shrink();
                     }
@@ -827,17 +1062,17 @@ class _TournamentCompletionScreenState
       ),
     );
   }
-  
+
   void _revealPodiumPlace(int place) {
     if (_revealedPositions.contains(place)) return;
-    
+
     setState(() {
       _revealedPositions.add(place);
     });
-    
+
     // Animate medal fade out
     _medalAnimations[place]?.forward();
-    
+
     // Start celebration animation
     Future.delayed(const Duration(milliseconds: 400), () {
       _celebrationAnimations[place]?.forward().then((_) {
@@ -845,7 +1080,7 @@ class _TournamentCompletionScreenState
       });
     });
   }
-  
+
   void _revealAllPositions() {
     setState(() {
       _showAllPositions = true;
@@ -860,9 +1095,11 @@ class _TournamentCompletionScreenState
   }
 
   Widget _buildStatRow(String label, String value) {
-    final double fontScale = _isDesktopMode ? Constants.desktopModeFontScale : 1.0;
-    final double sizeScale = _isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
-    
+    final double fontScale =
+        _isDesktopMode ? Constants.desktopModeFontScale : 1.0;
+    final double sizeScale =
+        _isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
+
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 4 * sizeScale),
       child: Row(
@@ -896,13 +1133,15 @@ class _TournamentCompletionScreenState
         return Colors.blue;
     }
   }
-  
+
   Widget _buildLeaderboardTile(PlayerStanding s) {
     // All positions are hidden until revealed (including top 3)
     final isRevealed = _showAllPositions || _revealedPositions.contains(s.rank);
-    final double fontScale = _isDesktopMode ? Constants.desktopModeFontScale : 1.0;
-    final double sizeScale = _isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
-    
+    final double fontScale =
+        _isDesktopMode ? Constants.desktopModeFontScale : 1.0;
+    final double sizeScale =
+        _isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
+
     return InkWell(
       onTap: isRevealed ? null : () => _revealLeaderboardPosition(s.rank),
       onLongPress: isRevealed ? () => _showGameHistoryDialog(context, s) : null,
@@ -934,9 +1173,9 @@ class _TournamentCompletionScreenState
             ),
           ),
           subtitle: Text(
-            isRevealed 
-              ? '${s.wins}W-${s.losses}L • ${s.matchesPlayed} kampe'
-              : 'Tryk for at afsløre',
+            isRevealed
+                ? '${s.wins}W-${s.losses}L • ${s.matchesPlayed} kampe'
+                : 'Tryk for at afsløre',
             style: TextStyle(
               color: isRevealed ? null : Colors.grey[500],
               fontStyle: isRevealed ? null : FontStyle.italic,
@@ -955,30 +1194,37 @@ class _TournamentCompletionScreenState
       ),
     );
   }
-  
+
   void _revealLeaderboardPosition(int rank) {
     setState(() {
       _revealedPositions.add(rank);
     });
   }
-  
+
   /// Build detailed leaderboard card with full statistics (like LeaderboardScreen)
   Widget _buildDetailedLeaderboardCard(PlayerStanding standing, int index) {
     // All positions are hidden until revealed (including top 3)
-    final isRevealed = _showAllPositions || _revealedPositions.contains(standing.rank);
-    
+    final isRevealed =
+        _showAllPositions || _revealedPositions.contains(standing.rank);
+
     // Determine if this is a top 3 position for special styling
     final bool isTop3 = standing.rank <= 3;
     final Color? cardColor = _getCardColor(standing.rank);
     final IconData? medalIcon = _getMedalIcon(standing.rank);
-    
-    final double fontScale = _isDesktopMode ? Constants.desktopModeFontScale : 1.0;
-    final double sizeScale = _isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
-    final double cardPadding = _isDesktopMode ? Constants.desktopModeCardPadding : Constants.mobileModeCardPadding;
-    
+
+    final double fontScale =
+        _isDesktopMode ? Constants.desktopModeFontScale : 1.0;
+    final double sizeScale =
+        _isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
+    final double cardPadding = _isDesktopMode
+        ? Constants.desktopModeCardPadding
+        : Constants.mobileModeCardPadding;
+
     return GestureDetector(
-      onTap: isRevealed ? null : () => _revealLeaderboardPosition(standing.rank),
-      onLongPress: isRevealed ? () => _showGameHistoryDialog(context, standing) : null,
+      onTap:
+          isRevealed ? null : () => _revealLeaderboardPosition(standing.rank),
+      onLongPress:
+          isRevealed ? () => _showGameHistoryDialog(context, standing) : null,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         decoration: BoxDecoration(
@@ -991,112 +1237,113 @@ class _TournamentCompletionScreenState
           color: isRevealed ? cardColor : Colors.grey[200],
           child: Padding(
             padding: EdgeInsets.all(cardPadding),
-            child: isRevealed 
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header: Rank, Medal, and Player Name
-                    Row(
-                      children: [
-                        // Rank badge
-                        Container(
-                          width: 40 * sizeScale,
-                          height: 40 * sizeScale,
-                          decoration: BoxDecoration(
-                            color: isTop3
-                                ? Colors.white.withOpacity(0.3)
-                                : Colors.grey[300],
-                            shape: BoxShape.circle,
+            child: isRevealed
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header: Rank, Medal, and Player Name
+                      Row(
+                        children: [
+                          // Rank badge
+                          Container(
+                            width: 40 * sizeScale,
+                            height: 40 * sizeScale,
+                            decoration: BoxDecoration(
+                              color: isTop3
+                                  ? Colors.white.withOpacity(0.3)
+                                  : Colors.grey[300],
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                '#${standing.rank}',
+                                style: TextStyle(
+                                  fontSize: 16 * fontScale,
+                                  fontWeight: FontWeight.bold,
+                                  color: isTop3 ? Colors.white : Colors.black87,
+                                ),
+                              ),
+                            ),
                           ),
-                          child: Center(
+                          SizedBox(width: 12 * sizeScale),
+                          // Medal icon for top 3
+                          if (medalIcon != null) ...[
+                            Icon(
+                              medalIcon,
+                              size: 32 * sizeScale,
+                              color: _getMedalColor(standing.rank),
+                            ),
+                            SizedBox(width: 12 * sizeScale),
+                          ],
+                          // Player name
+                          Expanded(
                             child: Text(
-                              '#${standing.rank}',
+                              standing.player.name,
                               style: TextStyle(
-                                fontSize: 16 * fontScale,
+                                fontSize: 20 * fontScale,
                                 fontWeight: FontWeight.bold,
                                 color: isTop3 ? Colors.white : Colors.black87,
                               ),
                             ),
                           ),
-                        ),
-                        SizedBox(width: 12 * sizeScale),
-                        // Medal icon for top 3
-                        if (medalIcon != null) ...[
-                          Icon(
-                            medalIcon,
-                            size: 32 * sizeScale,
-                            color: _getMedalColor(standing.rank),
-                          ),
-                          SizedBox(width: 12 * sizeScale),
                         ],
-                        // Player name
-                        Expanded(
-                          child: Text(
-                            standing.player.name,
-                            style: TextStyle(
-                              fontSize: 20 * fontScale,
-                              fontWeight: FontWeight.bold,
-                              color: isTop3 ? Colors.white : Colors.black87,
-                            ),
-                          ),
+                      ),
+                      SizedBox(height: 16 * sizeScale),
+                      // Statistics Grid
+                      _buildStatisticsGrid(context, standing, isTop3),
+                    ],
+                  )
+                : ListTile(
+                    dense: true,
+                    leading: CircleAvatar(
+                      radius: 20 * sizeScale,
+                      backgroundColor: Colors.grey,
+                      child: Text(
+                        '?',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14 * fontScale,
                         ),
-                      ],
+                      ),
                     ),
-                    SizedBox(height: 16 * sizeScale),
-                    // Statistics Grid
-                    _buildStatisticsGrid(context, standing, isTop3),
-                  ],
-                )
-              : ListTile(
-                  dense: true,
-                  leading: CircleAvatar(
-                    radius: 20 * sizeScale,
-                    backgroundColor: Colors.grey,
-                    child: Text(
+                    title: Text(
+                      '???',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 16 * fontScale,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Tryk for at afsløre',
+                      style: TextStyle(
+                        color: Colors.grey[500],
+                        fontStyle: FontStyle.italic,
+                        fontSize: 12 * fontScale,
+                      ),
+                    ),
+                    trailing: Text(
                       '?',
                       style: TextStyle(
-                        color: Colors.white,
+                        fontSize: 18 * fontScale,
                         fontWeight: FontWeight.bold,
-                        fontSize: 14 * fontScale,
+                        color: Colors.grey[600],
                       ),
                     ),
                   ),
-                  title: Text(
-                    '???',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 16 * fontScale,
-                    ),
-                  ),
-                  subtitle: Text(
-                    'Tryk for at afsløre',
-                    style: TextStyle(
-                      color: Colors.grey[500],
-                      fontStyle: FontStyle.italic,
-                      fontSize: 12 * fontScale,
-                    ),
-                  ),
-                  trailing: Text(
-                    '?',
-                    style: TextStyle(
-                      fontSize: 18 * fontScale,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ),
           ),
         ),
       ),
     );
   }
-  
+
   /// Build statistics grid for detailed view
   Widget _buildStatisticsGrid(
       BuildContext context, PlayerStanding standing, bool isTop3) {
     final textColor = isTop3 ? Colors.white : Colors.black87;
     final subtitleColor = isTop3 ? Colors.white70 : Colors.grey[600];
-    final double sizeScale = _isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
+    final double sizeScale =
+        _isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
 
     return Column(
       children: [
@@ -1159,9 +1406,11 @@ class _TournamentCompletionScreenState
 
   Widget _buildStatItem(
       String label, String value, Color? textColor, Color? subtitleColor) {
-    final double fontScale = _isDesktopMode ? Constants.desktopModeFontScale : 1.0;
-    final double sizeScale = _isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
-    
+    final double fontScale =
+        _isDesktopMode ? Constants.desktopModeFontScale : 1.0;
+    final double sizeScale =
+        _isDesktopMode ? Constants.desktopModeScaleFactor : 1.0;
+
     return Column(
       children: [
         Text(
@@ -1184,7 +1433,7 @@ class _TournamentCompletionScreenState
       ],
     );
   }
-  
+
   /// Show game history dialog for a player
   void _showGameHistoryDialog(BuildContext context, PlayerStanding standing) {
     final gameHistory = _getGameHistoryForPlayer(standing.player);
@@ -1271,10 +1520,10 @@ class _TournamentCompletionScreenState
         // isCompleted ensures both scores are non-null
         final team1Score = match.team1Score;
         final team2Score = match.team2Score;
-        
+
         // Additional safety check (should never be null due to isCompleted check)
         if (team1Score == null || team2Score == null) continue;
-        
+
         // Check if player is in this match
         final isInTeam1 = match.team1.player1.id == player.id ||
             match.team1.player2.id == player.id;
@@ -1328,7 +1577,7 @@ class _TournamentCompletionScreenState
 
     return history;
   }
-  
+
   Color? _getCardColor(int rank) {
     switch (rank) {
       case 1:
@@ -1371,20 +1620,20 @@ class _TournamentCompletionScreenState
 class _CelebrationPainter extends CustomPainter {
   final double animationValue;
   final Color color;
-  
+
   _CelebrationPainter({
     required this.animationValue,
     required this.color,
   });
-  
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = color.withOpacity((1 - animationValue) * 0.8)
       ..style = PaintingStyle.fill;
-    
+
     final random = 42; // Fixed seed for consistent particle positions
-    
+
     // Draw celebration particles (stars/sparkles)
     for (int i = 0; i < 12; i++) {
       final angle = (i * 30) * 3.14159 / 180;
@@ -1392,7 +1641,7 @@ class _CelebrationPainter extends CustomPainter {
       final x = size.width / 2 + distance * cos(angle + random);
       final y = size.height / 2 + distance * sin(angle + random);
       final particleSize = 4 * (1 - animationValue);
-      
+
       canvas.drawCircle(
         Offset(x, y),
         particleSize,
@@ -1400,7 +1649,7 @@ class _CelebrationPainter extends CustomPainter {
       );
     }
   }
-  
+
   @override
   bool shouldRepaint(_CelebrationPainter oldDelegate) {
     return oldDelegate.animationValue != animationValue;

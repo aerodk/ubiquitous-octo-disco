@@ -24,6 +24,9 @@ class RoundDisplayScreen extends StatefulWidget {
   final String? cloudPasscode;
   final bool enableCloud;
   final bool isReadOnly;
+  final bool? initialDesktopMode;
+  final double? initialZoomFactor;
+  final bool? initialCompactLayout;
 
   const RoundDisplayScreen({
     super.key,
@@ -32,6 +35,9 @@ class RoundDisplayScreen extends StatefulWidget {
     this.cloudPasscode,
     this.enableCloud = true,
     this.isReadOnly = false,
+    this.initialDesktopMode,
+    this.initialZoomFactor,
+    this.initialCompactLayout,
   });
 
   @override
@@ -47,17 +53,18 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   final FullscreenService _fullscreenService = FullscreenService();
   late Tournament _tournament;
   bool _isCloudAvailable = false;
-  
+
   // Track cloud storage codes
   String? _cloudCode;
   String? _cloudPasscode;
-  
+
   // Track players who were newly moved to pause after court adjustment
   Set<String> _newlyPausedPlayerIds = {};
-  
+
   // Display mode (mobile/desktop)
   bool _isDesktopMode = false;
   double _zoomFactor = DisplayModeService.defaultZoomFactor;
+  bool _isCompactLayout = false;
 
   // Fullscreen mode
   bool _isFullscreen = false;
@@ -68,6 +75,9 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     _tournament = widget.tournament;
     _cloudCode = widget.cloudCode;
     _cloudPasscode = widget.cloudPasscode;
+    _isDesktopMode = widget.initialDesktopMode ?? _isDesktopMode;
+    _zoomFactor = widget.initialZoomFactor ?? _zoomFactor;
+    _isCompactLayout = widget.initialCompactLayout ?? _isCompactLayout;
     if (widget.enableCloud) {
       _firebaseService = FirebaseService();
       _checkCloudAvailability();
@@ -87,10 +97,12 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   Future<void> _loadDisplayPreferences() async {
     final isDesktop = await _displayModeService.isDesktopMode();
     final zoom = await _displayModeService.getZoomFactor();
+    final isCompact = await _displayModeService.isCompactLayout();
     if (!mounted) return;
     setState(() {
-      _isDesktopMode = isDesktop;
-      _zoomFactor = zoom;
+      _isDesktopMode = widget.initialDesktopMode ?? isDesktop;
+      _zoomFactor = widget.initialZoomFactor ?? zoom;
+      _isCompactLayout = widget.initialCompactLayout ?? isCompact;
     });
   }
 
@@ -111,11 +123,87 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     });
   }
 
+  Future<void> _setZoom(double zoom) async {
+    final clamped = await _displayModeService.setZoomFactor(zoom);
+    if (!mounted) return;
+    setState(() {
+      _zoomFactor = clamped;
+    });
+  }
+
+  Future<void> _showZoomDialog() async {
+    double tempZoom = _zoomFactor;
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Juster zoom'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Zoom: ${(tempZoom * 100).toStringAsFixed(0)}%'),
+                  Slider(
+                    value: tempZoom,
+                    min: DisplayModeService.minZoomFactor,
+                    max: DisplayModeService.maxZoomFactor,
+                    divisions: 14,
+                    label: '${(tempZoom * 100).toStringAsFixed(0)}%',
+                    onChanged: (value) {
+                      setDialogState(() {
+                        tempZoom = value;
+                      });
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () async {
+                    await _setZoom(DisplayModeService.defaultZoomFactor);
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: const Text('Nulstil'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Annuller'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    await _setZoom(tempZoom);
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: const Text('Anvend'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _toggleFullscreen() async {
     final newState = await _fullscreenService.toggleFullscreen();
     if (!mounted) return;
     setState(() {
       _isFullscreen = newState;
+    });
+  }
+
+  Future<void> _toggleCompactLayout() async {
+    final updated = await _displayModeService.toggleCompactLayout();
+    if (!mounted) return;
+    setState(() {
+      _isCompactLayout = updated;
     });
   }
 
@@ -127,7 +215,9 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
 
   /// Sync the current tournament to cloud if codes are known
   Future<void> _syncToCloudIfConfigured(Tournament tournament) async {
-    if (_firebaseService == null || _cloudCode == null || _cloudPasscode == null) return;
+    if (_firebaseService == null ||
+        _cloudCode == null ||
+        _cloudPasscode == null) return;
 
     final isAvailable = await _firebaseService!.isFirebaseAvailable();
     if (!isAvailable) return;
@@ -148,38 +238,38 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   }
 
   Round get _currentRound => _tournament.currentRound!;
-  
+
   bool get _canGoBack {
     // Returns true if no scores are entered in current round
     // Allows navigation back to Setup (Round 1) or previous round (Round 2+)
     final currentRound = _currentRound;
-    final hasAnyScores = currentRound.matches.any(
-      (match) => match.team1Score != null || match.team2Score != null
-    );
-    
+    final hasAnyScores = currentRound.matches
+        .any((match) => match.team1Score != null || match.team2Score != null);
+
     return !hasAnyScores;
   }
 
   bool get _canStartFinalRound {
     // Must have at least the configured minimum completed rounds
-    if (_tournament.completedRounds < _tournament.settings.minRoundsBeforeFinal) return false;
-    
+    if (_tournament.completedRounds < _tournament.settings.minRoundsBeforeFinal)
+      return false;
+
     // Current round must be completed
     if (!_currentRound.isCompleted) return false;
-    
+
     // Cannot start if already in final round
     if (_currentRound.isFinalRound) return false;
-    
+
     // Tournament must not be completed
     if (_tournament.isCompleted) return false;
-    
+
     return true;
   }
 
   void _showTournamentCompletion() {
     // Mark tournament as completed
     final completedTournament = _tournament.copyWith(isCompleted: true);
-    
+
     // Navigate to completion screen
     Navigator.pushReplacement(
       context,
@@ -203,7 +293,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
           'Alt data vil blive slettet.',
         ),
         actions: [
-          TextButton (
+          TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Annuller'),
           ),
@@ -218,7 +308,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
 
     if (confirmed == true && mounted) {
       await _persistenceService.clearTournament();
-      
+
       // Navigate to setup screen
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => const SetupScreen()),
@@ -258,16 +348,16 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
 
   void _goToPreviousRound() {
     if (!_canGoBack) return;
-    
+
     // Save the full tournament state before going back (to preserve future rounds)
     _persistenceService.saveFullTournamentHistory(_tournament);
-    
+
     // If on first round, just pop back to setup screen
     if (_tournament.rounds.length <= 1) {
       Navigator.pop(context);
       return;
     }
-    
+
     // Remove the current round and replace screen with previous round
     final updatedTournament = Tournament(
       id: _tournament.id,
@@ -278,7 +368,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       createdAt: _tournament.createdAt,
       settings: _tournament.settings,
     );
-    
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -286,6 +376,11 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
           tournament: updatedTournament,
           cloudCode: _cloudCode,
           cloudPasscode: _cloudPasscode,
+          enableCloud: widget.enableCloud,
+          isReadOnly: widget.isReadOnly,
+          initialDesktopMode: _isDesktopMode,
+          initialZoomFactor: _zoomFactor,
+          initialCompactLayout: _isCompactLayout,
         ),
       ),
     );
@@ -296,33 +391,34 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     if (!_currentRound.isCompleted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Alle kampe skal have score før næste runde kan startes'),
+          content:
+              Text('Alle kampe skal have score før næste runde kan startes'),
           backgroundColor: Colors.orange,
         ),
       );
       return;
     }
-    
+
     final nextRoundNumber = _tournament.rounds.length + 1;
-    
+
     // Try to load previously saved tournament history
     final savedHistory = await _persistenceService.loadFullTournamentHistory();
-    
+
     Round? nextRound;
-    
+
     // Check if we can restore the next round from history
-    if (savedHistory != null && 
+    if (savedHistory != null &&
         savedHistory.rounds.length >= nextRoundNumber &&
         _roundsAreIdentical(savedHistory, _tournament)) {
       // We can restore the next round from history
       nextRound = savedHistory.rounds[nextRoundNumber - 1];
     }
-    
+
     // If we couldn't restore from history, generate a new round
     if (nextRound == null) {
       // Calculate current standings to track pause history
       final standings = _standingsService.calculateStandings(_tournament);
-      
+
       // Generate next round with pause fairness logic
       nextRound = _tournamentService.generateNextRound(
         _tournament.players,
@@ -333,11 +429,11 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
         format: _tournament.settings.format,
         previousRounds: _tournament.rounds,
       );
-      
+
       // Clear history since we generated a new round
       await _persistenceService.clearFullTournamentHistory();
     }
-    
+
     final updatedTournament = Tournament(
       id: _tournament.id,
       name: _tournament.name,
@@ -357,27 +453,33 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
           tournament: updatedTournament,
           cloudCode: _cloudCode,
           cloudPasscode: _cloudPasscode,
+          enableCloud: widget.enableCloud,
+          isReadOnly: widget.isReadOnly,
+          initialDesktopMode: _isDesktopMode,
+          initialZoomFactor: _zoomFactor,
+          initialCompactLayout: _isCompactLayout,
         ),
       ),
     );
   }
-  
+
   /// Check if the rounds in two tournaments are identical (same scores)
   /// Used to determine if we can safely restore a round from history
   bool _roundsAreIdentical(Tournament history, Tournament current) {
     if (history.rounds.length < current.rounds.length) return false;
-    
+
     // Check that all existing rounds have identical scores
     for (int i = 0; i < current.rounds.length; i++) {
       final historyRound = history.rounds[i];
       final currentRound = current.rounds[i];
-      
-      if (historyRound.matches.length != currentRound.matches.length) return false;
-      
+
+      if (historyRound.matches.length != currentRound.matches.length)
+        return false;
+
       for (int j = 0; j < currentRound.matches.length; j++) {
         final historyMatch = historyRound.matches[j];
         final currentMatch = currentRound.matches[j];
-        
+
         // Check if scores are different
         if (historyMatch.team1Score != currentMatch.team1Score ||
             historyMatch.team2Score != currentMatch.team2Score) {
@@ -385,7 +487,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
         }
       }
     }
-    
+
     return true;
   }
 
@@ -425,20 +527,20 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     if (confirmed != true || !mounted) return;
 
     final nextRoundNumber = _tournament.rounds.length + 1;
-    
+
     // Try to load previously saved tournament history
     final savedHistory = await _persistenceService.loadFullTournamentHistory();
-    
+
     Round? finalRound;
-    
+
     // Check if we can restore the final round from history
-    if (savedHistory != null && 
+    if (savedHistory != null &&
         savedHistory.rounds.length >= nextRoundNumber &&
         _roundsAreIdentical(savedHistory, _tournament)) {
       // We can restore the final round from history
       finalRound = savedHistory.rounds[nextRoundNumber - 1];
     }
-    
+
     // If we couldn't restore from history, generate a new final round
     if (finalRound == null) {
       final standings = _standingsService.calculateStandings(_tournament);
@@ -449,11 +551,11 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
         strategy: _tournament.settings.finalRoundStrategy,
         laneStrategy: _tournament.settings.laneAssignmentStrategy,
       );
-      
+
       // Clear history since we generated a new round
       await _persistenceService.clearFullTournamentHistory();
     }
-    
+
     final updatedTournament = Tournament(
       id: _tournament.id,
       name: _tournament.name,
@@ -474,6 +576,11 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
             tournament: updatedTournament,
             cloudCode: _cloudCode,
             cloudPasscode: _cloudPasscode,
+            enableCloud: widget.enableCloud,
+            isReadOnly: widget.isReadOnly,
+            initialDesktopMode: _isDesktopMode,
+            initialZoomFactor: _zoomFactor,
+            initialCompactLayout: _isCompactLayout,
           ),
         ),
       );
@@ -483,9 +590,11 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   /// Override a player's pause status
   /// If forceToActive is true, player is currently on pause and should be forced to active
   /// If forceToActive is false, player is currently active and should be forced to pause
-  Future<void> _overridePlayerPauseStatus(Player player, bool forceToActive) async {
+  Future<void> _overridePlayerPauseStatus(
+      Player player, bool forceToActive) async {
     // Don't allow overrides if any scores have been entered
-    if (_currentRound.matches.any((m) => m.team1Score != null || m.team2Score != null)) {
+    if (_currentRound.matches
+        .any((m) => m.team1Score != null || m.team2Score != null)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Kan ikke ændre spillere når der er indtastet score'),
@@ -542,15 +651,16 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     if (newRound == null) {
       // Override failed - show error
       final String errorMessage;
-      if (!forceToActive && _currentRound.playersOnBreak.length >= 
-          (_tournament.players.length - _tournament.courts.length * 4)) {
+      if (!forceToActive &&
+          _currentRound.playersOnBreak.length >=
+              (_tournament.players.length - _tournament.courts.length * 4)) {
         errorMessage = 'Kan ikke sætte flere spillere på pause. '
             'Med ${_tournament.courts.length} baner og ${_tournament.players.length} spillere, '
             'kan maksimalt ${_tournament.players.length - _tournament.courts.length * 4} spillere være på pause.';
       } else {
         errorMessage = 'Kunne ikke ændre spillerstatus. Prøv igen.';
       }
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -579,7 +689,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
 
     // Save and refresh
     await _persistenceService.saveTournament(updatedTournament);
-    
+
     setState(() {
       _tournament = updatedTournament;
       // Clear newly paused tracking after manual override
@@ -589,7 +699,8 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${player.name} er nu ${forceToActive ? "på pause" : "sat til at spille"}'),
+          content: Text(
+              '${player.name} er nu ${forceToActive ? "på pause" : "sat til at spille"}'),
           backgroundColor: Colors.green,
         ),
       );
@@ -600,7 +711,8 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   /// Regenerates the current round with the new court
   Future<void> _addCourt() async {
     // Don't allow court changes if any scores have been entered
-    if (_currentRound.matches.any((m) => m.team1Score != null || m.team2Score != null)) {
+    if (_currentRound.matches
+        .any((m) => m.team1Score != null || m.team2Score != null)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Kan ikke ændre baner når der er indtastet score'),
@@ -614,7 +726,8 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     if (_tournament.courts.length >= Constants.maxCourts) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Kan ikke tilføje flere end ${Constants.maxCourts} baner'),
+          content:
+              Text('Kan ikke tilføje flere end ${Constants.maxCourts} baner'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -679,7 +792,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     // Regenerate current round with new court count
     final standings = _standingsService.calculateStandings(_tournament);
     final Round newRound;
-    
+
     if (_currentRound.isFinalRound) {
       // Regenerate final round with new court
       newRound = _tournamentService.generateFinalRound(
@@ -691,7 +804,8 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       );
     } else {
       // Regenerate regular round with new court
-      final previousRounds = _tournament.rounds.sublist(0, _tournament.rounds.length - 1);
+      final previousRounds =
+          _tournament.rounds.sublist(0, _tournament.rounds.length - 1);
       newRound = _tournamentService.generateNextRound(
         _tournament.players,
         updatedCourts,
@@ -714,7 +828,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
 
     // Save and refresh
     await _persistenceService.saveTournament(updatedTournament);
-    
+
     setState(() {
       _tournament = updatedTournament;
     });
@@ -733,7 +847,8 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   /// Regenerates the current round with fewer courts
   Future<void> _removeCourt() async {
     // Don't allow court changes if any scores have been entered
-    if (_currentRound.matches.any((m) => m.team1Score != null || m.team2Score != null)) {
+    if (_currentRound.matches
+        .any((m) => m.team1Score != null || m.team2Score != null)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Kan ikke ændre baner når der er indtastet score'),
@@ -780,16 +895,18 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
     if (confirmed != true) return;
 
     // Track players currently on pause before removing the court
-    final previouslyPausedIds = _currentRound.playersOnBreak.map((p) => p.id).toSet();
+    final previouslyPausedIds =
+        _currentRound.playersOnBreak.map((p) => p.id).toSet();
 
     // Remove last court
     final removedCourt = _tournament.courts.last;
-    final updatedCourts = _tournament.courts.sublist(0, _tournament.courts.length - 1);
+    final updatedCourts =
+        _tournament.courts.sublist(0, _tournament.courts.length - 1);
 
     // Regenerate current round with fewer courts
     final standings = _standingsService.calculateStandings(_tournament);
     final Round newRound;
-    
+
     if (_currentRound.isFinalRound) {
       // Regenerate final round with fewer courts
       newRound = _tournamentService.generateFinalRound(
@@ -801,7 +918,8 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
       );
     } else {
       // Regenerate regular round with fewer courts
-      final previousRounds = _tournament.rounds.sublist(0, _tournament.rounds.length - 1);
+      final previousRounds =
+          _tournament.rounds.sublist(0, _tournament.rounds.length - 1);
       newRound = _tournamentService.generateNextRound(
         _tournament.players,
         updatedCourts,
@@ -830,7 +948,7 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
 
     // Save and refresh
     await _persistenceService.saveTournament(updatedTournament);
-    
+
     setState(() {
       _tournament = updatedTournament;
       _newlyPausedPlayerIds = newlyPausedIds;
@@ -883,161 +1001,221 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
   void _showActionMenu(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle bar
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                color: Colors.grey[400],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
+      isScrollControlled: true,
+      builder: (context) {
+        final mediaQuery = MediaQuery.of(context);
 
-            // Display Mode Toggle
-            ListTile(
-              leading: Icon(
-                _isDesktopMode ? Icons.desktop_windows : Icons.phone_android,
-                color: Colors.blue,
-              ),
-              title: const Text('Display Mode'),
-              subtitle: Text(_isDesktopMode ? 'Desktop' : 'Mobile'),
-              onTap: () {
-                _toggleDisplayMode();
-                Navigator.pop(context);
-              },
-            ),
-
-            const Divider(),
-
-            // Fullscreen Toggle
-            ListTile(
-              leading: Icon(
-                _isFullscreen ? Icons.fullscreen_exit : Icons.fullscreen,
-                color: Colors.blue,
-              ),
-              title: const Text('Fuldskærm'),
-              subtitle: Text(_isFullscreen ? 'Til' : 'Fra'),
-              onTap: () {
-                Navigator.pop(context);
-                _toggleFullscreen();
-              },
-            ),
-
-            const Divider(),
-
-            // Zoom Controls
-            ListTile(
-              leading: const Icon(Icons.zoom_out_map, color: Colors.blue),
-              title: const Text('Zoom Ud'),
-              enabled: _zoomFactor > DisplayModeService.minZoomFactor + 0.01,
-              onTap: _zoomFactor > DisplayModeService.minZoomFactor + 0.01
-                  ? () {
-                      _adjustZoom(false);
-                      Navigator.pop(context);
-                    }
-                  : null,
-            ),
-            ListTile(
-              leading: const Icon(Icons.zoom_in_map, color: Colors.blue),
-              title: const Text('Zoom Ind'),
-              enabled: _zoomFactor < DisplayModeService.maxZoomFactor - 0.01,
-              onTap: _zoomFactor < DisplayModeService.maxZoomFactor - 0.01
-                  ? () {
-                      _adjustZoom(true);
-                      Navigator.pop(context);
-                    }
-                  : null,
-            ),
-
-            const Divider(),
-
-            // Leaderboard
-            ListTile(
-              leading: const Icon(Icons.leaderboard, color: Colors.green),
-              title: const Text('Se Stillinger'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => LeaderboardScreen(
-                      tournament: _tournament,
-                      isReadOnly: widget.isReadOnly,
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(bottom: mediaQuery.viewInsets.bottom),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Handle bar
+                    Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[400],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
-                  ),
-                );
-              },
+
+                    // Display Mode Toggle
+                    ListTile(
+                      leading: Icon(
+                        _isDesktopMode
+                            ? Icons.desktop_windows
+                            : Icons.phone_android,
+                        color: Colors.blue,
+                      ),
+                      title: const Text('Display Mode'),
+                      subtitle: Text(_isDesktopMode ? 'Desktop' : 'Mobile'),
+                      onTap: () {
+                        _toggleDisplayMode();
+                        Navigator.pop(context);
+                      },
+                    ),
+
+                    const Divider(),
+
+                    // Fullscreen Toggle
+                    ListTile(
+                      leading: Icon(
+                        _isFullscreen
+                            ? Icons.fullscreen_exit
+                            : Icons.fullscreen,
+                        color: Colors.blue,
+                      ),
+                      title: const Text('Fuldskærm'),
+                      subtitle: Text(_isFullscreen ? 'Til' : 'Fra'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _toggleFullscreen();
+                      },
+                    ),
+
+                    const Divider(),
+
+                    // Zoom Controls
+                    ListTile(
+                      leading:
+                          const Icon(Icons.zoom_out_map, color: Colors.blue),
+                      title: const Text('Zoom Ud'),
+                      enabled:
+                          _zoomFactor > DisplayModeService.minZoomFactor + 0.01,
+                      onTap:
+                          _zoomFactor > DisplayModeService.minZoomFactor + 0.01
+                              ? () {
+                                  _adjustZoom(false);
+                                  Navigator.pop(context);
+                                }
+                              : null,
+                    ),
+                    ListTile(
+                      leading:
+                          const Icon(Icons.zoom_in_map, color: Colors.blue),
+                      title: const Text('Zoom Ind'),
+                      enabled:
+                          _zoomFactor < DisplayModeService.maxZoomFactor - 0.01,
+                      onTap:
+                          _zoomFactor < DisplayModeService.maxZoomFactor - 0.01
+                              ? () {
+                                  _adjustZoom(true);
+                                  Navigator.pop(context);
+                                }
+                              : null,
+                    ),
+
+                    ListTile(
+                      leading: const Icon(Icons.tune, color: Colors.blue),
+                      title: const Text('Juster Zoom...'),
+                      subtitle:
+                          Text('${(_zoomFactor * 100).toStringAsFixed(0)}%'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showZoomDialog();
+                      },
+                    ),
+
+                    ListTile(
+                      leading: Icon(
+                        _isCompactLayout
+                            ? Icons.view_agenda
+                            : Icons.view_compact,
+                        color: Colors.blue,
+                      ),
+                      title: const Text('Kompakt banevisning'),
+                      subtitle: Text(_isCompactLayout ? 'Til' : 'Fra'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _toggleCompactLayout();
+                      },
+                    ),
+
+                    const Divider(),
+
+                    // Leaderboard
+                    ListTile(
+                      leading:
+                          const Icon(Icons.leaderboard, color: Colors.green),
+                      title: const Text('Se Stillinger'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => LeaderboardScreen(
+                              tournament: _tournament,
+                              isReadOnly: widget.isReadOnly,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+
+                    const Divider(),
+
+                    // Cloud Save (only if NOT already saved)
+                    if (!widget.isReadOnly &&
+                        widget.enableCloud &&
+                        _isCloudAvailable &&
+                        _cloudCode == null) ...[
+                      ListTile(
+                        leading:
+                            const Icon(Icons.cloud_upload, color: Colors.blue),
+                        title: const Text('Gem i Cloud'),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _saveToCloud();
+                        },
+                      ),
+                      const Divider(),
+                    ],
+
+                    // Cloud Update (only if already saved)
+                    if (!widget.isReadOnly &&
+                        widget.enableCloud &&
+                        _isCloudAvailable &&
+                        _cloudCode != null) ...[
+                      ListTile(
+                        leading: const Icon(Icons.cloud_upload_outlined,
+                            color: Colors.blue),
+                        title: const Text('Opdater Cloud'),
+                        subtitle: Text('Kode: $_cloudCode'),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _saveToCloud();
+                        },
+                      ),
+                      const Divider(),
+                    ],
+
+                    // Share (only if saved to cloud and not read-only)
+                    if (_isCloudAvailable &&
+                        _cloudCode != null &&
+                        !widget.isReadOnly) ...[
+                      ListTile(
+                        leading: const Icon(Icons.share, color: Colors.green),
+                        title: const Text('Del Turnering'),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _showShareDialog();
+                        },
+                      ),
+                      const Divider(),
+                    ],
+
+                    // Reset Tournament
+                    if (!widget.isReadOnly) ...[
+                      ListTile(
+                        leading:
+                            const Icon(Icons.refresh, color: Colors.orange),
+                        title: const Text('Nulstil Turnering'),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _resetTournament();
+                        },
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ),
-
-            const Divider(),
-
-            // Cloud Save (only if NOT already saved)
-            if (!widget.isReadOnly && widget.enableCloud && _isCloudAvailable && _cloudCode == null) ...[
-              ListTile(
-                leading: const Icon(Icons.cloud_upload, color: Colors.blue),
-                title: const Text('Gem i Cloud'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _saveToCloud();
-                },
-              ),
-              const Divider(),
-            ],
-
-            // Cloud Update (only if already saved)
-            if (!widget.isReadOnly && widget.enableCloud && _isCloudAvailable && _cloudCode != null) ...[
-              ListTile(
-                leading: const Icon(Icons.cloud_upload_outlined, color: Colors.blue),
-                title: const Text('Opdater Cloud'),
-                subtitle: Text('Kode: $_cloudCode'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _saveToCloud();
-                },
-              ),
-              const Divider(),
-            ],
-
-            // Share (only if saved to cloud and not read-only)
-            if (_isCloudAvailable && _cloudCode != null && !widget.isReadOnly) ...[
-              ListTile(
-                leading: const Icon(Icons.share, color: Colors.green),
-                title: const Text('Del Turnering'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showShareDialog();
-                },
-              ),
-              const Divider(),
-            ],
-
-            // Reset Tournament
-            if (!widget.isReadOnly) ...[
-              ListTile(
-                leading: const Icon(Icons.refresh, color: Colors.orange),
-                title: const Text('Nulstil Turnering'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _resetTournament();
-                },
-              ),
-            ],
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final round = widget.tournament.currentRound;
-    
+
     if (round == null) {
       return Scaffold(
         appBar: AppBar(
@@ -1062,7 +1240,8 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
           // Show message that you can't go back
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Du kan ikke gå tilbage når der er indtastet score'),
+              content:
+                  Text('Du kan ikke gå tilbage når der er indtastet score'),
               backgroundColor: Colors.orange,
             ),
           );
@@ -1132,13 +1311,15 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                       backgroundColor: Colors.amber[600],
                       foregroundColor: Colors.black,
                       minimumSize: const Size(10, 36),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
                       elevation: 3,
                     ),
                     icon: const Icon(Icons.emoji_events, size: 18),
                     label: const Text(
                       'Sidste Runde',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                      style:
+                          TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                     ),
                   ),
                 if (!_currentRound.isFinalRound && !widget.isReadOnly)
@@ -1148,12 +1329,14 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                       backgroundColor: Colors.green,
                       foregroundColor: Colors.white,
                       minimumSize: const Size(10, 36),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       elevation: 3,
                     ),
                     child: Text(
                       'Næste Runde (${_currentRound.roundNumber + 1})',
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w600),
                     ),
                   ),
               ],
@@ -1174,6 +1357,20 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
               },
               tooltip: 'Vis stillinger',
             ),
+            IconButton(
+              icon: const Icon(Icons.zoom_in_map),
+              onPressed: _showZoomDialog,
+              tooltip: 'Juster zoom',
+            ),
+            IconButton(
+              icon: Icon(
+                _isCompactLayout ? Icons.view_agenda : Icons.view_compact,
+              ),
+              onPressed: _toggleCompactLayout,
+              tooltip: _isCompactLayout
+                  ? 'Slå kompakt visning fra'
+                  : 'Slå kompakt visning til',
+            ),
             // Fullscreen toggle button
             IconButton(
               icon: Icon(
@@ -1191,159 +1388,205 @@ class _RoundDisplayScreenState extends State<RoundDisplayScreen> {
                 builder: (context, constraints) {
                   // Determine number of columns based on screen width
                   // For desktop mode, force to behave like a larger screen
-                  final double sizeScale = (_isDesktopMode ? Constants.desktopModeScaleFactor : 1.0) * _zoomFactor;
-                  final effectiveWidth = constraints.maxWidth * sizeScale;
-                  
+                  final double sizeScale = (_isDesktopMode
+                          ? Constants.desktopModeScaleFactor
+                          : 1.0) *
+                      _zoomFactor;
+                  final compactWidthBoost = _isCompactLayout ? 1.2 : 1.0;
+                  final effectiveWidth =
+                      constraints.maxWidth * sizeScale * compactWidthBoost;
+
                   final int crossAxisCount;
-                  if (effectiveWidth >= 1200) {
+                  if (effectiveWidth >= 1600) {
+                    crossAxisCount =
+                        4; // 4 columns in very wide compact layouts
+                  } else if (effectiveWidth >= 1200) {
                     crossAxisCount = 3; // 3 columns on extra large screens
                   } else if (effectiveWidth >= 800) {
                     crossAxisCount = 2; // 2 columns on large screens
                   } else {
                     crossAxisCount = 1; // 1 column on small screens
                   }
-                  
-                  final double cardPadding = (_isDesktopMode 
-                    ? Constants.desktopModeCardPadding 
-                    : Constants.mobileModeCardPadding) * _zoomFactor;
-                  final double cardSpacing = (_isDesktopMode ? 24 : 16) * _zoomFactor;
-                  final double cardHeight = (_isDesktopMode ? 400 : 300) * _zoomFactor;
+
+                  final compactDensity = _isCompactLayout ? 0.78 : 1.0;
+                  final double cardPadding = (_isDesktopMode
+                          ? Constants.desktopModeCardPadding
+                          : Constants.mobileModeCardPadding) *
+                      _zoomFactor *
+                      compactDensity;
+                  final double cardSpacing =
+                      (_isDesktopMode ? 24 : 16) * _zoomFactor * compactDensity;
+                  final double cardHeight = (_isDesktopMode ? 400 : 300) *
+                      _zoomFactor *
+                      compactDensity;
 
                   return SingleChildScrollView(
                     child: Padding(
                       padding: EdgeInsets.all(cardPadding),
                       child: Column(
                         children: [
-                      // Display matches in a responsive grid
-                      if (_currentRound.matches.isNotEmpty)
-                        GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: crossAxisCount,
-                            crossAxisSpacing: cardSpacing,
-                            mainAxisSpacing: cardSpacing,
-                            // Ensure enough vertical space for match content with scores
-                            mainAxisExtent: cardHeight,
-                          ),
-                          itemCount: _currentRound.matches.length,
-                          itemBuilder: (context, index) {
-                            final match = _currentRound.matches[index];
-                            return MatchCard(
-                              key: ValueKey(match.id),
-                              match: match,
-                              maxPoints: _tournament.settings.pointsPerMatch,
-                              isDesktopMode: _isDesktopMode,
-                              zoomFactor: _zoomFactor,
-                              isReadOnly: widget.isReadOnly,
-                              onScoreChanged: widget.isReadOnly ? null : () async {
-                                setState(() {});
-                                // Save tournament immediately after score change
-                                await _persistenceService.saveTournament(_tournament);
-                                // Also save to full history to preserve scores on navigation back
-                                await _persistenceService.saveFullTournamentHistory(_tournament);
+                          // Display matches in a responsive grid
+                          if (_currentRound.matches.isNotEmpty)
+                            GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: crossAxisCount,
+                                crossAxisSpacing: cardSpacing,
+                                mainAxisSpacing: cardSpacing,
+                                // Ensure enough vertical space for match content with scores
+                                mainAxisExtent: cardHeight,
+                              ),
+                              itemCount: _currentRound.matches.length,
+                              itemBuilder: (context, index) {
+                                final match = _currentRound.matches[index];
+                                return MatchCard(
+                                  key: ValueKey(match.id),
+                                  match: match,
+                                  maxPoints:
+                                      _tournament.settings.pointsPerMatch,
+                                  isDesktopMode: _isDesktopMode,
+                                  zoomFactor: _zoomFactor,
+                                  isCompactMode: _isCompactLayout,
+                                  isReadOnly: widget.isReadOnly,
+                                  onScoreChanged: widget.isReadOnly
+                                      ? null
+                                      : () async {
+                                          setState(() {});
+                                          // Save tournament immediately after score change
+                                          await _persistenceService
+                                              .saveTournament(_tournament);
+                                          // Also save to full history to preserve scores on navigation back
+                                          await _persistenceService
+                                              .saveFullTournamentHistory(
+                                                  _tournament);
+                                        },
+                                  onPlayerForceToPause: widget.isReadOnly
+                                      ? null
+                                      : (player) => _overridePlayerPauseStatus(
+                                          player, false),
+                                );
                               },
-                              onPlayerForceToPause: widget.isReadOnly ? null : (player) => _overridePlayerPauseStatus(player, false),
-                            );
-                          },
-                        ),
+                            ),
 
-                      // Display players on break
-                      if (_currentRound.playersOnBreak.isNotEmpty) ...[
-                        const SizedBox(height: 16),
-                        BenchSection(
-                          playersOnBreak: _currentRound.playersOnBreak,
-                          standings: _standingsService.calculateStandings(_tournament),
-                          onPlayerTap: (player) => _overridePlayerPauseStatus(player, true),
-                        ),
-                      ],
+                          // Display players on break
+                          if (_currentRound.playersOnBreak.isNotEmpty) ...[
+                            const SizedBox(height: 16),
+                            BenchSection(
+                              playersOnBreak: _currentRound.playersOnBreak,
+                              standings: _standingsService
+                                  .calculateStandings(_tournament),
+                              onPlayerTap: (player) =>
+                                  _overridePlayerPauseStatus(player, true),
+                            ),
+                          ],
 
-                      // Court management section
-                      const SizedBox(height: 16),
-                      Card(
-                        color: Colors.blue[50],
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
+                          // Court management section
+                          const SizedBox(height: 16),
+                          Card(
+                            color: Colors.blue[50],
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Icon(Icons.sports_tennis, color: Colors.blue),
-                                  const SizedBox(width: 8),
-                                  const Text(
-                                    'Bane håndtering',
-                                    style: TextStyle(fontWeight: FontWeight.bold),
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.sports_tennis,
+                                          color: Colors.blue),
+                                      const SizedBox(width: 8),
+                                      const Text(
+                                        'Bane håndtering',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                      const Spacer(),
+                                      Text(
+                                        '${_tournament.courts.length} baner',
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
                                   ),
-                                  const Spacer(),
-                                  Text(
-                                    '${_tournament.courts.length} baner',
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      Expanded(
+                                        child: ElevatedButton(
+                                          onPressed: _tournament.courts.length <
+                                                      Constants.maxCourts &&
+                                                  !_currentRound.matches.any(
+                                                      (m) =>
+                                                          m.team1Score !=
+                                                              null ||
+                                                          m.team2Score !=
+                                                              null) &&
+                                                  _currentRound.playersOnBreak
+                                                          .length >=
+                                                      4
+                                              ? _addCourt
+                                              : null,
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.green[100],
+                                            foregroundColor: Colors.green[900],
+                                          ),
+                                          child: const Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(Icons.add),
+                                              SizedBox(width: 6),
+                                              Text('Tilføj bane'),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: ElevatedButton(
+                                          onPressed: _tournament.courts.length >
+                                                      Constants.minCourts &&
+                                                  !_currentRound.matches.any(
+                                                      (m) =>
+                                                          m.team1Score !=
+                                                              null ||
+                                                          m.team2Score != null)
+                                              ? _removeCourt
+                                              : null,
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.red[100],
+                                            foregroundColor: Colors.red[900],
+                                          ),
+                                          child: const Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(Icons.remove),
+                                              SizedBox(width: 6),
+                                              Text('Fjern bane'),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 8),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                children: [
-                                  Expanded(
-                                    child: ElevatedButton(
-                                      onPressed: _tournament.courts.length < Constants.maxCourts &&
-                                              !_currentRound.matches.any((m) => m.team1Score != null || m.team2Score != null) &&
-                                              _currentRound.playersOnBreak.length >= 4
-                                          ? _addCourt
-                                          : null,
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.green[100],
-                                        foregroundColor: Colors.green[900],
-                                      ),
-                                      child: const Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(Icons.add),
-                                          SizedBox(width: 6),
-                                          Text('Tilføj bane'),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: ElevatedButton(
-                                      onPressed: _tournament.courts.length > Constants.minCourts &&
-                                              !_currentRound.matches.any((m) => m.team1Score != null || m.team2Score != null)
-                                          ? _removeCourt
-                                          : null,
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.red[100],
-                                        foregroundColor: Colors.red[900],
-                                      ),
-                                      child: const Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(Icons.remove),
-                                          SizedBox(width: 6),
-                                          Text('Fjern bane'),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                            ),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-              );
+                    ),
+                  );
                 },
               ),
             ),
-            
+
             // Bottom buttons section (only show completion when final round is done)
             Padding(
               padding: const EdgeInsets.all(16.0),
